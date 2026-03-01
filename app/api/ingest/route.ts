@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 2. Analyze with Gemini
-    const ai = new GoogleGenAI({ apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY as string });
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY as string });
 
     const prompt = `
 System Prompt — Ingestion Engine
@@ -169,7 +169,7 @@ ${combinedText.substring(0, 150000)}
     `;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3.1-pro-preview',
+      model: 'gemini-2.5-pro',
       contents: prompt,
       config: {
         responseMimeType: 'application/json',

@@ -468,7 +468,7 @@ When responding, always base your answer on the project's structured memory befo
       `;
 
       const response = await ai.models.generateContent({
-        model: 'gemini-3.1-pro-preview',
+        model: 'gemini-2.5-pro',
         contents: prompt,
         config: {
           systemInstruction: systemPrompt,
@@ -927,7 +927,7 @@ Every response must protect the integrity of the story while helping the writer 
 When responding, always base your answer on the project's structured memory before using freeform creativity. If there is tension between creativity and continuity, continuity wins unless the user explicitly asks for an alternate or non-canon version.
       `;
 
-      const modelName = mode === 'deep' ? 'gemini-3.1-pro-preview' : 'gemini-2.5-flash-lite';
+      const modelName = mode === 'deep' ? 'gemini-2.5-pro' : 'gemini-2.5-flash-lite';
       const config: any = {
         systemInstruction: systemPrompt,
       };
