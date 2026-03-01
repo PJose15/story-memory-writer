@@ -1,0 +1,5 @@
+{
+  "name": "Story Memory Writer",
+  "description": "A narrative copilot that remembers your entire story and helps you keep writing without losing the thread.",
+  "requestFramePermissions": []
+}
