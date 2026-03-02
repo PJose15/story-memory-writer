@@ -97,7 +97,7 @@ export default function ImportPage() {
       const charId = charIdMap.get(c.name) || crypto.randomUUID();
 
       // Find relationships where this character is character_1
-      const rels = (extractedData.relationships || [])
+      const relsAsSource = (extractedData.relationships || [])
         .filter((r: any) => r.character_1 === c.name || r.character_1 === c.character_id)
         .map((r: any) => ({
           targetId: charIdMap.get(r.character_2) || r.character_2,
@@ -106,6 +106,25 @@ export default function ImportPage() {
           tensionLevel: r.tension_level || 50,
           dynamics: r.current_dynamic || r.relationship_type || ''
         }));
+
+      // Find relationships where this character is character_2 (inverse)
+      const relsAsTarget = (extractedData.relationships || [])
+        .filter((r: any) => r.character_2 === c.name || r.character_2 === c.character_id)
+        .map((r: any) => ({
+          targetId: charIdMap.get(r.character_1) || r.character_1,
+          targetName: (extractedData.characters?.find((tc: any) => tc.name === r.character_1 || tc.character_id === r.character_1))?.name || r.character_1,
+          trustLevel: r.trust_level || 50,
+          tensionLevel: r.tension_level || 50,
+          dynamics: r.current_dynamic || r.relationship_type || ''
+        }));
+
+      // Merge and deduplicate by targetId
+      const seenTargets = new Set<string>();
+      const rels = [...relsAsSource, ...relsAsTarget].filter(r => {
+        if (seenTargets.has(r.targetId)) return false;
+        seenTargets.add(r.targetId);
+        return true;
+      });
 
       return {
         id: charId,

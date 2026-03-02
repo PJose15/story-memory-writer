@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleGenAI, Type } from '@google/genai';
+import { GoogleGenAI, Type, FinishReason } from '@google/genai';
 import pdf from 'pdf-parse';
 import mammoth from 'mammoth';
 import { rateLimit } from '@/lib/rate-limit';
@@ -525,6 +525,13 @@ export async function POST(req: NextRequest) {
           responseSchema,
         }
       });
+
+      const candidate = response.candidates?.[0];
+      const finishReason = candidate?.finishReason;
+      if (finishReason === FinishReason.SAFETY || finishReason === FinishReason.PROHIBITED_CONTENT || finishReason === FinishReason.BLOCKLIST) {
+        console.warn(`Chunk ${i + 1} was blocked by safety filters, skipping.`);
+        continue;
+      }
 
       const rawText = response.text;
       if (!rawText) {

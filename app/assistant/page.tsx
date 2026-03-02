@@ -141,11 +141,13 @@ export default function AssistantPage() {
     const canonItems = state.canon_items.map(c => `- [${c.category}] ${c.description} (${c.status})`);
     const ambiguities = state.ambiguities.map(a => `- ${a.issue} (affects: ${a.affectedSection}, confidence: ${a.confidence})`);
 
-    return `STORY BIBLE:
+    const MAX_CONTEXT_LENGTH = 120000; // ~30K tokens, safe for Gemini context window
+
+    let context = `STORY BIBLE:
 Title: ${state.title}
 Synopsis: ${state.synopsis}
 Style Profile: ${state.style_profile}
-
+${state.author_intent ? `\nCURRENT AUTHOR INTENT:\n${state.author_intent}\n` : ''}
 LATEST CHAPTER:
 ${latestChapter ? `Title: ${latestChapter.title}\nSummary: ${latestChapter.summary}\nContent (last 3000 chars): ${latestChapter.content.slice(-3000)}` : 'None'}
 
@@ -169,6 +171,14 @@ ${canonItems.length ? canonItems.join('\n') : 'None'}
 
 AMBIGUITIES (Uncertain elements needing review):
 ${ambiguities.length ? ambiguities.join('\n') : 'None'}`;
+
+    // Truncate if context is too large, prioritizing confirmed canon
+    if (context.length > MAX_CONTEXT_LENGTH) {
+      console.warn(`Story context truncated: ${context.length} chars -> ${MAX_CONTEXT_LENGTH} chars`);
+      context = context.slice(0, MAX_CONTEXT_LENGTH) + '\n\n[Context truncated due to size. Some draft items may be omitted.]';
+    }
+
+    return context;
   };
 
   const handleAudit = async () => {

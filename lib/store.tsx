@@ -141,6 +141,7 @@ export interface StoryState {
   title: string;
   genre: string[];
   synopsis: string;
+  author_intent: string;
   chapters: Chapter[];
   scenes: Scene[];
   characters: Character[];
@@ -162,6 +163,7 @@ const defaultState: StoryState = {
   title: 'Untitled Project',
   genre: [],
   synopsis: '',
+  author_intent: '',
   chapters: [],
   scenes: [],
   characters: [],

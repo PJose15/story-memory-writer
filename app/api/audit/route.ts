@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleGenAI, Type } from '@google/genai';
+import { GoogleGenAI, Type, FinishReason } from '@google/genai';
 import { buildWritingAssistantPrompt } from '@/lib/prompts/writing-assistant';
 import { rateLimit } from '@/lib/rate-limit';
 import { AI_MODEL, SAFETY_SETTINGS } from '@/lib/ai-config';
@@ -72,6 +72,18 @@ Analyze it against the established canon. Detect contradictions, broken characte
         }
       }
     });
+
+    // Check if the response was blocked
+    const candidate = response.candidates?.[0];
+    const finishReason = candidate?.finishReason;
+    if (finishReason === FinishReason.SAFETY || finishReason === FinishReason.PROHIBITED_CONTENT || finishReason === FinishReason.BLOCKLIST) {
+      return NextResponse.json({
+        status: 'Clear',
+        risks: [{ level: 'Low', description: 'The AI could not audit this content. Try rephrasing your input.', affectedElements: [] }],
+        suggestedCorrections: [],
+        safeVersion: '',
+      });
+    }
 
     const rawText = response.text;
     if (!rawText) {

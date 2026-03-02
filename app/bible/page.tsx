@@ -11,14 +11,16 @@ export default function BiblePage() {
   const [title, setTitle] = useState(state.title);
   const [synopsis, setSynopsis] = useState(state.synopsis);
   const [styleProfile, setStyleProfile] = useState(state.style_profile);
+  const [authorIntent, setAuthorIntent] = useState(state.author_intent);
   const [isSaving, setIsSaving] = useState(false);
-  useUnsavedChanges(title !== state.title || synopsis !== state.synopsis || styleProfile !== state.style_profile);
+  useUnsavedChanges(title !== state.title || synopsis !== state.synopsis || styleProfile !== state.style_profile || authorIntent !== state.author_intent);
 
   const handleSave = () => {
     setIsSaving(true);
     updateField('title', title);
     updateField('synopsis', synopsis);
     updateField('style_profile', styleProfile);
+    updateField('author_intent', authorIntent);
     setTimeout(() => setIsSaving(false), 500);
   };
 
@@ -83,6 +85,19 @@ export default function BiblePage() {
             className="w-full h-32 bg-zinc-900 border border-zinc-800 rounded-xl px-5 py-4 text-zinc-300 leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-shadow"
             placeholder="Describe your writing style, tone, and pacing (e.g., 'Dark fantasy, fast-paced action, lyrical descriptions')..."
           />
+        </section>
+
+        <section className="space-y-4">
+          <label className="block text-sm font-medium text-zinc-400 uppercase tracking-wider">
+            Current Author Intent
+          </label>
+          <textarea
+            value={authorIntent}
+            onChange={(e) => setAuthorIntent(e.target.value)}
+            className="w-full h-32 bg-zinc-900 border border-zinc-800 rounded-xl px-5 py-4 text-zinc-300 leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-shadow"
+            placeholder="What are you currently working toward? (e.g., 'Building tension for the betrayal reveal in Chapter 12', 'Developing the romantic subplot before the climax')..."
+          />
+          <p className="text-xs text-zinc-500">This guides the AI assistant with your current creative direction. Update it as your focus changes.</p>
         </section>
       </motion.div>
     </div>

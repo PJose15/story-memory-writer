@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI, FinishReason } from '@google/genai';
 import { buildWritingAssistantPrompt } from '@/lib/prompts/writing-assistant';
 import { rateLimit } from '@/lib/rate-limit';
 import { AI_MODEL, SAFETY_SETTINGS } from '@/lib/ai-config';
@@ -110,8 +110,25 @@ ${userInput}
       },
     });
 
+    // Check if the response was blocked or truncated
+    const candidate = response.candidates?.[0];
+    const finishReason = candidate?.finishReason;
+
+    if (finishReason === FinishReason.SAFETY || finishReason === FinishReason.PROHIBITED_CONTENT || finishReason === FinishReason.BLOCKLIST) {
+      return NextResponse.json({
+        text: 'The AI could not generate a response for this request. Try rephrasing your input or adjusting the scene context.',
+        isBlockedMode: !!isBlockedRequest,
+        blocked: true,
+      });
+    }
+
+    let text = response.text || '';
+    if (finishReason === FinishReason.MAX_TOKENS && text) {
+      text += '\n\n---\n*Response was truncated due to length. Ask me to continue if needed.*';
+    }
+
     return NextResponse.json({
-      text: response.text || 'I could not generate a response.',
+      text: text || 'I could not generate a response.',
       isBlockedMode: !!isBlockedRequest,
     });
 

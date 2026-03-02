@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI, FinishReason } from '@google/genai';
 import { buildCharacterAnalysisSystemPrompt, buildCharacterAnalysisPrompt } from '@/lib/prompts/character-analysis';
 import { rateLimit } from '@/lib/rate-limit';
 import { AI_MODEL, SAFETY_SETTINGS } from '@/lib/ai-config';
@@ -55,7 +55,19 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    return NextResponse.json({ analysis: response.text || '' });
+    const candidate = response.candidates?.[0];
+    const finishReason = candidate?.finishReason;
+
+    if (finishReason === FinishReason.SAFETY || finishReason === FinishReason.PROHIBITED_CONTENT || finishReason === FinishReason.BLOCKLIST) {
+      return NextResponse.json({ analysis: 'The AI could not analyze this character. Try simplifying the character details or rephrasing.' });
+    }
+
+    let analysis = response.text || '';
+    if (finishReason === FinishReason.MAX_TOKENS && analysis) {
+      analysis += '\n\n---\n*Analysis was truncated due to length.*';
+    }
+
+    return NextResponse.json({ analysis });
 
   } catch (error: any) {
     console.error('Character analysis API error:', error);
