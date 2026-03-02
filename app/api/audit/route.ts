@@ -11,8 +11,11 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { storyContext, userInput, language } = body;
 
-    if (!storyContext || !userInput || !language) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    if (typeof userInput !== 'string' || !userInput.trim()) {
+      return NextResponse.json({ error: 'Missing required field: userInput' }, { status: 400 });
+    }
+    if (typeof language !== 'string' || !language.trim()) {
+      return NextResponse.json({ error: 'Missing required field: language' }, { status: 400 });
     }
 
     const totalLength = (storyContext?.length || 0) + (userInput?.length || 0);
@@ -65,11 +68,17 @@ Analyze it against the established canon. Detect contradictions, broken characte
       }
     });
 
-    const result = JSON.parse(response.text || '{}');
+    const rawText = response.text;
+    if (!rawText) {
+      return NextResponse.json({ status: 'Clear', risks: [], suggestedCorrections: [], safeVersion: '' });
+    }
+    const result = JSON.parse(rawText);
     return NextResponse.json(result);
 
   } catch (error: any) {
     console.error('Audit API error:', error);
-    return NextResponse.json({ error: 'Failed to perform audit' }, { status: 500 });
+    const message = error?.message || 'Failed to perform audit';
+    const status = error?.status || 500;
+    return NextResponse.json({ error: message }, { status });
   }
 }

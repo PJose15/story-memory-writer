@@ -62,8 +62,11 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { storyContext, userInput, isBlockedRequest, language, chatHistory } = body;
 
-    if (!storyContext || !userInput || !language) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    if (typeof userInput !== 'string' || !userInput.trim()) {
+      return NextResponse.json({ error: 'Missing required field: userInput' }, { status: 400 });
+    }
+    if (typeof language !== 'string' || !language.trim()) {
+      return NextResponse.json({ error: 'Missing required field: language' }, { status: 400 });
     }
 
     const historyText = Array.isArray(chatHistory) ? chatHistory.join('\n') : '';
@@ -109,6 +112,8 @@ ${userInput}
 
   } catch (error: any) {
     console.error('Chat API error:', error);
-    return NextResponse.json({ error: 'Failed to generate response' }, { status: 500 });
+    const message = error?.message || 'Failed to generate response';
+    const status = error?.status || 500;
+    return NextResponse.json({ error: message }, { status });
   }
 }

@@ -55,15 +55,16 @@ export default function ImportPage() {
       });
 
       if (!res.ok) {
-        throw new Error('Failed to parse files');
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to parse files');
       }
 
       const data = await res.json();
       setExtractedData(data.extractedData || {});
       setUploadStatus('review');
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      alert('An error occurred during ingestion.');
+      alert(error.message || 'An error occurred during ingestion.');
       setUploadStatus('idle');
     } finally {
       setIsUploading(false);

@@ -11,8 +11,14 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { character, language } = body;
 
-    if (!character || !character.name || !language) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    if (!character || typeof character !== 'object') {
+      return NextResponse.json({ error: 'Missing required field: character' }, { status: 400 });
+    }
+    if (typeof character.name !== 'string' || !character.name.trim()) {
+      return NextResponse.json({ error: 'Missing required field: character.name' }, { status: 400 });
+    }
+    if (typeof language !== 'string' || !language.trim()) {
+      return NextResponse.json({ error: 'Missing required field: language' }, { status: 400 });
     }
 
     const bodyStr = JSON.stringify(body);
@@ -49,6 +55,8 @@ export async function POST(req: NextRequest) {
 
   } catch (error: any) {
     console.error('Character analysis API error:', error);
-    return NextResponse.json({ error: 'Failed to analyze character' }, { status: 500 });
+    const message = error?.message || 'Failed to analyze character';
+    const status = error?.status || 500;
+    return NextResponse.json({ error: message }, { status });
   }
 }

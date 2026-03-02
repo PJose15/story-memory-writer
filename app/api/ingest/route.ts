@@ -422,7 +422,12 @@ export async function POST(req: NextRequest) {
   if (limited) return limited;
 
   try {
-    const formData = await req.formData();
+    let formData: FormData;
+    try {
+      formData = await req.formData();
+    } catch {
+      return NextResponse.json({ error: 'Invalid request format. Expected multipart form data.' }, { status: 400 });
+    }
     const files = formData.getAll('files') as File[];
     const language = (formData.get('language') as string) || 'English';
 
@@ -519,7 +524,12 @@ export async function POST(req: NextRequest) {
         }
       });
 
-      const parsed = JSON.parse(response.text || '{}');
+      const rawText = response.text;
+      if (!rawText) {
+        console.warn(`Chunk ${i + 1} returned empty response, skipping.`);
+        continue;
+      }
+      const parsed = JSON.parse(rawText);
       results.push(parsed);
       console.log(`Chunk ${i + 1} done.`);
     }
@@ -533,6 +543,8 @@ export async function POST(req: NextRequest) {
 
   } catch (error: any) {
     console.error('Ingestion error:', error);
-    return NextResponse.json({ error: 'Failed to process files' }, { status: 500 });
+    const message = error?.message || 'Failed to process files';
+    const status = error?.status || 500;
+    return NextResponse.json({ error: message }, { status });
   }
 }
