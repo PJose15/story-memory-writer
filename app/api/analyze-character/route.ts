@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
 import { buildCharacterAnalysisSystemPrompt, buildCharacterAnalysisPrompt } from '@/lib/prompts/character-analysis';
 import { rateLimit } from '@/lib/rate-limit';
+import { AI_MODEL, SAFETY_SETTINGS } from '@/lib/ai-config';
 
 export const maxDuration = 60;
 
@@ -46,10 +47,11 @@ export async function POST(req: NextRequest) {
     });
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: AI_MODEL,
       contents: prompt,
       config: {
         systemInstruction: systemPrompt,
+        safetySettings: SAFETY_SETTINGS,
       },
     });
 

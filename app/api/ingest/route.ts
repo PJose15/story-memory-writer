@@ -3,6 +3,7 @@ import { GoogleGenAI, Type } from '@google/genai';
 import pdf from 'pdf-parse';
 import mammoth from 'mammoth';
 import { rateLimit } from '@/lib/rate-limit';
+import { AI_MODEL, SAFETY_SETTINGS } from '@/lib/ai-config';
 
 const responseSchema = {
   type: Type.OBJECT,
@@ -515,10 +516,11 @@ export async function POST(req: NextRequest) {
       console.log(`Sending chunk ${i + 1}/${chunks.length} (${chunks[i].length} chars)...`);
 
       const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: AI_MODEL,
         contents: userPrompt,
         config: {
           systemInstruction: systemPrompt,
+          safetySettings: SAFETY_SETTINGS,
           responseMimeType: 'application/json',
           responseSchema,
         }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenAI, Type } from '@google/genai';
 import { buildWritingAssistantPrompt } from '@/lib/prompts/writing-assistant';
 import { rateLimit } from '@/lib/rate-limit';
+import { AI_MODEL, SAFETY_SETTINGS } from '@/lib/ai-config';
 
 export const maxDuration = 60;
 
@@ -44,10 +45,11 @@ Analyze it against the established canon. Detect contradictions, broken characte
     `;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: AI_MODEL,
       contents: prompt,
       config: {
         systemInstruction: systemPrompt,
+        safetySettings: SAFETY_SETTINGS,
         responseMimeType: 'application/json',
         responseSchema: {
           type: Type.OBJECT,
