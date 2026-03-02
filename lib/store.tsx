@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 
 export type CanonStatus = 'confirmed' | 'flexible' | 'draft' | 'discarded';
 
@@ -204,14 +204,21 @@ export function StoryProvider({ children }: { children: React.ReactNode }) {
     setIsLoaded(true);
   }, []);
 
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     if (isLoaded) {
-      try {
-        localStorage.setItem('story_memory_state', JSON.stringify(state));
-      } catch (e) {
-        console.error('Failed to save state to localStorage (quota may be exceeded)', e);
-      }
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = setTimeout(() => {
+        try {
+          localStorage.setItem('story_memory_state', JSON.stringify(state));
+        } catch (e) {
+          console.error('Failed to save state to localStorage (quota may be exceeded)', e);
+        }
+      }, 500);
     }
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
   }, [state, isLoaded]);
 
   const updateField = <K extends keyof StoryState>(field: K, value: StoryState[K]) => {

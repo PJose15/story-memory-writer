@@ -62,7 +62,8 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { storyContext, userInput, isBlockedRequest, language, chatHistory } = body;
+    const { userInput, isBlockedRequest, language, chatHistory } = body;
+    const storyContext = typeof body.storyContext === 'string' ? body.storyContext : '';
 
     if (typeof userInput !== 'string' || !userInput.trim()) {
       return NextResponse.json({ error: 'Missing required field: userInput' }, { status: 400 });

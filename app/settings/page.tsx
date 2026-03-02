@@ -15,12 +15,16 @@ export default function SettingsPage() {
     reader.onload = (event) => {
       try {
         const data = JSON.parse(event.target?.result as string);
-        if (!data.title || !data.characters || !data.chapters) {
-          alert('Invalid file: missing required fields (title, characters, chapters).');
+        if (
+          typeof data.title !== 'string' ||
+          !Array.isArray(data.characters) ||
+          !Array.isArray(data.chapters)
+        ) {
+          alert('Invalid file: missing or malformed required fields (title, characters, chapters).');
           return;
         }
         if (!confirm('This will replace ALL current project data. Are you sure?')) return;
-        setState(data);
+        setState((prev) => ({ ...prev, ...data }));
       } catch {
         alert('Failed to parse JSON file. Make sure it is a valid Story Bible export.');
       }
@@ -30,13 +34,15 @@ export default function SettingsPage() {
   };
 
   const handleExport = () => {
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
+    const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
     const downloadAnchorNode = document.createElement('a');
-    downloadAnchorNode.setAttribute("href", dataStr);
-    downloadAnchorNode.setAttribute("download", `${state.title.replace(/\s+/g, '_').toLowerCase()}_story_bible.json`);
-    document.body.appendChild(downloadAnchorNode); // required for firefox
+    downloadAnchorNode.href = url;
+    downloadAnchorNode.download = `${state.title.replace(/\s+/g, '_').toLowerCase()}_story_bible.json`;
+    document.body.appendChild(downloadAnchorNode);
     downloadAnchorNode.click();
     downloadAnchorNode.remove();
+    URL.revokeObjectURL(url);
   };
 
   const handleClear = () => {
