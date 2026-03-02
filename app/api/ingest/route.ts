@@ -415,7 +415,7 @@ export const maxDuration = 300;
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB per file
 const MAX_FILES = 10;
-const ALLOWED_EXTENSIONS = ['.pdf', '.docx', '.doc', '.txt', '.md'];
+const ALLOWED_EXTENSIONS = ['.pdf', '.docx', '.txt', '.md'];
 
 export async function POST(req: NextRequest) {
   const limited = await rateLimit(req, { maxRequests: 5, windowMs: 60000 });
@@ -469,7 +469,7 @@ export async function POST(req: NextRequest) {
         if (file.name.endsWith('.pdf')) {
           const textResult = await pdf(buffer);
           text = textResult.text;
-        } else if (file.name.endsWith('.docx') || file.name.endsWith('.doc')) {
+        } else if (file.name.endsWith('.docx')) {
           const result = await mammoth.extractRawText({ buffer });
           text = result.value;
         } else if (file.name.endsWith('.txt') || file.name.endsWith('.md')) {
@@ -529,12 +529,25 @@ export async function POST(req: NextRequest) {
         console.warn(`Chunk ${i + 1} returned empty response, skipping.`);
         continue;
       }
-      const parsed = JSON.parse(rawText);
+      let parsed;
+      try {
+        parsed = JSON.parse(rawText);
+      } catch {
+        console.error(`Chunk ${i + 1}: Gemini returned invalid JSON:`, rawText.slice(0, 500));
+        continue;
+      }
       results.push(parsed);
       console.log(`Chunk ${i + 1} done.`);
     }
 
-    const extractedData = chunks.length === 1 ? results[0] : mergeResults(results);
+    if (results.length === 0) {
+      return NextResponse.json(
+        { error: 'AI failed to analyze the manuscript. Please try again.', fileParsingStatus },
+        { status: 502 }
+      );
+    }
+
+    const extractedData = results.length === 1 ? results[0] : mergeResults(results);
 
     return NextResponse.json({
       fileParsingStatus,
@@ -543,8 +556,8 @@ export async function POST(req: NextRequest) {
 
   } catch (error: any) {
     console.error('Ingestion error:', error);
-    const message = error?.message || 'Failed to process files';
-    const status = error?.status || 500;
-    return NextResponse.json({ error: message }, { status });
+    const status = typeof error?.status === 'number' && error.status >= 400 && error.status < 600
+      ? error.status : 500;
+    return NextResponse.json({ error: 'Failed to process files' }, { status });
   }
 }

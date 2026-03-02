@@ -10,10 +10,12 @@ function getClientIP(req: NextRequest): string {
   );
 }
 
-const RATE_LIMIT_RESPONSE = NextResponse.json(
-  { error: 'Too many requests. Please try again later.' },
-  { status: 429 }
-);
+function rateLimitResponse() {
+  return NextResponse.json(
+    { error: 'Too many requests. Please try again later.' },
+    { status: 429 }
+  );
+}
 
 // --- Upstash Redis rate limiter (production / Vercel) ---
 const hasUpstash = !!(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN);
@@ -68,10 +70,10 @@ export async function rateLimit(
   if (hasUpstash) {
     const limiter = getUpstashLimiter(maxRequests, windowMs);
     const { success } = await limiter.limit(key);
-    if (!success) return RATE_LIMIT_RESPONSE;
+    if (!success) return rateLimitResponse();
   } else {
     const allowed = memoryRateLimit(key, maxRequests, windowMs);
-    if (!allowed) return RATE_LIMIT_RESPONSE;
+    if (!allowed) return rateLimitResponse();
   }
 
   return null;

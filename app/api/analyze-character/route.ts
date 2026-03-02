@@ -3,6 +3,8 @@ import { GoogleGenAI } from '@google/genai';
 import { buildCharacterAnalysisSystemPrompt, buildCharacterAnalysisPrompt } from '@/lib/prompts/character-analysis';
 import { rateLimit } from '@/lib/rate-limit';
 
+export const maxDuration = 60;
+
 export async function POST(req: NextRequest) {
   const limited = await rateLimit(req, { maxRequests: 10, windowMs: 60000 });
   if (limited) return limited;
@@ -55,8 +57,8 @@ export async function POST(req: NextRequest) {
 
   } catch (error: any) {
     console.error('Character analysis API error:', error);
-    const message = error?.message || 'Failed to analyze character';
-    const status = error?.status || 500;
-    return NextResponse.json({ error: message }, { status });
+    const status = typeof error?.status === 'number' && error.status >= 400 && error.status < 600
+      ? error.status : 500;
+    return NextResponse.json({ error: 'Failed to analyze character' }, { status });
   }
 }

@@ -3,6 +3,8 @@ import { GoogleGenAI } from '@google/genai';
 import { buildWritingAssistantPrompt } from '@/lib/prompts/writing-assistant';
 import { rateLimit } from '@/lib/rate-limit';
 
+export const maxDuration = 60;
+
 function buildOutputFormat(isBlockedRequest: boolean): string {
   if (isBlockedRequest) {
     return `
@@ -112,8 +114,8 @@ ${userInput}
 
   } catch (error: any) {
     console.error('Chat API error:', error);
-    const message = error?.message || 'Failed to generate response';
-    const status = error?.status || 500;
-    return NextResponse.json({ error: message }, { status });
+    const status = typeof error?.status === 'number' && error.status >= 400 && error.status < 600
+      ? error.status : 500;
+    return NextResponse.json({ error: 'Failed to generate response' }, { status });
   }
 }

@@ -286,7 +286,7 @@ export default function ImportPage() {
             <input
               type="file"
               multiple
-              accept=".pdf,.doc,.docx,.txt,.md"
+              accept=".pdf,.docx,.txt,.md"
               className="hidden"
               ref={fileInputRef}
               onChange={handleFileChange}

@@ -3,6 +3,8 @@ import { GoogleGenAI, Type } from '@google/genai';
 import { buildWritingAssistantPrompt } from '@/lib/prompts/writing-assistant';
 import { rateLimit } from '@/lib/rate-limit';
 
+export const maxDuration = 60;
+
 export async function POST(req: NextRequest) {
   const limited = await rateLimit(req, { maxRequests: 10, windowMs: 60000 });
   if (limited) return limited;
@@ -72,13 +74,19 @@ Analyze it against the established canon. Detect contradictions, broken characte
     if (!rawText) {
       return NextResponse.json({ status: 'Clear', risks: [], suggestedCorrections: [], safeVersion: '' });
     }
-    const result = JSON.parse(rawText);
+    let result;
+    try {
+      result = JSON.parse(rawText);
+    } catch {
+      console.error('Audit: Gemini returned invalid JSON:', rawText.slice(0, 500));
+      return NextResponse.json({ error: 'AI returned an invalid response. Please try again.' }, { status: 502 });
+    }
     return NextResponse.json(result);
 
   } catch (error: any) {
     console.error('Audit API error:', error);
-    const message = error?.message || 'Failed to perform audit';
-    const status = error?.status || 500;
-    return NextResponse.json({ error: message }, { status });
+    const status = typeof error?.status === 'number' && error.status >= 400 && error.status < 600
+      ? error.status : 500;
+    return NextResponse.json({ error: 'Failed to perform audit' }, { status });
   }
 }
