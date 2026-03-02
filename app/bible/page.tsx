@@ -2,6 +2,7 @@
 
 import { useStory } from '@/lib/store';
 import { useState } from 'react';
+import { useUnsavedChanges } from '@/hooks/use-unsaved-changes';
 import { Save, Book, Settings2 } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -11,6 +12,7 @@ export default function BiblePage() {
   const [synopsis, setSynopsis] = useState(state.synopsis);
   const [styleProfile, setStyleProfile] = useState(state.style_profile);
   const [isSaving, setIsSaving] = useState(false);
+  useUnsavedChanges(title !== state.title || synopsis !== state.synopsis || styleProfile !== state.style_profile);
 
   const handleSave = () => {
     setIsSaving(true);

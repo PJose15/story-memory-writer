@@ -2,6 +2,7 @@
 
 import { useStory, Character, CanonStatus, CharacterState, CharacterRelationship, CharacterStateHistory } from '@/lib/store';
 import { useState } from 'react';
+import { useUnsavedChanges } from '@/hooks/use-unsaved-changes';
 import { Plus, Trash2, Edit3, Save, X, Users, ShieldCheck, Shield, ShieldAlert, ShieldOff, Activity, Heart, History, AlertCircle, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import ReactMarkdown from 'react-markdown';
@@ -42,6 +43,7 @@ export default function CharactersPage() {
   const [isNewItem, setIsNewItem] = useState(false);
   const [analyzingId, setAnalyzingId] = useState<string | null>(null);
   const [analysisResult, setAnalysisResult] = useState<Record<string, string>>({});
+  useUnsavedChanges(editingId !== null);
 
   const handleAnalyzeState = async (char: Character) => {
     setAnalyzingId(char.id);

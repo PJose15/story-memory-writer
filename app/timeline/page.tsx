@@ -2,6 +2,7 @@
 
 import { useStory, TimelineEvent, CanonStatus } from '@/lib/store';
 import { useState } from 'react';
+import { useUnsavedChanges } from '@/hooks/use-unsaved-changes';
 import { Plus, Trash2, Edit3, Save, X, Clock, ShieldCheck, Shield, ShieldAlert, ShieldOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -17,6 +18,7 @@ export default function TimelinePage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<TimelineEvent>>({});
   const [isNewItem, setIsNewItem] = useState(false);
+  useUnsavedChanges(editingId !== null);
 
   const handleAddEvent = () => {
     const newEvent: TimelineEvent = {
