@@ -16,7 +16,6 @@ import {
   UploadCloud
 } from 'lucide-react';
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
 
 const navItems = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
@@ -44,18 +43,12 @@ export function Sidebar() {
         </button>
       </div>
 
-      {/* Sidebar */}
-      <AnimatePresence>
-        {(isOpen || typeof window !== 'undefined' && window.innerWidth >= 768) && (
-          <motion.aside
-            initial={{ x: -300 }}
-            animate={{ x: 0 }}
-            exit={{ x: -300 }}
-            transition={{ type: 'spring', bounce: 0, duration: 0.3 }}
-            className={`fixed inset-y-0 left-0 z-50 w-64 bg-zinc-950 border-r border-zinc-800 flex flex-col md:relative md:translate-x-0 ${
-              isOpen ? 'translate-x-0' : '-translate-x-full'
-            }`}
-          >
+      {/* Sidebar — always rendered, hidden via CSS on mobile when closed */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-zinc-950 border-r border-zinc-800 flex flex-col transition-transform duration-300 md:relative md:translate-x-0 ${
+          isOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
             <div className="p-6 hidden md:block">
               <h1 className="font-serif text-xl font-semibold text-zinc-100 tracking-tight">
                 Story Memory
@@ -98,9 +91,7 @@ export function Sidebar() {
                 Settings
               </Link>
             </div>
-          </motion.aside>
-        )}
-      </AnimatePresence>
+      </aside>
 
       {/* Mobile Overlay */}
       {isOpen && (
