@@ -60,13 +60,14 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { storyContext, userInput, isBlockedRequest, language } = body;
+    const { storyContext, userInput, isBlockedRequest, language, chatHistory } = body;
 
     if (!storyContext || !userInput || !language) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    const totalLength = (storyContext?.length || 0) + (userInput?.length || 0);
+    const historyText = Array.isArray(chatHistory) ? chatHistory.join('\n') : '';
+    const totalLength = (storyContext?.length || 0) + (userInput?.length || 0) + historyText.length;
     if (totalLength > 500000) {
       return NextResponse.json({ error: 'Request payload too large (max 500KB of text)' }, { status: 413 });
     }
@@ -80,11 +81,15 @@ export async function POST(req: NextRequest) {
     const systemPrompt = buildWritingAssistantPrompt(language);
     const outputFormat = buildOutputFormat(!!isBlockedRequest);
 
+    const historyBlock = historyText
+      ? `\nRECENT CONVERSATION:\n${historyText}\n`
+      : '';
+
     const contents = `
 ${storyContext}
 
 ${outputFormat}
-
+${historyBlock}
 USER REQUEST:
 ${userInput}
 `;

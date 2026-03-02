@@ -16,6 +16,7 @@ export default function ManuscriptPage() {
   const { state, updateField } = useStory();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<Chapter>>({});
+  const [isNewItem, setIsNewItem] = useState(false);
 
   const handleAddChapter = () => {
     const newChapter: Chapter = {
@@ -28,6 +29,7 @@ export default function ManuscriptPage() {
     updateField('chapters', [...state.chapters, newChapter]);
     setEditingId(newChapter.id);
     setEditForm(newChapter);
+    setIsNewItem(true);
   };
 
   const handleSave = () => {
@@ -37,9 +39,20 @@ export default function ManuscriptPage() {
     );
     updateField('chapters', updatedChapters as Chapter[]);
     setEditingId(null);
+    setIsNewItem(false);
+  };
+
+  const handleCancel = () => {
+    if (isNewItem && editingId) {
+      updateField('chapters', state.chapters.filter(c => c.id !== editingId));
+    }
+    setEditingId(null);
+    setIsNewItem(false);
   };
 
   const handleDelete = (id: string) => {
+    const chapter = state.chapters.find(c => c.id === id);
+    if (!confirm(`Delete "${chapter?.title || 'this chapter'}"? This cannot be undone.`)) return;
     updateField('chapters', state.chapters.filter((c) => c.id !== id));
   };
 
@@ -103,7 +116,7 @@ export default function ManuscriptPage() {
                     </select>
                     <div className="flex-1" />
                     <button
-                      onClick={() => setEditingId(null)}
+                      onClick={handleCancel}
                       className="flex items-center gap-2 px-4 py-2 rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
                     >
                       <X size={18} />

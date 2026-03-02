@@ -39,6 +39,7 @@ export default function CharactersPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<Character>>({});
   const [activeTab, setActiveTab] = useState<'profile' | 'state' | 'relationships' | 'history'>('profile');
+  const [isNewItem, setIsNewItem] = useState(false);
   const [analyzingId, setAnalyzingId] = useState<string | null>(null);
   const [analysisResult, setAnalysisResult] = useState<Record<string, string>>({});
 
@@ -117,6 +118,7 @@ export default function CharactersPage() {
     setExpandedId(newCharacter.id);
     setEditForm(newCharacter);
     setActiveTab('profile');
+    setIsNewItem(true);
   };
 
   const handleSave = () => {
@@ -126,9 +128,20 @@ export default function CharactersPage() {
     );
     updateField('characters', updated as Character[]);
     setEditingId(null);
+    setIsNewItem(false);
+  };
+
+  const handleCancel = () => {
+    if (isNewItem && editingId) {
+      updateField('characters', state.characters.filter(c => c.id !== editingId));
+    }
+    setEditingId(null);
+    setIsNewItem(false);
   };
 
   const handleDelete = (id: string) => {
+    const char = state.characters.find(c => c.id === id);
+    if (!confirm(`Delete "${char?.name || 'this character'}"? This cannot be undone.`)) return;
     updateField('characters', state.characters.filter((c) => c.id !== id));
   };
 
@@ -509,7 +522,7 @@ export default function CharactersPage() {
 
                   <div className="flex items-center justify-end gap-3 pt-6 border-t border-zinc-800">
                     <button
-                      onClick={() => setEditingId(null)}
+                      onClick={handleCancel}
                       className="flex items-center gap-2 px-4 py-2 rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
                     >
                       <X size={18} />

@@ -16,6 +16,7 @@ export default function ConflictsPage() {
   const { state, updateField } = useStory();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<Conflict>>({});
+  const [isNewItem, setIsNewItem] = useState(false);
 
   const handleAddConflict = () => {
     const newConflict: Conflict = {
@@ -28,6 +29,7 @@ export default function ConflictsPage() {
     updateField('active_conflicts', [...state.active_conflicts, newConflict]);
     setEditingId(newConflict.id);
     setEditForm(newConflict);
+    setIsNewItem(true);
   };
 
   const handleSave = () => {
@@ -37,9 +39,20 @@ export default function ConflictsPage() {
     );
     updateField('active_conflicts', updated as Conflict[]);
     setEditingId(null);
+    setIsNewItem(false);
+  };
+
+  const handleCancel = () => {
+    if (isNewItem && editingId) {
+      updateField('active_conflicts', state.active_conflicts.filter(c => c.id !== editingId));
+    }
+    setEditingId(null);
+    setIsNewItem(false);
   };
 
   const handleDelete = (id: string) => {
+    const conflict = state.active_conflicts.find(c => c.id === id);
+    if (!confirm(`Delete "${conflict?.title || 'this conflict'}"? This cannot be undone.`)) return;
     updateField('active_conflicts', state.active_conflicts.filter((c) => c.id !== id));
   };
 
@@ -116,7 +129,7 @@ export default function ConflictsPage() {
                     </label>
                     <div className="flex-1" />
                     <button
-                      onClick={() => setEditingId(null)}
+                      onClick={handleCancel}
                       className="flex items-center gap-2 px-4 py-2 rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
                     >
                       <X size={18} />

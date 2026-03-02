@@ -11,7 +11,7 @@ export default function ImportPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'analyzing' | 'review' | 'success'>('idle');
   const [extractedData, setExtractedData] = useState<any>(null);
-  const [parsingStatus, setParsingStatus] = useState<any[]>([]);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -59,7 +59,6 @@ export default function ImportPage() {
       }
 
       const data = await res.json();
-      setParsingStatus(data.fileParsingStatus || []);
       setExtractedData(data.extractedData || {});
       setUploadStatus('review');
     } catch (error) {
@@ -71,29 +70,40 @@ export default function ImportPage() {
     }
   };
 
+  const dedup = <T extends Record<string, any>>(existing: T[], incoming: T[], key: keyof T): T[] => {
+    const existingKeys = new Set(existing.map(item => String(item[key]).toLowerCase().trim()));
+    return incoming.filter(item => !existingKeys.has(String(item[key]).toLowerCase().trim()));
+  };
+
   const handleConfirmImport = () => {
     if (!extractedData) return;
 
+    // Build stable ID map so relationships resolve correctly
+    const charIdMap = new Map<string, string>();
+    for (const c of (extractedData.characters || [])) {
+      const id = c.character_id || crypto.randomUUID();
+      charIdMap.set(c.name, id);
+      if (c.character_id) charIdMap.set(c.character_id, id);
+    }
+
     // Merge Characters
     const newCharacters = (extractedData.characters || []).map((c: any) => {
-      const state = extractedData.character_states?.find((s: any) => s.character_id === c.character_id || s.name === c.name);
-      
+      const charState = extractedData.character_states?.find((s: any) => s.character_id === c.character_id || s.name === c.name);
+      const charId = charIdMap.get(c.name) || crypto.randomUUID();
+
       // Find relationships where this character is character_1
       const rels = (extractedData.relationships || [])
         .filter((r: any) => r.character_1 === c.name || r.character_1 === c.character_id)
-        .map((r: any) => {
-          // Try to find the target character's ID
-          const targetChar = extractedData.characters?.find((tc: any) => tc.name === r.character_2 || tc.character_id === r.character_2);
-          return {
-            targetId: targetChar?.character_id || r.character_2,
-            trustLevel: r.trust_level || 50,
-            tensionLevel: r.tension_level || 50,
-            dynamics: r.current_dynamic || r.relationship_type || ''
-          };
-        });
+        .map((r: any) => ({
+          targetId: charIdMap.get(r.character_2) || r.character_2,
+          targetName: (extractedData.characters?.find((tc: any) => tc.name === r.character_2 || tc.character_id === r.character_2))?.name || r.character_2,
+          trustLevel: r.trust_level || 50,
+          tensionLevel: r.tension_level || 50,
+          dynamics: r.current_dynamic || r.relationship_type || ''
+        }));
 
       return {
-        id: c.character_id || crypto.randomUUID(),
+        id: charId,
         name: c.name,
         role: c.role,
         description: c.description,
@@ -102,14 +112,14 @@ export default function ImportPage() {
         canonStatus: 'draft',
         currentState: {
           indicator: 'stable',
-          pressureLevel: state?.current_pressure_level || 'Low',
-          emotionalState: state?.current_emotional_state || '',
-          visibleGoal: state?.visible_goal || '',
-          hiddenNeed: state?.hidden_need || '',
-          currentFear: state?.current_fear || '',
-          dominantBelief: state?.dominant_belief || '',
-          emotionalWound: state?.emotional_wound || '',
-          currentKnowledge: state?.current_knowledge || ''
+          pressureLevel: charState?.current_pressure_level || 'Low',
+          emotionalState: charState?.current_emotional_state || '',
+          visibleGoal: charState?.visible_goal || '',
+          hiddenNeed: charState?.hidden_need || '',
+          currentFear: charState?.current_fear || '',
+          dominantBelief: charState?.dominant_belief || '',
+          emotionalWound: charState?.emotional_wound || '',
+          currentKnowledge: charState?.current_knowledge || ''
         },
         dynamicRelationships: rels,
         stateHistory: []
@@ -213,24 +223,34 @@ export default function ImportPage() {
       canonStatus: 'draft'
     }));
 
-    updateField('characters', [...state.characters, ...newCharacters]);
-    updateField('chapters', [...state.chapters, ...newChapters]);
-    updateField('scenes', [...state.scenes, ...newScenes]);
-    updateField('active_conflicts', [...state.active_conflicts, ...newConflicts]);
-    updateField('timeline_events', [...state.timeline_events, ...newTimelineEvents]);
-    updateField('world_rules', [...state.world_rules, ...newWorldRules]);
-    updateField('locations', [...(state.locations || []), ...newLocations]);
-    updateField('themes', [...(state.themes || []), ...newThemes]);
-    updateField('canon_items', [...(state.canon_items || []), ...newCanonItems]);
-    updateField('ambiguities', [...(state.ambiguities || []), ...newAmbiguities]);
-    updateField('open_loops', [...state.open_loops, ...newOpenLoops]);
-    updateField('foreshadowing_elements', [...state.foreshadowing_elements, ...newForeshadowing]);
+    updateField('characters', [...state.characters, ...dedup(state.characters, newCharacters, 'name')]);
+    updateField('chapters', [...state.chapters, ...dedup(state.chapters, newChapters, 'title')]);
+    updateField('scenes', [...state.scenes, ...dedup(state.scenes, newScenes, 'title')]);
+    updateField('active_conflicts', [...state.active_conflicts, ...dedup(state.active_conflicts, newConflicts, 'title')]);
+    updateField('timeline_events', [...state.timeline_events, ...dedup(state.timeline_events, newTimelineEvents, 'date')]);
+    updateField('world_rules', [...state.world_rules, ...dedup(state.world_rules, newWorldRules, 'rule')]);
+    updateField('locations', [...(state.locations || []), ...dedup(state.locations || [], newLocations, 'name')]);
+    updateField('themes', [...(state.themes || []), ...dedup(state.themes || [], newThemes, 'theme')]);
+    updateField('canon_items', [...(state.canon_items || []), ...dedup(state.canon_items || [], newCanonItems, 'description')]);
+    updateField('ambiguities', [...(state.ambiguities || []), ...dedup(state.ambiguities || [], newAmbiguities, 'issue')]);
+    updateField('open_loops', [...state.open_loops, ...dedup(state.open_loops, newOpenLoops, 'description')]);
+    updateField('foreshadowing_elements', [...state.foreshadowing_elements, ...dedup(state.foreshadowing_elements, newForeshadowing, 'clue')]);
 
     if (extractedData.project?.title && state.title === 'Untitled Project') {
       updateField('title', extractedData.project.title);
     }
     if (extractedData.project?.summary_global && !state.synopsis) {
       updateField('synopsis', extractedData.project.summary_global);
+    }
+    if (extractedData.project?.genre?.length && state.genre.length === 0) {
+      updateField('genre', extractedData.project.genre);
+    }
+    if (!state.style_profile) {
+      const parts = [
+        extractedData.project?.tone_profile && `Tone: ${extractedData.project.tone_profile}`,
+        extractedData.project?.narrative_pov && `POV: ${extractedData.project.narrative_pov}`,
+      ].filter(Boolean);
+      if (parts.length) updateField('style_profile', parts.join('. '));
     }
 
     setUploadStatus('success');
@@ -240,7 +260,6 @@ export default function ImportPage() {
     setFiles([]);
     setUploadStatus('idle');
     setExtractedData(null);
-    setParsingStatus([]);
   };
 
   return (
@@ -390,7 +409,7 @@ export default function ImportPage() {
                   <li key={i} className="bg-zinc-950 p-3 rounded-lg border border-zinc-800/50 relative group">
                     <button 
                       onClick={() => setExtractedData({ ...extractedData, chapters: extractedData.chapters.filter((_: any, idx: number) => idx !== i) })}
-                      className="absolute top-2 right-2 p-1 text-zinc-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="absolute top-2 right-2 p-1 text-zinc-500 hover:text-red-400 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                     >
                       <X size={14} />
                     </button>
@@ -421,7 +440,7 @@ export default function ImportPage() {
                   <li key={i} className="bg-zinc-950 p-3 rounded-lg border border-zinc-800/50 relative group">
                     <button 
                       onClick={() => setExtractedData({ ...extractedData, characters: extractedData.characters.filter((_: any, idx: number) => idx !== i) })}
-                      className="absolute top-2 right-2 p-1 text-zinc-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="absolute top-2 right-2 p-1 text-zinc-500 hover:text-red-400 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                     >
                       <X size={14} />
                     </button>
@@ -485,7 +504,7 @@ export default function ImportPage() {
                   <li key={i} className="bg-zinc-950 p-3 rounded-lg border border-zinc-800/50 relative group">
                     <button 
                       onClick={() => setExtractedData({ ...extractedData, active_conflicts: extractedData.active_conflicts.filter((_: any, idx: number) => idx !== i) })}
-                      className="absolute top-2 right-2 p-1 text-zinc-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="absolute top-2 right-2 p-1 text-zinc-500 hover:text-red-400 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                     >
                       <X size={14} />
                     </button>
@@ -507,7 +526,7 @@ export default function ImportPage() {
                   <li key={`w-${i}`} className="bg-zinc-950 p-3 rounded-lg border border-zinc-800/50 relative group">
                     <button 
                       onClick={() => setExtractedData({ ...extractedData, world_rules: extractedData.world_rules.filter((_: any, idx: number) => idx !== i) })}
-                      className="absolute top-2 right-2 p-1 text-zinc-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="absolute top-2 right-2 p-1 text-zinc-500 hover:text-red-400 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                     >
                       <X size={14} />
                     </button>
@@ -520,7 +539,7 @@ export default function ImportPage() {
                   <li key={`t-${i}`} className="bg-zinc-950 p-3 rounded-lg border border-zinc-800/50 relative group">
                     <button 
                       onClick={() => setExtractedData({ ...extractedData, timeline_events: extractedData.timeline_events.filter((_: any, idx: number) => idx !== i) })}
-                      className="absolute top-2 right-2 p-1 text-zinc-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="absolute top-2 right-2 p-1 text-zinc-500 hover:text-red-400 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                     >
                       <X size={14} />
                     </button>
@@ -547,7 +566,7 @@ export default function ImportPage() {
                     <li key={`th-${i}`} className="bg-zinc-950 p-3 rounded-lg border border-zinc-800/50 relative group">
                       <button 
                         onClick={() => setExtractedData({ ...extractedData, themes: extractedData.themes.filter((_: any, idx: number) => idx !== i) })}
-                        className="absolute top-2 right-2 p-1 text-zinc-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="absolute top-2 right-2 p-1 text-zinc-500 hover:text-red-400 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                       >
                         <X size={14} />
                       </button>
@@ -560,7 +579,7 @@ export default function ImportPage() {
                     <li key={`loc-${i}`} className="bg-zinc-950 p-3 rounded-lg border border-zinc-800/50 relative group">
                       <button 
                         onClick={() => setExtractedData({ ...extractedData, locations: extractedData.locations.filter((_: any, idx: number) => idx !== i) })}
-                        className="absolute top-2 right-2 p-1 text-zinc-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="absolute top-2 right-2 p-1 text-zinc-500 hover:text-red-400 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                       >
                         <X size={14} />
                       </button>
@@ -580,7 +599,7 @@ export default function ImportPage() {
                     <li key={`ol-${i}`} className="bg-zinc-950 p-3 rounded-lg border border-zinc-800/50 relative group">
                       <button 
                         onClick={() => setExtractedData({ ...extractedData, open_loops: extractedData.open_loops.filter((_: any, idx: number) => idx !== i) })}
-                        className="absolute top-2 right-2 p-1 text-zinc-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="absolute top-2 right-2 p-1 text-zinc-500 hover:text-red-400 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                       >
                         <X size={14} />
                       </button>
@@ -592,7 +611,7 @@ export default function ImportPage() {
                     <li key={`fs-${i}`} className="bg-zinc-950 p-3 rounded-lg border border-zinc-800/50 relative group">
                       <button 
                         onClick={() => setExtractedData({ ...extractedData, foreshadowing_elements: extractedData.foreshadowing_elements.filter((_: any, idx: number) => idx !== i) })}
-                        className="absolute top-2 right-2 p-1 text-zinc-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="absolute top-2 right-2 p-1 text-zinc-500 hover:text-red-400 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                       >
                         <X size={14} />
                       </button>
@@ -619,7 +638,7 @@ export default function ImportPage() {
                     <li key={`c-${i}`} className="bg-zinc-950 p-3 rounded-lg border border-zinc-800/50 relative group">
                       <button 
                         onClick={() => setExtractedData({ ...extractedData, canon_items: extractedData.canon_items.filter((_: any, idx: number) => idx !== i) })}
-                        className="absolute top-2 right-2 p-1 text-zinc-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="absolute top-2 right-2 p-1 text-zinc-500 hover:text-red-400 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                       >
                         <X size={14} />
                       </button>
@@ -636,7 +655,7 @@ export default function ImportPage() {
                     <li key={`a-${i}`} className="bg-amber-950/30 p-3 rounded-lg border border-amber-900/50 relative group">
                       <button 
                         onClick={() => setExtractedData({ ...extractedData, ambiguities: extractedData.ambiguities.filter((_: any, idx: number) => idx !== i) })}
-                        className="absolute top-2 right-2 p-1 text-zinc-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="absolute top-2 right-2 p-1 text-zinc-500 hover:text-red-400 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                       >
                         <X size={14} />
                       </button>

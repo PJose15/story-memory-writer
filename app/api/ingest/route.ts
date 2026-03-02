@@ -12,7 +12,9 @@ const responseSchema = {
       properties: {
         title: { type: Type.STRING },
         genre: { type: Type.ARRAY, items: { type: Type.STRING } },
-        summary_global: { type: Type.STRING }
+        summary_global: { type: Type.STRING },
+        tone_profile: { type: Type.STRING },
+        narrative_pov: { type: Type.STRING }
       }
     },
     chapters: {

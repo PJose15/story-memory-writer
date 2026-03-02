@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { useStory } from '@/lib/store';
+import { useStory, ChatMessage } from '@/lib/store';
 import { Send, Bot, User, Loader2, ShieldAlert, X, AlertTriangle, CheckCircle2, LockKeyhole } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import Markdown from 'react-markdown';
@@ -27,15 +27,16 @@ interface AuditResult {
   safeVersion: string;
 }
 
+const welcomeMessage: Message = {
+  id: 'welcome',
+  role: 'assistant',
+  content: "Hello! I'm your narrative copilot. I have access to your Story Bible, characters, and manuscript. How can I help you today?",
+};
+
 export default function AssistantPage() {
-  const { state } = useStory();
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 'welcome',
-      role: 'assistant',
-      content: "Hello! I'm your narrative copilot. I have access to your Story Bible, characters, and manuscript. How can I help you today?",
-    },
-  ]);
+  const { state, updateField } = useStory();
+  const [messages, setMessages] = useState<Message[]>([welcomeMessage]);
+  const hasLoadedRef = useRef(false);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isAuditing, setIsAuditing] = useState(false);
@@ -46,72 +47,122 @@ export default function AssistantPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  // Load saved messages from store on mount
+  useEffect(() => {
+    if (!hasLoadedRef.current && state.chat_messages.length > 0) {
+      setMessages(state.chat_messages.map(m => ({ ...m })));
+      hasLoadedRef.current = true;
+    }
+  }, [state.chat_messages]);
+
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
+  // Persist chat messages to store (strip isThinking)
+  useEffect(() => {
+    const persistable: ChatMessage[] = messages
+      .filter(m => !m.isThinking)
+      .map(({ id, role, content, isBlockedMode }) => ({ id, role, content, isBlockedMode }));
+    updateField('chat_messages', persistable);
+  }, [messages]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const buildContext = () => {
-    // Filter out discarded items
-    const activeCharacters = state.characters.filter(c => c.canonStatus !== 'discarded');
-    const activeTimeline = state.timeline_events.filter(t => t.canonStatus !== 'discarded');
-    const activeConflicts = state.active_conflicts.filter(c => c.canonStatus !== 'discarded');
-    const activeChapters = state.chapters.filter(c => c.canonStatus !== 'discarded');
-    const activeRules = state.world_rules.filter(r => r.canonStatus !== 'discarded');
-    const activeForeshadowing = state.foreshadowing_elements.filter(f => f.canonStatus !== 'discarded');
+    const notDiscarded = <T extends { canonStatus?: string }>(items: T[]) =>
+      items.filter(i => i.canonStatus !== 'discarded');
 
-    // Group by status
-    const getByStatus = (items: any[], status: string) => items.filter(i => (i.canonStatus || 'draft') === status);
+    const activeCharacters = notDiscarded(state.characters);
+    const activeChapters = notDiscarded(state.chapters);
+    const activeScenes = notDiscarded(state.scenes);
+    const activeTimeline = notDiscarded(state.timeline_events);
+    const activeConflicts = notDiscarded(state.active_conflicts);
+    const activeRules = notDiscarded(state.world_rules);
+    const activeForeshadowing = notDiscarded(state.foreshadowing_elements);
+    const activeLocations = notDiscarded(state.locations);
+    const activeThemes = notDiscarded(state.themes);
+    const activeOpenLoops = notDiscarded(state.open_loops);
 
-    const confirmedItems = [
-      ...getByStatus(activeCharacters, 'confirmed').map(c => `[Character] ${c.name}: ${c.description}`),
-      ...getByStatus(activeTimeline, 'confirmed').map(t => `[Timeline] ${t.date}: ${t.description}`),
-      ...getByStatus(activeConflicts, 'confirmed').map(c => `[Conflict] ${c.title}: ${c.description}`),
-      ...getByStatus(activeChapters, 'confirmed').map(c => `[Chapter] ${c.title}: ${c.summary}`),
-      ...getByStatus(activeRules, 'confirmed').map(r => `[World Rule] ${r.category}: ${r.rule}`),
-      ...getByStatus(activeForeshadowing, 'confirmed').map(f => `[Foreshadowing] ${f.clue} -> ${f.payoff}`)
-    ];
+    // Build rich character descriptions
+    const formatCharacter = (c: typeof state.characters[0]) => {
+      const parts = [`[Character] ${c.name} (${c.role}): ${c.description}`];
+      if (c.coreIdentity) parts.push(`  Core Identity: ${c.coreIdentity}`);
+      if (c.currentState) {
+        const s = c.currentState;
+        parts.push(`  State: ${s.emotionalState || 'Unknown'} | Goal: ${s.visibleGoal || '?'} | Fear: ${s.currentFear || '?'} | Pressure: ${s.pressureLevel}`);
+        if (s.hiddenNeed) parts.push(`  Hidden Need: ${s.hiddenNeed}`);
+        if (s.currentKnowledge) parts.push(`  Knows: ${s.currentKnowledge}`);
+      }
+      if (c.dynamicRelationships?.length) {
+        const rels = c.dynamicRelationships.map(r => {
+          const target = state.characters.find(ch => ch.id === r.targetId);
+          return `${target?.name || 'Unknown'} (Trust:${r.trustLevel}% Tension:${r.tensionLevel}%): ${r.dynamics}`;
+        });
+        parts.push(`  Relationships: ${rels.join('; ')}`);
+      }
+      return parts.join('\n');
+    };
 
-    const flexibleItems = [
-      ...getByStatus(activeCharacters, 'flexible').map(c => `[Character] ${c.name}: ${c.description}`),
-      ...getByStatus(activeTimeline, 'flexible').map(t => `[Timeline] ${t.date}: ${t.description}`),
-      ...getByStatus(activeConflicts, 'flexible').map(c => `[Conflict] ${c.title}: ${c.description}`),
-      ...getByStatus(activeChapters, 'flexible').map(c => `[Chapter] ${c.title}: ${c.summary}`),
-      ...getByStatus(activeRules, 'flexible').map(r => `[World Rule] ${r.category}: ${r.rule}`),
-      ...getByStatus(activeForeshadowing, 'flexible').map(f => `[Foreshadowing] ${f.clue} -> ${f.payoff}`)
-    ];
+    // Group items by canon status for the context
+    const getByStatus = <T extends { canonStatus?: string }>(items: T[], status: string) =>
+      items.filter(i => (i.canonStatus || 'draft') === status);
 
-    const draftItems = [
-      ...getByStatus(activeCharacters, 'draft').map(c => `[Character] ${c.name}: ${c.description}`),
-      ...getByStatus(activeTimeline, 'draft').map(t => `[Timeline] ${t.date}: ${t.description}`),
-      ...getByStatus(activeConflicts, 'draft').map(c => `[Conflict] ${c.title}: ${c.description}`),
-      ...getByStatus(activeChapters, 'draft').map(c => `[Chapter] ${c.title}: ${c.summary}`),
-      ...getByStatus(activeRules, 'draft').map(r => `[World Rule] ${r.category}: ${r.rule}`),
-      ...getByStatus(activeForeshadowing, 'draft').map(f => `[Foreshadowing] ${f.clue} -> ${f.payoff}`)
-    ];
+    const buildCanonBlock = (status: string) => {
+      const items: string[] = [
+        ...getByStatus(activeCharacters, status).map(formatCharacter),
+        ...getByStatus(activeChapters, status).map(c => {
+          const scenes = activeScenes.filter(s => s.chapterId === c.id);
+          const sceneLine = scenes.length ? `\n  Scenes: ${scenes.map(s => `${s.title}: ${s.summary}`).join(' | ')}` : '';
+          return `[Chapter] ${c.title}: ${c.summary}${sceneLine}`;
+        }),
+        ...getByStatus(activeTimeline, status).map(t => `[Timeline] ${t.date}: ${t.description}${t.impact ? ' -> ' + t.impact : ''}`),
+        ...getByStatus(activeConflicts, status).map(c => `[Conflict] ${c.title} (${c.status}): ${c.description}`),
+        ...getByStatus(activeRules, status).map(r => `[World Rule] ${r.category}: ${r.rule}`),
+        ...getByStatus(activeForeshadowing, status).map(f => `[Foreshadowing] ${f.clue}${f.payoff ? ' -> ' + f.payoff : ' (unresolved)'}`),
+        ...getByStatus(activeLocations, status).map(l => `[Location] ${l.name}: ${l.description}`),
+        ...getByStatus(activeThemes, status).map(t => `[Theme] ${t.theme}: ${t.evidence.join(', ')}`),
+      ];
+      return items;
+    };
+
+    const confirmedItems = buildCanonBlock('confirmed');
+    const flexibleItems = buildCanonBlock('flexible');
+    const draftItems = buildCanonBlock('draft');
 
     const latestChapter = activeChapters.length > 0 ? activeChapters[activeChapters.length - 1] : null;
 
-    return `
-      STORY BIBLE:
-      Title: ${state.title}
-      Synopsis: ${state.synopsis}
-      Style Profile: ${state.style_profile}
-      
-      LATEST CHAPTER:
-      ${latestChapter ? `Title: ${latestChapter.title}\nSummary: ${latestChapter.summary}\nContent: ${latestChapter.content.substring(0, 1500)}...` : 'None'}
-      
-      CANON LOCK STATUS:
-      You must respect the following certainty levels:
-      
-      1. CONFIRMED CANON (LOCKED - DO NOT CONTRADICT):
-      ${confirmedItems.length ? confirmedItems.join('\n') : 'None'}
-      
-      2. FLEXIBLE CANON (Build around carefully):
-      ${flexibleItems.length ? flexibleItems.join('\n') : 'None'}
-      
-      3. DRAFT IDEAS (Exploratory, not final):
-      ${draftItems.length ? draftItems.join('\n') : 'None'}
-    `;
+    // Open loops and ambiguities (not canon-locked, always included)
+    const openLoops = activeOpenLoops.filter(l => l.status === 'open').map(l => `- ${l.description}`);
+    const canonItems = state.canon_items.map(c => `- [${c.category}] ${c.description} (${c.status})`);
+    const ambiguities = state.ambiguities.map(a => `- ${a.issue} (affects: ${a.affectedSection}, confidence: ${a.confidence})`);
+
+    return `STORY BIBLE:
+Title: ${state.title}
+Synopsis: ${state.synopsis}
+Style Profile: ${state.style_profile}
+
+LATEST CHAPTER:
+${latestChapter ? `Title: ${latestChapter.title}\nSummary: ${latestChapter.summary}\nContent: ${latestChapter.content.substring(0, 2000)}` : 'None'}
+
+CANON LOCK STATUS:
+You must respect the following certainty levels:
+
+1. CONFIRMED CANON (LOCKED - DO NOT CONTRADICT):
+${confirmedItems.length ? confirmedItems.join('\n') : 'None'}
+
+2. FLEXIBLE CANON (Build around carefully):
+${flexibleItems.length ? flexibleItems.join('\n') : 'None'}
+
+3. DRAFT IDEAS (Exploratory, not final):
+${draftItems.length ? draftItems.join('\n') : 'None'}
+
+OPEN LOOPS (Unresolved narrative threads):
+${openLoops.length ? openLoops.join('\n') : 'None'}
+
+CANON ITEMS:
+${canonItems.length ? canonItems.join('\n') : 'None'}
+
+AMBIGUITIES (Uncertain elements needing review):
+${ambiguities.length ? ambiguities.join('\n') : 'None'}`;
   };
 
   const handleAudit = async () => {
@@ -155,21 +206,30 @@ export default function AssistantPage() {
     setIsLoading(true);
 
     const BLOCKED_PHRASES = [
-      'blocked',
       "i'm blocked",
       'im blocked',
       "i'm stuck",
       'im stuck',
+      'i feel blocked',
+      'i feel stuck',
       'unblock me',
       'help me continue',
       "i don't know what happens next",
-      'i dont know what happens next'
+      'i dont know what happens next',
+      "i don't know what to write",
+      'i dont know what to write',
+      "writer's block",
+      'writers block',
     ];
     
     const isBlockedRequest = BLOCKED_PHRASES.some(phrase => textToSend.toLowerCase().includes(phrase));
 
     try {
       const context = buildContext();
+      // Include last 10 messages as conversation history
+      const recentHistory = messages.slice(-10).map(m =>
+        `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content.substring(0, 500)}`
+      );
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -178,6 +238,7 @@ export default function AssistantPage() {
           userInput: textToSend,
           isBlockedRequest,
           language: state.language || 'English',
+          chatHistory: recentHistory,
         }),
       });
       if (!res.ok) {

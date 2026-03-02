@@ -129,9 +129,17 @@ export interface Ambiguity {
   recommendedReview: string;
 }
 
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  isBlockedMode?: boolean;
+}
+
 export interface StoryState {
   language: string;
   title: string;
+  genre: string[];
   synopsis: string;
   chapters: Chapter[];
   scenes: Scene[];
@@ -146,11 +154,13 @@ export interface StoryState {
   themes: Theme[];
   canon_items: CanonItem[];
   ambiguities: Ambiguity[];
+  chat_messages: ChatMessage[];
 }
 
 const defaultState: StoryState = {
   language: 'English',
   title: 'Untitled Project',
+  genre: [],
   synopsis: '',
   chapters: [],
   scenes: [],
@@ -165,6 +175,7 @@ const defaultState: StoryState = {
   themes: [],
   canon_items: [],
   ambiguities: [],
+  chat_messages: [],
 };
 
 interface StoryContextType {

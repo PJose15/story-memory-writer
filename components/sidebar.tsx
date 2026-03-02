@@ -87,9 +87,14 @@ export function Sidebar() {
             <div className="p-4 border-t border-zinc-800">
               <Link
                 href="/settings"
-                className="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-sm font-medium text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200"
+                onClick={() => setIsOpen(false)}
+                className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-sm font-medium ${
+                  pathname === '/settings'
+                    ? 'bg-zinc-800 text-zinc-100'
+                    : 'text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200'
+                }`}
               >
-                <Settings size={18} className="text-zinc-500" />
+                <Settings size={18} className={pathname === '/settings' ? 'text-zinc-100' : 'text-zinc-500'} />
                 Settings
               </Link>
             </div>

@@ -1,10 +1,33 @@
 'use client';
 
 import { useStory } from '@/lib/store';
-import { Settings, Download, Trash2, AlertTriangle, Globe } from 'lucide-react';
+import { useRef } from 'react';
+import { Settings, Download, Upload, Trash2, AlertTriangle, Globe } from 'lucide-react';
 
 export default function SettingsPage() {
   const { state, setState, updateField } = useStory();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const data = JSON.parse(event.target?.result as string);
+        if (!data.title || !data.characters || !data.chapters) {
+          alert('Invalid file: missing required fields (title, characters, chapters).');
+          return;
+        }
+        if (!confirm('This will replace ALL current project data. Are you sure?')) return;
+        setState(data);
+      } catch {
+        alert('Failed to parse JSON file. Make sure it is a valid Story Bible export.');
+      }
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+    reader.readAsText(file);
+  };
 
   const handleExport = () => {
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
@@ -75,6 +98,30 @@ export default function SettingsPage() {
           >
             <Download size={18} />
             Export JSON
+          </button>
+        </section>
+
+        <section className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 space-y-4">
+          <h2 className="text-xl font-serif font-semibold text-zinc-100 flex items-center gap-2">
+            <Upload size={20} className="text-indigo-400" />
+            Restore Project
+          </h2>
+          <p className="text-zinc-400 text-sm leading-relaxed">
+            Import a previously exported JSON file to restore your Story Bible. This will replace all current data.
+          </p>
+          <input
+            type="file"
+            accept=".json"
+            ref={fileInputRef}
+            onChange={handleImport}
+            className="hidden"
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="flex items-center gap-2 bg-zinc-800 text-zinc-100 px-4 py-2 rounded-lg font-medium hover:bg-zinc-700 transition-colors"
+          >
+            <Upload size={18} />
+            Import JSON
           </button>
         </section>
 

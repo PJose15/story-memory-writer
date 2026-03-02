@@ -16,6 +16,7 @@ export default function TimelinePage() {
   const { state, updateField } = useStory();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<TimelineEvent>>({});
+  const [isNewItem, setIsNewItem] = useState(false);
 
   const handleAddEvent = () => {
     const newEvent: TimelineEvent = {
@@ -28,6 +29,7 @@ export default function TimelinePage() {
     updateField('timeline_events', [...state.timeline_events, newEvent]);
     setEditingId(newEvent.id);
     setEditForm(newEvent);
+    setIsNewItem(true);
   };
 
   const handleSave = () => {
@@ -37,9 +39,20 @@ export default function TimelinePage() {
     );
     updateField('timeline_events', updated as TimelineEvent[]);
     setEditingId(null);
+    setIsNewItem(false);
+  };
+
+  const handleCancel = () => {
+    if (isNewItem && editingId) {
+      updateField('timeline_events', state.timeline_events.filter(e => e.id !== editingId));
+    }
+    setEditingId(null);
+    setIsNewItem(false);
   };
 
   const handleDelete = (id: string) => {
+    const event = state.timeline_events.find(e => e.id === id);
+    if (!confirm(`Delete "${event?.date || 'this event'}"? This cannot be undone.`)) return;
     updateField('timeline_events', state.timeline_events.filter((e) => e.id !== id));
   };
 
@@ -111,7 +124,7 @@ export default function TimelinePage() {
                       </select>
                       <div className="flex-1" />
                       <button
-                        onClick={() => setEditingId(null)}
+                        onClick={handleCancel}
                         className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors text-sm"
                       >
                         <X size={16} />
@@ -141,7 +154,7 @@ export default function TimelinePage() {
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                         <button
                           onClick={() => {
                             setEditingId(event.id);
