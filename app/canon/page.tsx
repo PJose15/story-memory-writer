@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { Lock, Trash2, ShieldCheck, ShieldAlert, Shield, ShieldOff, Filter } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
-type ItemType = 'character' | 'timeline' | 'conflict' | 'chapter';
+type ItemType = 'character' | 'timeline' | 'conflict' | 'chapter' | 'scene' | 'world_rule' | 'location' | 'theme' | 'open_loop' | 'foreshadowing';
 
 interface CanonItem {
   id: string;
@@ -27,12 +27,18 @@ export default function CanonLockPage() {
   const [filterStatus, setFilterStatus] = useState<CanonStatus | 'all'>('all');
   const [filterType, setFilterType] = useState<ItemType | 'all'>('all');
 
-  // Aggregate all items
+  // Aggregate all items with canonStatus
   const allItems: CanonItem[] = [
     ...state.characters.map(c => ({ id: c.id, type: 'character' as ItemType, title: c.name, description: c.description, status: c.canonStatus || 'draft' })),
     ...state.timeline_events.map(t => ({ id: t.id, type: 'timeline' as ItemType, title: t.date, description: t.description, status: t.canonStatus || 'draft' })),
     ...state.active_conflicts.map(c => ({ id: c.id, type: 'conflict' as ItemType, title: c.title, description: c.description, status: c.canonStatus || 'draft' })),
     ...state.chapters.map(c => ({ id: c.id, type: 'chapter' as ItemType, title: c.title, description: c.summary, status: c.canonStatus || 'draft' })),
+    ...state.scenes.map(s => ({ id: s.id, type: 'scene' as ItemType, title: s.title, description: s.summary, status: s.canonStatus || 'draft' })),
+    ...state.world_rules.map(w => ({ id: w.id, type: 'world_rule' as ItemType, title: w.rule, description: w.category, status: w.canonStatus || 'draft' })),
+    ...state.locations.map(l => ({ id: l.id, type: 'location' as ItemType, title: l.name, description: l.description, status: l.canonStatus || 'draft' })),
+    ...state.themes.map(t => ({ id: t.id, type: 'theme' as ItemType, title: t.theme, description: t.evidence.join(', '), status: t.canonStatus || 'draft' })),
+    ...state.open_loops.map(o => ({ id: o.id, type: 'open_loop' as ItemType, title: o.description, description: o.status, status: o.canonStatus || 'draft' })),
+    ...state.foreshadowing_elements.map(f => ({ id: f.id, type: 'foreshadowing' as ItemType, title: f.clue, description: f.payoff, status: f.canonStatus || 'draft' })),
   ];
 
   const filteredItems = allItems.filter(item => {
@@ -41,16 +47,23 @@ export default function CanonLockPage() {
     return true;
   });
 
+  const typeToField: Record<ItemType, keyof typeof state> = {
+    character: 'characters',
+    timeline: 'timeline_events',
+    conflict: 'active_conflicts',
+    chapter: 'chapters',
+    scene: 'scenes',
+    world_rule: 'world_rules',
+    location: 'locations',
+    theme: 'themes',
+    open_loop: 'open_loops',
+    foreshadowing: 'foreshadowing_elements',
+  };
+
   const updateItemStatus = (id: string, type: ItemType, newStatus: CanonStatus) => {
-    if (type === 'character') {
-      updateField('characters', state.characters.map(c => c.id === id ? { ...c, canonStatus: newStatus } : c));
-    } else if (type === 'timeline') {
-      updateField('timeline_events', state.timeline_events.map(t => t.id === id ? { ...t, canonStatus: newStatus } : t));
-    } else if (type === 'conflict') {
-      updateField('active_conflicts', state.active_conflicts.map(c => c.id === id ? { ...c, canonStatus: newStatus } : c));
-    } else if (type === 'chapter') {
-      updateField('chapters', state.chapters.map(c => c.id === id ? { ...c, canonStatus: newStatus } : c));
-    }
+    const field = typeToField[type];
+    const items = state[field] as any[];
+    updateField(field as any, items.map((item: any) => item.id === id ? { ...item, canonStatus: newStatus } : item));
   };
 
   return (
@@ -74,9 +87,15 @@ export default function CanonLockPage() {
           >
             <option value="all">All Types</option>
             <option value="character">Characters</option>
+            <option value="chapter">Chapters</option>
+            <option value="scene">Scenes</option>
             <option value="timeline">Timeline</option>
             <option value="conflict">Conflicts</option>
-            <option value="chapter">Chapters</option>
+            <option value="world_rule">World Rules</option>
+            <option value="location">Locations</option>
+            <option value="theme">Themes</option>
+            <option value="open_loop">Open Loops</option>
+            <option value="foreshadowing">Foreshadowing</option>
           </select>
           
           <select
