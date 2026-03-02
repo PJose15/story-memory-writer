@@ -153,7 +153,7 @@ export default function ImportPage() {
     // Merge Plot Points -> active_conflicts (or we can just map active_conflicts directly)
     const newConflicts = (extractedData.active_conflicts || []).map((c: any) => ({
       id: c.conflict_id || crypto.randomUUID(),
-      title: c.conflict_type || c.title || 'Conflict',
+      title: c.title || c.conflict_type || 'Conflict',
       description: c.description,
       status: c.status === 'resolved' ? 'resolved' : 'active',
       canonStatus: 'draft'
