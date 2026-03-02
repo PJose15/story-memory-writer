@@ -2,7 +2,7 @@
 
 import { useStory, CanonStatus } from '@/lib/store';
 import { useState } from 'react';
-import { Lock, Unlock, Edit3, Trash2, ShieldCheck, ShieldAlert, Shield, ShieldOff, Filter } from 'lucide-react';
+import { Lock, Trash2, ShieldCheck, ShieldAlert, Shield, ShieldOff, Filter } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 type ItemType = 'character' | 'timeline' | 'conflict' | 'chapter';

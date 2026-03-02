@@ -4,8 +4,19 @@ import { useStory, Character, CanonStatus, CharacterState, CharacterRelationship
 import { useState } from 'react';
 import { Plus, Trash2, Edit3, Save, X, Users, ShieldCheck, Shield, ShieldAlert, ShieldOff, Activity, Heart, History, AlertCircle, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { GoogleGenAI } from '@google/genai';
 import ReactMarkdown from 'react-markdown';
+
+const defaultCurrentState: CharacterState = {
+  emotionalState: '',
+  visibleGoal: '',
+  hiddenNeed: '',
+  currentFear: '',
+  dominantBelief: '',
+  emotionalWound: '',
+  pressureLevel: 'Low',
+  currentKnowledge: '',
+  indicator: 'stable',
+};
 
 const statusConfig = {
   confirmed: { icon: ShieldCheck, color: 'text-emerald-400', bg: 'bg-emerald-400/10', label: 'Confirmed Canon' },
@@ -34,61 +45,42 @@ export default function CharactersPage() {
   const handleAnalyzeState = async (char: Character) => {
     setAnalyzingId(char.id);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY as string });
-      
-      const prompt = `
-        You are an expert narrative editor and character psychologist.
-        Analyze the following character's current state and provide a "Character Intelligence Audit".
-        
-        Character Name: ${char.name}
-        Role: ${char.role}
-        Core Identity (Permanent): ${char.coreIdentity}
-        
-        Current Live State:
-        - Emotional State: ${char.currentState?.emotionalState}
-        - Visible Goal: ${char.currentState?.visibleGoal}
-        - Hidden Need: ${char.currentState?.hiddenNeed}
-        - Current Fear: ${char.currentState?.currentFear}
-        - Dominant Belief: ${char.currentState?.dominantBelief}
-        - Emotional Wound: ${char.currentState?.emotionalWound}
-        - Pressure Level: ${char.currentState?.pressureLevel}
-        - What they know right now: ${char.currentState?.currentKnowledge}
-        
-        Recent History:
-        ${char.stateHistory?.map(h => `- ${h.context}: ${h.changes}`).join('\n')}
-        
-        Relationships:
-        ${char.dynamicRelationships?.map(r => {
-          const target = state.characters.find(c => c.id === r.targetId);
-          return `- With ${target?.name}: Trust ${r.trustLevel}%, Tension ${r.tensionLevel}%. Dynamics: ${r.dynamics}`;
-        }).join('\n')}
-        
-        Provide your analysis in the following format (use Markdown):
-        ### Character State Snapshot
-        (Brief summary of their current mental/emotional position)
-        
-        ### Current Emotional Logic
-        (How their goals, fears, and needs are interacting right now)
-        
-        ### What They Likely Want Right Now
-        (Immediate desires based on state)
-        
-        ### What They Are Likely to Avoid
-        (Immediate aversions based on state)
-        
-        ### Risks of Out-of-Character Behavior
-        (What would be OOC for them right now? What should the writer avoid doing with them?)
-        
-        ### Recommended Behavioral Direction
-        (How should they act in the next scene?)
-      `;
-
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-pro',
-        contents: prompt,
+      const relationships = (char.dynamicRelationships || []).map(r => {
+        const target = state.characters.find(c => c.id === r.targetId);
+        return {
+          targetName: target?.name || 'Unknown',
+          trustLevel: r.trustLevel,
+          tensionLevel: r.tensionLevel,
+          dynamics: r.dynamics,
+        };
       });
-      
-      setAnalysisResult(prev => ({ ...prev, [char.id]: response.text || '' }));
+
+      const res = await fetch('/api/analyze-character', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          character: {
+            name: char.name,
+            role: char.role,
+            coreIdentity: char.coreIdentity,
+            currentState: char.currentState,
+            stateHistory: (char.stateHistory || []).map(h => ({
+              context: h.context,
+              changes: h.changes,
+            })),
+            relationships,
+          },
+          language: state.language || 'English',
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Analysis failed');
+      }
+
+      const data = await res.json();
+      setAnalysisResult(prev => ({ ...prev, [char.id]: data.analysis }));
     } catch (error) {
       console.error(error);
       setAnalysisResult(prev => ({ ...prev, [char.id]: 'Failed to generate analysis.' }));
@@ -241,7 +233,7 @@ export default function CharactersPage() {
                             <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-1">State Indicator</label>
                             <select
                               value={editForm.currentState?.indicator || 'stable'}
-                              onChange={(e) => setEditForm({ ...editForm, currentState: { ...editForm.currentState!, indicator: e.target.value as any } })}
+                              onChange={(e) => setEditForm({ ...editForm, currentState: { ...(editForm.currentState || defaultCurrentState), indicator: e.target.value as any } })}
                               className="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1.5 text-sm text-zinc-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
                             >
                               <option value="stable">Stable</option>
@@ -255,7 +247,7 @@ export default function CharactersPage() {
                             <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-1">Pressure Level</label>
                             <select
                               value={editForm.currentState?.pressureLevel || 'Low'}
-                              onChange={(e) => setEditForm({ ...editForm, currentState: { ...editForm.currentState!, pressureLevel: e.target.value as any } })}
+                              onChange={(e) => setEditForm({ ...editForm, currentState: { ...(editForm.currentState || defaultCurrentState), pressureLevel: e.target.value as any } })}
                               className="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1.5 text-sm text-zinc-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
                             >
                               <option value="Low">Low</option>
@@ -270,7 +262,7 @@ export default function CharactersPage() {
                           <input
                             type="text"
                             value={editForm.currentState?.currentKnowledge || ''}
-                            onChange={(e) => setEditForm({ ...editForm, currentState: { ...editForm.currentState!, currentKnowledge: e.target.value } })}
+                            onChange={(e) => setEditForm({ ...editForm, currentState: { ...(editForm.currentState || defaultCurrentState), currentKnowledge: e.target.value } })}
                             className="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1.5 text-sm text-zinc-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 w-64"
                             placeholder="What do they know right now?"
                           />
@@ -282,7 +274,7 @@ export default function CharactersPage() {
                           <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">Current Emotional State</label>
                           <textarea
                             value={editForm.currentState?.emotionalState || ''}
-                            onChange={(e) => setEditForm({ ...editForm, currentState: { ...editForm.currentState!, emotionalState: e.target.value } })}
+                            onChange={(e) => setEditForm({ ...editForm, currentState: { ...(editForm.currentState || defaultCurrentState), emotionalState: e.target.value } })}
                             className="w-full h-20 bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-3 text-sm text-zinc-300 font-sans resize-y focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
                             placeholder="How are they feeling in this exact moment?"
                           />
@@ -291,7 +283,7 @@ export default function CharactersPage() {
                           <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">Visible Goal</label>
                           <textarea
                             value={editForm.currentState?.visibleGoal || ''}
-                            onChange={(e) => setEditForm({ ...editForm, currentState: { ...editForm.currentState!, visibleGoal: e.target.value } })}
+                            onChange={(e) => setEditForm({ ...editForm, currentState: { ...(editForm.currentState || defaultCurrentState), visibleGoal: e.target.value } })}
                             className="w-full h-20 bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-3 text-sm text-zinc-300 font-sans resize-y focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
                             placeholder="What are they actively trying to achieve?"
                           />
@@ -300,7 +292,7 @@ export default function CharactersPage() {
                           <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">Hidden Need</label>
                           <textarea
                             value={editForm.currentState?.hiddenNeed || ''}
-                            onChange={(e) => setEditForm({ ...editForm, currentState: { ...editForm.currentState!, hiddenNeed: e.target.value } })}
+                            onChange={(e) => setEditForm({ ...editForm, currentState: { ...(editForm.currentState || defaultCurrentState), hiddenNeed: e.target.value } })}
                             className="w-full h-20 bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-3 text-sm text-zinc-300 font-sans resize-y focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
                             placeholder="What do they actually need (but might not know)?"
                           />
@@ -309,7 +301,7 @@ export default function CharactersPage() {
                           <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">Current Fear</label>
                           <textarea
                             value={editForm.currentState?.currentFear || ''}
-                            onChange={(e) => setEditForm({ ...editForm, currentState: { ...editForm.currentState!, currentFear: e.target.value } })}
+                            onChange={(e) => setEditForm({ ...editForm, currentState: { ...(editForm.currentState || defaultCurrentState), currentFear: e.target.value } })}
                             className="w-full h-20 bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-3 text-sm text-zinc-300 font-sans resize-y focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
                             placeholder="What are they most afraid of right now?"
                           />
@@ -318,7 +310,7 @@ export default function CharactersPage() {
                           <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">Dominant Belief</label>
                           <textarea
                             value={editForm.currentState?.dominantBelief || ''}
-                            onChange={(e) => setEditForm({ ...editForm, currentState: { ...editForm.currentState!, dominantBelief: e.target.value } })}
+                            onChange={(e) => setEditForm({ ...editForm, currentState: { ...(editForm.currentState || defaultCurrentState), dominantBelief: e.target.value } })}
                             className="w-full h-20 bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-3 text-sm text-zinc-300 font-sans resize-y focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
                             placeholder="What belief is driving their current actions?"
                           />
@@ -327,7 +319,7 @@ export default function CharactersPage() {
                           <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">Emotional Wound</label>
                           <textarea
                             value={editForm.currentState?.emotionalWound || ''}
-                            onChange={(e) => setEditForm({ ...editForm, currentState: { ...editForm.currentState!, emotionalWound: e.target.value } })}
+                            onChange={(e) => setEditForm({ ...editForm, currentState: { ...(editForm.currentState || defaultCurrentState), emotionalWound: e.target.value } })}
                             className="w-full h-20 bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-3 text-sm text-zinc-300 font-sans resize-y focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
                             placeholder="What past hurt is influencing them?"
                           />

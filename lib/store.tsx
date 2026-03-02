@@ -130,6 +130,7 @@ export interface Ambiguity {
 }
 
 export interface StoryState {
+  language: string;
   title: string;
   synopsis: string;
   chapters: Chapter[];
@@ -148,6 +149,7 @@ export interface StoryState {
 }
 
 const defaultState: StoryState = {
+  language: 'English',
   title: 'Untitled Project',
   synopsis: '',
   chapters: [],
@@ -181,8 +183,9 @@ export function StoryProvider({ children }: { children: React.ReactNode }) {
     const saved = localStorage.getItem('story_memory_state');
     if (saved) {
       try {
+        // Merge saved data with defaults so new fields added after save get their default values
         // eslint-disable-next-line react-hooks/set-state-in-effect
-        setState(JSON.parse(saved));
+        setState({ ...defaultState, ...JSON.parse(saved) });
       } catch (e) {
         console.error('Failed to parse saved state', e);
       }

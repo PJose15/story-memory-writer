@@ -1,10 +1,10 @@
 'use client';
 
 import { useStory } from '@/lib/store';
-import { Settings, Download, Trash2, AlertTriangle } from 'lucide-react';
+import { Settings, Download, Trash2, AlertTriangle, Globe } from 'lucide-react';
 
 export default function SettingsPage() {
-  const { state, setState } = useStory();
+  const { state, setState, updateField } = useStory();
 
   const handleExport = () => {
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
@@ -34,6 +34,33 @@ export default function SettingsPage() {
       </header>
 
       <div className="space-y-8">
+        <section className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 space-y-4">
+          <h2 className="text-xl font-serif font-semibold text-zinc-100 flex items-center gap-2">
+            <Globe size={20} className="text-indigo-400" />
+            Project Language
+          </h2>
+          <p className="text-zinc-400 text-sm leading-relaxed">
+            Set the language for your project. All AI analysis, ingestion, and assistant responses will use this language. Content will never be translated.
+          </p>
+          <select
+            value={state.language || 'English'}
+            onChange={(e) => updateField('language', e.target.value)}
+            className="bg-zinc-800 border border-zinc-700 text-zinc-100 px-4 py-2 rounded-lg font-medium focus:border-indigo-500 outline-none"
+          >
+            <option value="English">English</option>
+            <option value="Spanish">Español (Spanish)</option>
+            <option value="French">Français (French)</option>
+            <option value="Portuguese">Português (Portuguese)</option>
+            <option value="German">Deutsch (German)</option>
+            <option value="Italian">Italiano (Italian)</option>
+            <option value="Japanese">日本語 (Japanese)</option>
+            <option value="Korean">한국어 (Korean)</option>
+            <option value="Chinese">中文 (Chinese)</option>
+            <option value="Russian">Русский (Russian)</option>
+            <option value="Arabic">العربية (Arabic)</option>
+          </select>
+        </section>
+
         <section className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 space-y-4">
           <h2 className="text-xl font-serif font-semibold text-zinc-100 flex items-center gap-2">
             <Download size={20} className="text-indigo-400" />

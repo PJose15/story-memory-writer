@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { useStory, Character, Chapter, TimelineEvent, WorldRule, Conflict } from '@/lib/store';
-import { UploadCloud, FileText, CheckCircle2, AlertCircle, Loader2, File, ArrowRight, Save, X, ChevronUp, ChevronDown } from 'lucide-react';
+import { useStory } from '@/lib/store';
+import { UploadCloud, FileText, CheckCircle2, AlertCircle, Loader2, ArrowRight, Save, X, ChevronUp, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function ImportPage() {
@@ -45,6 +45,7 @@ export default function ImportPage() {
 
     const formData = new FormData();
     files.forEach(file => formData.append('files', file));
+    formData.append('language', state.language || 'English');
 
     try {
       setUploadStatus('analyzing');

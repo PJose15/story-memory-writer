@@ -2,56 +2,204 @@ import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenAI, Type } from '@google/genai';
 import pdf from 'pdf-parse';
 import mammoth from 'mammoth';
+import { rateLimit } from '@/lib/rate-limit';
 
-export async function POST(req: NextRequest) {
-  try {
-    const formData = await req.formData();
-    const files = formData.getAll('files') as File[];
-
-    if (!files || files.length === 0) {
-      return NextResponse.json({ error: 'No files uploaded' }, { status: 400 });
-    }
-
-    let combinedText = '';
-    const fileParsingStatus: { name: string; status: string; error?: string }[] = [];
-
-    // 1. Parse files
-    for (const file of files) {
-      try {
-        const arrayBuffer = await file.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
-        let text = '';
-
-        if (file.name.endsWith('.pdf')) {
-          const textResult = await pdf(buffer);
-          text = textResult.text;
-        } else if (file.name.endsWith('.docx') || file.name.endsWith('.doc')) {
-          const result = await mammoth.extractRawText({ buffer });
-          text = result.value;
-        } else if (file.name.endsWith('.txt') || file.name.endsWith('.md')) {
-          text = buffer.toString('utf-8');
-        } else {
-          fileParsingStatus.push({ name: file.name, status: 'failed', error: 'Unsupported file type' });
-          continue;
+const responseSchema = {
+  type: Type.OBJECT,
+  properties: {
+    project: {
+      type: Type.OBJECT,
+      properties: {
+        title: { type: Type.STRING },
+        genre: { type: Type.ARRAY, items: { type: Type.STRING } },
+        summary_global: { type: Type.STRING }
+      }
+    },
+    chapters: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          chapter_id: { type: Type.STRING },
+          title: { type: Type.STRING },
+          summary: { type: Type.STRING },
+          raw_text_reference: { type: Type.STRING }
         }
-
-        combinedText += `\n\n--- FILE: ${file.name} ---\n\n${text}`;
-        fileParsingStatus.push({ name: file.name, status: 'success' });
-      } catch (err: any) {
-        console.error(`Error parsing ${file.name}:`, err);
-        fileParsingStatus.push({ name: file.name, status: 'failed', error: err.message });
+      }
+    },
+    scenes: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          scene_id: { type: Type.STRING },
+          chapter_id: { type: Type.STRING },
+          order_index: { type: Type.INTEGER },
+          summary: { type: Type.STRING }
+        }
+      }
+    },
+    characters: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          character_id: { type: Type.STRING },
+          name: { type: Type.STRING },
+          role: { type: Type.STRING },
+          description: { type: Type.STRING },
+          core_traits: { type: Type.ARRAY, items: { type: Type.STRING } }
+        }
+      }
+    },
+    character_states: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          character_id: { type: Type.STRING },
+          name: { type: Type.STRING },
+          current_pressure_level: { type: Type.STRING },
+          current_emotional_state: { type: Type.STRING },
+          visible_goal: { type: Type.STRING },
+          hidden_need: { type: Type.STRING },
+          current_fear: { type: Type.STRING },
+          dominant_belief: { type: Type.STRING },
+          emotional_wound: { type: Type.STRING },
+          current_knowledge: { type: Type.STRING }
+        }
+      }
+    },
+    relationships: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          character_1: { type: Type.STRING },
+          character_2: { type: Type.STRING },
+          trust_level: { type: Type.INTEGER },
+          tension_level: { type: Type.INTEGER },
+          current_dynamic: { type: Type.STRING },
+          relationship_type: { type: Type.STRING }
+        }
+      }
+    },
+    active_conflicts: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          conflict_id: { type: Type.STRING },
+          conflict_type: { type: Type.STRING },
+          title: { type: Type.STRING },
+          description: { type: Type.STRING },
+          status: { type: Type.STRING }
+        }
+      }
+    },
+    timeline_events: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          timeline_event_id: { type: Type.STRING },
+          event: { type: Type.STRING },
+          immediate_effect: { type: Type.STRING },
+          latent_effect: { type: Type.STRING }
+        }
+      }
+    },
+    world_rules: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          world_rule_id: { type: Type.STRING },
+          scope: { type: Type.STRING },
+          rule: { type: Type.STRING }
+        }
+      }
+    },
+    locations: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          location_id: { type: Type.STRING },
+          name: { type: Type.STRING },
+          description: { type: Type.STRING },
+          importance: { type: Type.STRING },
+          associated_rules: { type: Type.ARRAY, items: { type: Type.STRING } }
+        }
+      }
+    },
+    themes: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          theme_id: { type: Type.STRING },
+          theme: { type: Type.STRING },
+          evidence: { type: Type.ARRAY, items: { type: Type.STRING } }
+        }
+      }
+    },
+    canon_items: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          canon_item_id: { type: Type.STRING },
+          category: { type: Type.STRING },
+          description: { type: Type.STRING },
+          status: { type: Type.STRING },
+          source_reference: { type: Type.STRING }
+        }
+      }
+    },
+    ambiguities: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          ambiguity_id: { type: Type.STRING },
+          issue: { type: Type.STRING },
+          affected_section: { type: Type.STRING },
+          confidence: { type: Type.STRING },
+          recommended_review: { type: Type.STRING }
+        }
+      }
+    },
+    open_loops: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          loop_id: { type: Type.STRING },
+          description: { type: Type.STRING },
+          status: { type: Type.STRING }
+        }
+      }
+    },
+    foreshadowing_elements: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          foreshadowing_id: { type: Type.STRING },
+          clue: { type: Type.STRING },
+          payoff_status: { type: Type.STRING }
+        }
       }
     }
+  }
+};
 
-    if (combinedText.trim() === '') {
-      return NextResponse.json({ error: 'No text could be extracted from the uploaded files.', fileParsingStatus }, { status: 400 });
-    }
-
-    // 2. Analyze with Gemini
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY as string });
-
-    const prompt = `
+function buildSystemPrompt(language: string) {
+  return `
 System Prompt — Ingestion Engine
+
+CRITICAL LANGUAGE RULE: The project language is ${language}. You MUST preserve all content in its original language. Do NOT translate any text. All extracted data — summaries, descriptions, character names, dialogue, world rules, themes, conflicts, timeline events, and every other field — MUST remain in ${language}. Your entire output must be in ${language}.
 
 You are the Narrative Ingestion Engine for a writing assistant app.
 
@@ -63,17 +211,17 @@ You behave like a manuscript analyst, story archivist, and continuity extraction
 Your job is to:
 - read the uploaded manuscript or writing files
 - extract meaningful story structure
-- organize it into the app’s ingestion schema
+- organize it into the app's ingestion schema
 - preserve continuity
 - separate explicit facts from inference
 - prepare the project for continued writing
 
 Your output must support:
-manuscript continuation, continuity checking, character tracking, plot tracking, timeline logic, writer’s block recovery, long-term story memory.
+manuscript continuation, continuity checking, character tracking, plot tracking, timeline logic, writer's block recovery, long-term story memory.
 
 Core objective
 Convert uploaded story content into a structured, reliable, reusable narrative database.
-You must read the user’s uploaded file(s), identify the narrative information inside them, and extract that information into the required schema sections.
+You must read the user's uploaded file(s), identify the narrative information inside them, and extract that information into the required schema sections.
 You must make the manuscript usable by the rest of the app immediately after ingestion.
 
 Your responsibilities
@@ -163,210 +311,210 @@ Treat every uploaded manuscript as a story system that must be understood, organ
 Your job is to transform raw writing files into structured narrative intelligence that the app can trust.
 
 When processing uploaded content, always respond with the structured extraction object using the required ingestion schema.
+`;
+}
 
-Raw Text to Analyze:
-${combinedText.substring(0, 150000)}
-    `;
+const CHUNK_SIZE = 200000; // ~200K characters per chunk
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-pro',
-      contents: prompt,
-      config: {
-        responseMimeType: 'application/json',
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            project: {
-              type: Type.OBJECT,
-              properties: {
-                title: { type: Type.STRING },
-                genre: { type: Type.ARRAY, items: { type: Type.STRING } },
-                summary_global: { type: Type.STRING }
-              }
-            },
-            chapters: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  chapter_id: { type: Type.STRING },
-                  title: { type: Type.STRING },
-                  summary: { type: Type.STRING },
-                  raw_text_reference: { type: Type.STRING }
-                }
-              }
-            },
-            scenes: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  scene_id: { type: Type.STRING },
-                  chapter_id: { type: Type.STRING },
-                  order_index: { type: Type.INTEGER },
-                  summary: { type: Type.STRING }
-                }
-              }
-            },
-            characters: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  character_id: { type: Type.STRING },
-                  name: { type: Type.STRING },
-                  role: { type: Type.STRING },
-                  description: { type: Type.STRING },
-                  core_traits: { type: Type.ARRAY, items: { type: Type.STRING } }
-                }
-              }
-            },
-            character_states: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  character_id: { type: Type.STRING },
-                  name: { type: Type.STRING },
-                  current_pressure_level: { type: Type.STRING },
-                  current_emotional_state: { type: Type.STRING },
-                  visible_goal: { type: Type.STRING },
-                  hidden_need: { type: Type.STRING },
-                  current_fear: { type: Type.STRING },
-                  dominant_belief: { type: Type.STRING },
-                  emotional_wound: { type: Type.STRING },
-                  current_knowledge: { type: Type.STRING }
-                }
-              }
-            },
-            relationships: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  character_1: { type: Type.STRING },
-                  character_2: { type: Type.STRING },
-                  trust_level: { type: Type.INTEGER },
-                  tension_level: { type: Type.INTEGER },
-                  current_dynamic: { type: Type.STRING },
-                  relationship_type: { type: Type.STRING }
-                }
-              }
-            },
-            active_conflicts: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  conflict_id: { type: Type.STRING },
-                  conflict_type: { type: Type.STRING },
-                  title: { type: Type.STRING },
-                  description: { type: Type.STRING },
-                  status: { type: Type.STRING }
-                }
-              }
-            },
-            timeline_events: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  timeline_event_id: { type: Type.STRING },
-                  event: { type: Type.STRING },
-                  immediate_effect: { type: Type.STRING },
-                  latent_effect: { type: Type.STRING }
-                }
-              }
-            },
-            world_rules: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  world_rule_id: { type: Type.STRING },
-                  scope: { type: Type.STRING },
-                  rule: { type: Type.STRING }
-                }
-              }
-            },
-            locations: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  location_id: { type: Type.STRING },
-                  name: { type: Type.STRING },
-                  description: { type: Type.STRING },
-                  importance: { type: Type.STRING },
-                  associated_rules: { type: Type.ARRAY, items: { type: Type.STRING } }
-                }
-              }
-            },
-            themes: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  theme_id: { type: Type.STRING },
-                  theme: { type: Type.STRING },
-                  evidence: { type: Type.ARRAY, items: { type: Type.STRING } }
-                }
-              }
-            },
-            canon_items: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  canon_item_id: { type: Type.STRING },
-                  category: { type: Type.STRING },
-                  description: { type: Type.STRING },
-                  status: { type: Type.STRING },
-                  source_reference: { type: Type.STRING }
-                }
-              }
-            },
-            ambiguities: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  ambiguity_id: { type: Type.STRING },
-                  issue: { type: Type.STRING },
-                  affected_section: { type: Type.STRING },
-                  confidence: { type: Type.STRING },
-                  recommended_review: { type: Type.STRING }
-                }
-              }
-            },
-            open_loops: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  loop_id: { type: Type.STRING },
-                  description: { type: Type.STRING },
-                  status: { type: Type.STRING }
-                }
-              }
-            },
-            foreshadowing_elements: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  foreshadowing_id: { type: Type.STRING },
-                  clue: { type: Type.STRING },
-                  payoff_status: { type: Type.STRING }
-                }
-              }
-            }
-          }
-        }
+function splitTextIntoChunks(text: string): string[] {
+  if (text.length <= CHUNK_SIZE) {
+    return [text];
+  }
+
+  const chunks: string[] = [];
+  let remaining = text;
+
+  while (remaining.length > 0) {
+    if (remaining.length <= CHUNK_SIZE) {
+      chunks.push(remaining);
+      break;
+    }
+
+    // Try to split at a chapter boundary within the chunk window
+    let splitAt = -1;
+    const searchWindow = remaining.substring(CHUNK_SIZE - 20000, CHUNK_SIZE + 5000);
+    const chapterPattern = /\n\s*(?:cap[íi]tulo|chapter|parte|part)\s+/i;
+    const match = searchWindow.match(chapterPattern);
+    if (match && match.index !== undefined) {
+      splitAt = CHUNK_SIZE - 20000 + match.index;
+    }
+
+    // Fall back to paragraph boundary
+    if (splitAt === -1) {
+      const lastParagraph = remaining.lastIndexOf('\n\n', CHUNK_SIZE);
+      if (lastParagraph > CHUNK_SIZE * 0.5) {
+        splitAt = lastParagraph;
+      } else {
+        splitAt = CHUNK_SIZE;
       }
-    });
+    }
 
-    const extractedData = JSON.parse(response.text || '{}');
+    chunks.push(remaining.substring(0, splitAt));
+    remaining = remaining.substring(splitAt);
+  }
+
+  return chunks;
+}
+
+function mergeResults(results: any[]): any {
+  const merged: any = {
+    project: results[0]?.project || {},
+    chapters: [],
+    scenes: [],
+    characters: [],
+    character_states: [],
+    relationships: [],
+    active_conflicts: [],
+    timeline_events: [],
+    world_rules: [],
+    locations: [],
+    themes: [],
+    canon_items: [],
+    ambiguities: [],
+    open_loops: [],
+    foreshadowing_elements: [],
+  };
+
+  const arrayKeys = Object.keys(merged).filter(k => k !== 'project');
+
+  for (const result of results) {
+    for (const key of arrayKeys) {
+      if (result[key] && Array.isArray(result[key])) {
+        merged[key].push(...result[key]);
+      }
+    }
+  }
+
+  // Deduplicate characters by name
+  const seenCharacters = new Map<string, any>();
+  for (const char of merged.characters) {
+    const key = char.name?.toLowerCase();
+    if (key && !seenCharacters.has(key)) {
+      seenCharacters.set(key, char);
+    }
+  }
+  merged.characters = Array.from(seenCharacters.values());
+
+  // Deduplicate locations by name
+  const seenLocations = new Map<string, any>();
+  for (const loc of merged.locations) {
+    const key = loc.name?.toLowerCase();
+    if (key && !seenLocations.has(key)) {
+      seenLocations.set(key, loc);
+    }
+  }
+  merged.locations = Array.from(seenLocations.values());
+
+  return merged;
+}
+
+const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB per file
+const MAX_FILES = 10;
+const ALLOWED_EXTENSIONS = ['.pdf', '.docx', '.doc', '.txt', '.md'];
+
+export async function POST(req: NextRequest) {
+  const limited = rateLimit(req, { maxRequests: 5, windowMs: 60000 });
+  if (limited) return limited;
+
+  try {
+    const formData = await req.formData();
+    const files = formData.getAll('files') as File[];
+    const language = (formData.get('language') as string) || 'English';
+
+    if (!files || files.length === 0) {
+      return NextResponse.json({ error: 'No files uploaded' }, { status: 400 });
+    }
+
+    if (files.length > MAX_FILES) {
+      return NextResponse.json({ error: `Too many files (max ${MAX_FILES})` }, { status: 400 });
+    }
+
+    // Validate files
+    for (const file of files) {
+      if (file.size > MAX_FILE_SIZE) {
+        return NextResponse.json(
+          { error: `File "${file.name}" exceeds the 50MB size limit.` },
+          { status: 400 }
+        );
+      }
+      const ext = '.' + file.name.split('.').pop()?.toLowerCase();
+      if (!ALLOWED_EXTENSIONS.includes(ext)) {
+        return NextResponse.json(
+          { error: `File "${file.name}" has an unsupported format. Allowed: ${ALLOWED_EXTENSIONS.join(', ')}` },
+          { status: 400 }
+        );
+      }
+    }
+
+    let combinedText = '';
+    const fileParsingStatus: { name: string; status: string; error?: string }[] = [];
+
+    // 1. Parse files
+    for (const file of files) {
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        let text = '';
+
+        if (file.name.endsWith('.pdf')) {
+          const textResult = await pdf(buffer);
+          text = textResult.text;
+        } else if (file.name.endsWith('.docx') || file.name.endsWith('.doc')) {
+          const result = await mammoth.extractRawText({ buffer });
+          text = result.value;
+        } else if (file.name.endsWith('.txt') || file.name.endsWith('.md')) {
+          text = buffer.toString('utf-8');
+        } else {
+          fileParsingStatus.push({ name: file.name, status: 'failed', error: 'Unsupported file type' });
+          continue;
+        }
+
+        combinedText += `\n\n--- FILE: ${file.name} ---\n\n${text}`;
+        fileParsingStatus.push({ name: file.name, status: 'success' });
+      } catch (err: any) {
+        console.error(`Error parsing ${file.name}:`, err);
+        fileParsingStatus.push({ name: file.name, status: 'failed', error: err.message });
+      }
+    }
+
+    if (combinedText.trim() === '') {
+      return NextResponse.json({ error: 'No text could be extracted from the uploaded files.', fileParsingStatus }, { status: 400 });
+    }
+
+    // 2. Split into chunks and analyze with Gemini
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY as string });
+    const systemPrompt = buildSystemPrompt(language);
+    const chunks = splitTextIntoChunks(combinedText);
+
+    console.log(`Processing ${chunks.length} chunk(s), total ${combinedText.length} characters`);
+
+    const results: any[] = [];
+
+    for (let i = 0; i < chunks.length; i++) {
+      const chunkLabel = chunks.length > 1
+        ? `\n\n[This is part ${i + 1} of ${chunks.length} of the manuscript. Extract all narrative data from this section.]\n\n`
+        : '';
+
+      const userPrompt = `${chunkLabel}Raw Text to Analyze:\n${chunks[i]}`;
+
+      console.log(`Sending chunk ${i + 1}/${chunks.length} (${chunks[i].length} chars)...`);
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: userPrompt,
+        config: {
+          systemInstruction: systemPrompt,
+          responseMimeType: 'application/json',
+          responseSchema,
+        }
+      });
+
+      const parsed = JSON.parse(response.text || '{}');
+      results.push(parsed);
+      console.log(`Chunk ${i + 1} done.`);
+    }
+
+    const extractedData = chunks.length === 1 ? results[0] : mergeResults(results);
 
     return NextResponse.json({
       fileParsingStatus,
@@ -375,6 +523,6 @@ ${combinedText.substring(0, 150000)}
 
   } catch (error: any) {
     console.error('Ingestion error:', error);
-    return NextResponse.json({ error: error.message || 'Failed to process files' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to process files' }, { status: 500 });
   }
 }
