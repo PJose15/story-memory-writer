@@ -147,7 +147,7 @@ Synopsis: ${state.synopsis}
 Style Profile: ${state.style_profile}
 
 LATEST CHAPTER:
-${latestChapter ? `Title: ${latestChapter.title}\nSummary: ${latestChapter.summary}\nContent: ${latestChapter.content.substring(0, 2000)}` : 'None'}
+${latestChapter ? `Title: ${latestChapter.title}\nSummary: ${latestChapter.summary}\nContent (last 3000 chars): ${latestChapter.content.slice(-3000)}` : 'None'}
 
 CANON LOCK STATUS:
 You must respect the following certainty levels:
