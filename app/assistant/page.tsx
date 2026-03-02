@@ -63,10 +63,12 @@ export default function AssistantPage() {
   }, [messages]);
 
   // Persist chat messages to store (strip isThinking) — only after initial load
+  // Cap at 100 messages to prevent localStorage from growing indefinitely
   useEffect(() => {
     if (!hasLoadedRef.current) return;
     const persistable: ChatMessage[] = messages
       .filter(m => !m.isThinking)
+      .slice(-100)
       .map(({ id, role, content, isBlockedMode }) => ({ id, role, content, isBlockedMode }));
     updateField('chat_messages', persistable);
   }, [messages]); // eslint-disable-line react-hooks/exhaustive-deps
