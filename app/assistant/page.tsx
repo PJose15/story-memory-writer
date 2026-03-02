@@ -50,8 +50,10 @@ export default function AssistantPage() {
 
   // Load saved messages from store on mount
   useEffect(() => {
-    if (!hasLoadedRef.current && state.chat_messages.length > 0) {
-      setMessages(state.chat_messages.map(m => ({ ...m })));
+    if (!hasLoadedRef.current) {
+      if (state.chat_messages.length > 0) {
+        setMessages(state.chat_messages.map(m => ({ ...m })));
+      }
       hasLoadedRef.current = true;
     }
   }, [state.chat_messages]);
@@ -60,8 +62,9 @@ export default function AssistantPage() {
     scrollToBottom();
   }, [messages]);
 
-  // Persist chat messages to store (strip isThinking)
+  // Persist chat messages to store (strip isThinking) — only after initial load
   useEffect(() => {
+    if (!hasLoadedRef.current) return;
     const persistable: ChatMessage[] = messages
       .filter(m => !m.isThinking)
       .map(({ id, role, content, isBlockedMode }) => ({ id, role, content, isBlockedMode }));
