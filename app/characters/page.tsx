@@ -374,8 +374,9 @@ export default function CharactersPage() {
                                 <select
                                   value={rel.targetId}
                                   onChange={(e) => {
-                                    const newRels = [...(editForm.dynamicRelationships || [])];
-                                    newRels[idx].targetId = e.target.value;
+                                    const newRels = (editForm.dynamicRelationships || []).map((r, i) =>
+                                      i === idx ? { ...r, targetId: e.target.value } : r
+                                    );
                                     setEditForm({ ...editForm, dynamicRelationships: newRels });
                                   }}
                                   className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
@@ -397,8 +398,9 @@ export default function CharactersPage() {
                                       min="0" max="100"
                                       value={rel.trustLevel}
                                       onChange={(e) => {
-                                        const newRels = [...(editForm.dynamicRelationships || [])];
-                                        newRels[idx].trustLevel = parseInt(e.target.value);
+                                        const newRels = (editForm.dynamicRelationships || []).map((r, i) =>
+                                          i === idx ? { ...r, trustLevel: parseInt(e.target.value) } : r
+                                        );
                                         setEditForm({ ...editForm, dynamicRelationships: newRels });
                                       }}
                                       className="w-full accent-emerald-500"
@@ -413,8 +415,9 @@ export default function CharactersPage() {
                                       min="0" max="100"
                                       value={rel.tensionLevel}
                                       onChange={(e) => {
-                                        const newRels = [...(editForm.dynamicRelationships || [])];
-                                        newRels[idx].tensionLevel = parseInt(e.target.value);
+                                        const newRels = (editForm.dynamicRelationships || []).map((r, i) =>
+                                          i === idx ? { ...r, tensionLevel: parseInt(e.target.value) } : r
+                                        );
                                         setEditForm({ ...editForm, dynamicRelationships: newRels });
                                       }}
                                       className="w-full accent-red-500"
@@ -425,8 +428,9 @@ export default function CharactersPage() {
                                   type="text"
                                   value={rel.dynamics}
                                   onChange={(e) => {
-                                    const newRels = [...(editForm.dynamicRelationships || [])];
-                                    newRels[idx].dynamics = e.target.value;
+                                    const newRels = (editForm.dynamicRelationships || []).map((r, i) =>
+                                      i === idx ? { ...r, dynamics: e.target.value } : r
+                                    );
                                     setEditForm({ ...editForm, dynamicRelationships: newRels });
                                   }}
                                   className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
@@ -482,8 +486,9 @@ export default function CharactersPage() {
                                   type="text"
                                   value={history.context}
                                   onChange={(e) => {
-                                    const newHist = [...(editForm.stateHistory || [])];
-                                    newHist[idx].context = e.target.value;
+                                    const newHist = (editForm.stateHistory || []).map((h, i) =>
+                                      i === idx ? { ...h, context: e.target.value } : h
+                                    );
                                     setEditForm({ ...editForm, stateHistory: newHist });
                                   }}
                                   className="bg-transparent border-b border-zinc-800 px-1 py-0.5 text-sm font-medium text-zinc-200 focus:outline-none focus:border-indigo-500"
@@ -503,8 +508,9 @@ export default function CharactersPage() {
                               <textarea
                                 value={history.changes}
                                 onChange={(e) => {
-                                  const newHist = [...(editForm.stateHistory || [])];
-                                  newHist[idx].changes = e.target.value;
+                                  const newHist = (editForm.stateHistory || []).map((h, i) =>
+                                    i === idx ? { ...h, changes: e.target.value } : h
+                                  );
                                   setEditForm({ ...editForm, stateHistory: newHist });
                                 }}
                                 className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-400 font-sans resize-y focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
