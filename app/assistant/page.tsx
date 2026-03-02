@@ -42,6 +42,7 @@ export default function AssistantPage() {
   const [isAuditing, setIsAuditing] = useState(false);
   const [pendingAudit, setPendingAudit] = useState<{ request: string; result: AuditResult } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -172,6 +173,8 @@ ${ambiguities.length ? ambiguities.join('\n') : 'None'}`;
 
     try {
       const context = buildContext();
+      abortRef.current?.abort();
+      abortRef.current = new AbortController();
       const res = await fetch('/api/audit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -180,6 +183,7 @@ ${ambiguities.length ? ambiguities.join('\n') : 'None'}`;
           userInput: input,
           language: state.language || 'English',
         }),
+        signal: abortRef.current.signal,
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
@@ -230,6 +234,8 @@ ${ambiguities.length ? ambiguities.join('\n') : 'None'}`;
       const recentHistory = messages.slice(-10).map(m =>
         `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content.substring(0, 500)}`
       );
+      abortRef.current?.abort();
+      abortRef.current = new AbortController();
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -240,6 +246,7 @@ ${ambiguities.length ? ambiguities.join('\n') : 'None'}`;
           language: state.language || 'English',
           chatHistory: recentHistory,
         }),
+        signal: abortRef.current.signal,
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));

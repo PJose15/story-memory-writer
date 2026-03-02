@@ -13,6 +13,7 @@ export default function ImportPage() {
   const [extractedData, setExtractedData] = useState<any>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -49,9 +50,12 @@ export default function ImportPage() {
 
     try {
       setUploadStatus('analyzing');
+      abortRef.current?.abort();
+      abortRef.current = new AbortController();
       const res = await fetch('/api/ingest', {
         method: 'POST',
         body: formData,
+        signal: abortRef.current.signal,
       });
 
       if (!res.ok) {
@@ -418,8 +422,9 @@ export default function ImportPage() {
                       type="text" 
                       value={c.title} 
                       onChange={(e) => {
-                        const newChapters = [...extractedData.chapters];
-                        newChapters[i].title = e.target.value;
+                        const newChapters = extractedData.chapters.map((ch: any, idx: number) =>
+                          idx === i ? { ...ch, title: e.target.value } : ch
+                        );
                         setExtractedData({ ...extractedData, chapters: newChapters });
                       }}
                       className="w-[calc(100%-24px)] bg-transparent border-b border-zinc-800 focus:border-indigo-500 text-sm text-zinc-200 font-medium mb-1 outline-none px-1"
@@ -450,8 +455,9 @@ export default function ImportPage() {
                         type="text" 
                         value={c.name} 
                         onChange={(e) => {
-                          const newChars = [...extractedData.characters];
-                          newChars[i].name = e.target.value;
+                          const newChars = extractedData.characters.map((ch: any, idx: number) =>
+                            idx === i ? { ...ch, name: e.target.value } : ch
+                          );
                           setExtractedData({ ...extractedData, characters: newChars });
                         }}
                         className="flex-1 bg-transparent border-b border-zinc-800 focus:border-indigo-500 text-sm text-zinc-200 font-medium outline-none px-1"
@@ -460,8 +466,9 @@ export default function ImportPage() {
                         type="text" 
                         value={c.role} 
                         onChange={(e) => {
-                          const newChars = [...extractedData.characters];
-                          newChars[i].role = e.target.value;
+                          const newChars = extractedData.characters.map((ch: any, idx: number) =>
+                            idx === i ? { ...ch, role: e.target.value } : ch
+                          );
                           setExtractedData({ ...extractedData, characters: newChars });
                         }}
                         className="w-1/3 bg-transparent border-b border-zinc-800 focus:border-indigo-500 text-xs text-zinc-500 outline-none px-1"
