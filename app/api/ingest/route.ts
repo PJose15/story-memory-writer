@@ -408,12 +408,15 @@ function mergeResults(results: any[]): any {
   return merged;
 }
 
+// Allow up to 300s for large manuscript processing on Vercel (requires Pro plan; free tier caps at 60s)
+export const maxDuration = 300;
+
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB per file
 const MAX_FILES = 10;
 const ALLOWED_EXTENSIONS = ['.pdf', '.docx', '.doc', '.txt', '.md'];
 
 export async function POST(req: NextRequest) {
-  const limited = rateLimit(req, { maxRequests: 5, windowMs: 60000 });
+  const limited = await rateLimit(req, { maxRequests: 5, windowMs: 60000 });
   if (limited) return limited;
 
   try {

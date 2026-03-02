@@ -4,7 +4,7 @@ import { buildCharacterAnalysisSystemPrompt, buildCharacterAnalysisPrompt } from
 import { rateLimit } from '@/lib/rate-limit';
 
 export async function POST(req: NextRequest) {
-  const limited = rateLimit(req, { maxRequests: 10, windowMs: 60000 });
+  const limited = await rateLimit(req, { maxRequests: 10, windowMs: 60000 });
   if (limited) return limited;
 
   try {
