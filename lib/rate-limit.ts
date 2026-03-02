@@ -39,8 +39,37 @@ function getUpstashLimiter(maxRequests: number, windowMs: number): Ratelimit {
 
 // --- In-memory rate limiter (local development) ---
 const memoryStore = new Map<string, number[]>();
+const MAX_STORE_KEYS = 10000;
+let lastCleanup = Date.now();
+const CLEANUP_INTERVAL = 60000; // 1 minute
+
+function cleanupMemoryStore(windowMs: number) {
+  const now = Date.now();
+  if (now - lastCleanup < CLEANUP_INTERVAL) return;
+  lastCleanup = now;
+
+  for (const [key, timestamps] of memoryStore) {
+    const valid = timestamps.filter(t => now - t < windowMs);
+    if (valid.length === 0) {
+      memoryStore.delete(key);
+    } else {
+      memoryStore.set(key, valid);
+    }
+  }
+
+  // Hard cap: if still too large, drop oldest entries
+  if (memoryStore.size > MAX_STORE_KEYS) {
+    const excess = memoryStore.size - MAX_STORE_KEYS;
+    const keys = memoryStore.keys();
+    for (let i = 0; i < excess; i++) {
+      const { value } = keys.next();
+      if (value) memoryStore.delete(value);
+    }
+  }
+}
 
 function memoryRateLimit(key: string, maxRequests: number, windowMs: number): boolean {
+  cleanupMemoryStore(windowMs);
   const now = Date.now();
   const timestamps = (memoryStore.get(key) || []).filter(t => now - t < windowMs);
 
