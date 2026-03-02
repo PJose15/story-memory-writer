@@ -206,7 +206,11 @@ export function StoryProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (isLoaded) {
-      localStorage.setItem('story_memory_state', JSON.stringify(state));
+      try {
+        localStorage.setItem('story_memory_state', JSON.stringify(state));
+      } catch (e) {
+        console.error('Failed to save state to localStorage (quota may be exceeded)', e);
+      }
     }
   }, [state, isLoaded]);
 
