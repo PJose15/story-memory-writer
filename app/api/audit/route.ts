@@ -84,7 +84,13 @@ Analyze it against the established canon. Detect contradictions, broken characte
       console.error('Audit: Gemini returned invalid JSON:', rawText.slice(0, 500));
       return NextResponse.json({ error: 'AI returned an invalid response. Please try again.' }, { status: 502 });
     }
-    return NextResponse.json(result);
+    // Ensure expected shape so the client doesn't crash
+    return NextResponse.json({
+      status: typeof result.status === 'string' ? result.status : 'Clear',
+      risks: Array.isArray(result.risks) ? result.risks : [],
+      suggestedCorrections: Array.isArray(result.suggestedCorrections) ? result.suggestedCorrections : [],
+      safeVersion: typeof result.safeVersion === 'string' ? result.safeVersion : '',
+    });
 
   } catch (error: any) {
     console.error('Audit API error:', error);

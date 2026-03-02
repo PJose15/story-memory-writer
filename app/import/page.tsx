@@ -232,7 +232,7 @@ export default function ImportPage() {
     updateField('chapters', [...state.chapters, ...dedup(state.chapters, newChapters, 'title')]);
     updateField('scenes', [...state.scenes, ...dedup(state.scenes, newScenes, 'title')]);
     updateField('active_conflicts', [...state.active_conflicts, ...dedup(state.active_conflicts, newConflicts, 'title')]);
-    updateField('timeline_events', [...state.timeline_events, ...dedup(state.timeline_events, newTimelineEvents, 'date')]);
+    updateField('timeline_events', [...state.timeline_events, ...dedup(state.timeline_events, newTimelineEvents, 'description')]);
     updateField('world_rules', [...state.world_rules, ...dedup(state.world_rules, newWorldRules, 'rule')]);
     updateField('locations', [...(state.locations || []), ...dedup(state.locations || [], newLocations, 'name')]);
     updateField('themes', [...(state.themes || []), ...dedup(state.themes || [], newThemes, 'theme')]);

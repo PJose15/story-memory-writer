@@ -693,11 +693,10 @@ export default function CharactersPage() {
                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 {char.dynamicRelationships.map((rel, idx) => {
                                   const targetChar = state.characters.find(c => c.id === rel.targetId);
-                                  if (!targetChar) return null;
                                   return (
-                                    <div key={idx} className="bg-zinc-900/40 p-3 rounded-xl border border-zinc-800/40 flex flex-col gap-2">
+                                    <div key={idx} className={`bg-zinc-900/40 p-3 rounded-xl border flex flex-col gap-2 ${targetChar ? 'border-zinc-800/40' : 'border-red-800/40'}`}>
                                       <div className="flex justify-between items-center">
-                                        <span className="text-sm font-medium text-zinc-200">{targetChar.name}</span>
+                                        <span className={`text-sm font-medium ${targetChar ? 'text-zinc-200' : 'text-red-400'}`}>{targetChar?.name || 'Deleted character'}</span>
                                         <div className="flex gap-2 text-[10px] font-mono">
                                           <span className="text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded">T:{rel.trustLevel}</span>
                                           <span className="text-red-400 bg-red-400/10 px-1.5 py-0.5 rounded">X:{rel.tensionLevel}</span>
