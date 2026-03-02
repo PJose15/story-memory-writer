@@ -482,7 +482,12 @@ export async function POST(req: NextRequest) {
     }
 
     // 2. Split into chunks and analyze with Gemini
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY as string });
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return NextResponse.json({ error: 'API key not configured' }, { status: 500 });
+    }
+
+    const ai = new GoogleGenAI({ apiKey });
     const systemPrompt = buildSystemPrompt(language);
     const chunks = splitTextIntoChunks(combinedText);
 
