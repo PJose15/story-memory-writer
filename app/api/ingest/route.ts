@@ -408,6 +408,67 @@ function mergeResults(results: any[]): any {
   }
   merged.locations = Array.from(seenLocations.values());
 
+  // Deduplicate conflicts by title
+  const seenConflicts = new Map<string, any>();
+  for (const conflict of merged.active_conflicts) {
+    const key = (conflict.title || conflict.conflict_type || '')?.toLowerCase().trim();
+    if (key && !seenConflicts.has(key)) {
+      seenConflicts.set(key, conflict);
+    }
+  }
+  merged.active_conflicts = Array.from(seenConflicts.values());
+
+  // Deduplicate timeline events by event name
+  const seenTimeline = new Map<string, any>();
+  for (const event of merged.timeline_events) {
+    const key = (event.event || '')?.toLowerCase().trim();
+    if (key && !seenTimeline.has(key)) {
+      seenTimeline.set(key, event);
+    }
+  }
+  merged.timeline_events = Array.from(seenTimeline.values());
+
+  // Deduplicate world rules by rule text
+  const seenRules = new Map<string, any>();
+  for (const rule of merged.world_rules) {
+    const key = (rule.rule || '')?.toLowerCase().trim();
+    if (key && !seenRules.has(key)) {
+      seenRules.set(key, rule);
+    }
+  }
+  merged.world_rules = Array.from(seenRules.values());
+
+  // Deduplicate themes by theme name, merging evidence arrays
+  const seenThemes = new Map<string, any>();
+  for (const theme of merged.themes) {
+    const key = (theme.theme || '')?.toLowerCase().trim();
+    if (key) {
+      if (seenThemes.has(key)) {
+        const existing = seenThemes.get(key);
+        const mergedEvidence = [...(existing.evidence || [])];
+        for (const e of (theme.evidence || [])) {
+          if (!mergedEvidence.some((me: string) => me.toLowerCase() === e.toLowerCase())) {
+            mergedEvidence.push(e);
+          }
+        }
+        existing.evidence = mergedEvidence;
+      } else {
+        seenThemes.set(key, { ...theme });
+      }
+    }
+  }
+  merged.themes = Array.from(seenThemes.values());
+
+  // Deduplicate open loops by description
+  const seenLoops = new Map<string, any>();
+  for (const loop of merged.open_loops) {
+    const key = (loop.description || '')?.toLowerCase().trim();
+    if (key && !seenLoops.has(key)) {
+      seenLoops.set(key, loop);
+    }
+  }
+  merged.open_loops = Array.from(seenLoops.values());
+
   return merged;
 }
 

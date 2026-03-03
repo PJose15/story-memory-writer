@@ -43,14 +43,17 @@ Explain why each path fits the canon and current story state)
   return `
 OUTPUT FORMAT:
 Please structure your response with the following sections (use Markdown headings):
-### Active Canon Used
-(Briefly list the established facts you relied on)
+### Context Used
+(List the specific story elements you are referencing — character names, chapter titles, conflicts, timeline events, etc. Be specific so the user can verify your sources.)
+
+### Information Gaps
+(List any information that would be helpful but is missing from your context. If you have everything you need, say "None — full context available for this query.")
 
 ### Conflicts Detected
 (If the user's request contradicts Confirmed Canon, warn them here. Otherwise, say "None detected")
 
 ### Safe Narrative Recommendations
-(Your suggestions that respect the canon)
+(Your suggestions that respect the canon. Clearly distinguish between facts from the context and your own creative suggestions.)
 
 ### Generated Text (Optional)
 (Only if the user explicitly asked you to write or generate a scene/dialogue)
@@ -75,7 +78,7 @@ export async function POST(req: NextRequest) {
 
     // Validate and sanitize chat history entries
     const sanitizedHistory = Array.isArray(chatHistory)
-      ? chatHistory.filter((item): item is string => typeof item === 'string').map(s => s.slice(0, 500))
+      ? chatHistory.filter((item): item is string => typeof item === 'string').map(s => s.slice(0, 1500))
       : [];
     const historyText = sanitizedHistory.join('\n');
     const totalLength = (storyContext?.length || 0) + (userInput?.length || 0) + historyText.length;
@@ -141,6 +144,9 @@ ${userInput}
     console.error('Chat API error:', error);
     const status = typeof error?.status === 'number' && error.status >= 400 && error.status < 600
       ? error.status : 500;
-    return NextResponse.json({ error: 'Failed to generate response' }, { status });
+    const message = status === 429
+      ? 'AI quota exceeded. Please wait a few minutes and try again, or upgrade your API key.'
+      : 'Failed to generate response';
+    return NextResponse.json({ error: message }, { status });
   }
 }

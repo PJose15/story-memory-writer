@@ -90,8 +90,12 @@ export default function ImportPage() {
     for (const c of (extractedData.characters || [])) {
       const id = c.character_id || crypto.randomUUID();
       charIdMap.set(c.name, id);
+      charIdMap.set(c.name.toLowerCase(), id); // case-insensitive fallback
       if (c.character_id) charIdMap.set(c.character_id, id);
     }
+    // Helper: resolve character ID with case-insensitive name fallback
+    const resolveCharId = (ref: string): string | undefined =>
+      charIdMap.get(ref) || charIdMap.get(ref.toLowerCase());
 
     // Merge Characters
     const newCharacters = (extractedData.characters || []).map((c: any) => {
@@ -101,24 +105,32 @@ export default function ImportPage() {
       // Find relationships where this character is character_1
       const relsAsSource = (extractedData.relationships || [])
         .filter((r: any) => r.character_1 === c.name || r.character_1 === c.character_id)
-        .map((r: any) => ({
-          targetId: charIdMap.get(r.character_2) || r.character_2,
-          targetName: (extractedData.characters?.find((tc: any) => tc.name === r.character_2 || tc.character_id === r.character_2))?.name || r.character_2,
-          trustLevel: r.trust_level || 50,
-          tensionLevel: r.tension_level || 50,
-          dynamics: r.current_dynamic || r.relationship_type || ''
-        }));
+        .map((r: any) => {
+          const resolvedId = resolveCharId(r.character_2);
+          if (!resolvedId) return null; // Skip unresolvable relationships
+          return {
+            targetId: resolvedId,
+            targetName: (extractedData.characters?.find((tc: any) => tc.name === r.character_2 || tc.character_id === r.character_2))?.name || r.character_2,
+            trustLevel: r.trust_level || 50,
+            tensionLevel: r.tension_level || 50,
+            dynamics: r.current_dynamic || r.relationship_type || ''
+          };
+        }).filter(Boolean);
 
       // Find relationships where this character is character_2 (inverse)
       const relsAsTarget = (extractedData.relationships || [])
         .filter((r: any) => r.character_2 === c.name || r.character_2 === c.character_id)
-        .map((r: any) => ({
-          targetId: charIdMap.get(r.character_1) || r.character_1,
-          targetName: (extractedData.characters?.find((tc: any) => tc.name === r.character_1 || tc.character_id === r.character_1))?.name || r.character_1,
-          trustLevel: r.trust_level || 50,
-          tensionLevel: r.tension_level || 50,
-          dynamics: r.current_dynamic || r.relationship_type || ''
-        }));
+        .map((r: any) => {
+          const resolvedId = resolveCharId(r.character_1);
+          if (!resolvedId) return null; // Skip unresolvable relationships
+          return {
+            targetId: resolvedId,
+            targetName: (extractedData.characters?.find((tc: any) => tc.name === r.character_1 || tc.character_id === r.character_1))?.name || r.character_1,
+            trustLevel: r.trust_level || 50,
+            tensionLevel: r.tension_level || 50,
+            dynamics: r.current_dynamic || r.relationship_type || ''
+          };
+        }).filter(Boolean);
 
       // Merge and deduplicate by targetId
       const seenTargets = new Set<string>();
@@ -136,6 +148,7 @@ export default function ImportPage() {
         coreIdentity: c.core_traits ? c.core_traits.join(', ') : '',
         relationships: '',
         canonStatus: 'draft',
+        source: 'ai-inferred' as const,
         currentState: {
           indicator: 'stable',
           pressureLevel: charState?.current_pressure_level || 'Low',
@@ -158,7 +171,8 @@ export default function ImportPage() {
       title: c.title || `Chapter ${idx + 1}`,
       summary: c.summary,
       content: c.raw_text_reference || '',
-      canonStatus: 'draft'
+      canonStatus: 'draft',
+      source: 'ai-inferred' as const,
     }));
 
     // Merge Scenes
@@ -168,7 +182,8 @@ export default function ImportPage() {
       title: `Scene ${s.order_index || ''}`,
       summary: s.summary,
       content: '',
-      canonStatus: 'draft'
+      canonStatus: 'draft',
+      source: 'ai-inferred' as const,
     }));
 
     // Merge Plot Points -> active_conflicts (or we can just map active_conflicts directly)
@@ -177,7 +192,8 @@ export default function ImportPage() {
       title: c.title || c.conflict_type || 'Conflict',
       description: c.description,
       status: c.status === 'resolved' ? 'resolved' : 'active',
-      canonStatus: 'draft'
+      canonStatus: 'draft',
+      source: 'ai-inferred' as const,
     }));
 
     // Merge Timeline -> timeline_events
@@ -186,7 +202,8 @@ export default function ImportPage() {
       date: t.event || t.date, // Using event as date/title for now
       description: t.immediate_effect || t.cause || t.description || '',
       impact: t.latent_effect || '',
-      canonStatus: 'draft'
+      canonStatus: 'draft',
+      source: 'ai-inferred' as const,
     }));
 
     // Merge Worldbuilding -> world_rules
@@ -194,7 +211,8 @@ export default function ImportPage() {
       id: w.world_rule_id || crypto.randomUUID(),
       category: w.scope || 'Lore',
       rule: w.rule || `${w.title}: ${w.description}`,
-      canonStatus: 'draft'
+      canonStatus: 'draft',
+      source: 'ai-inferred' as const,
     }));
 
     // Merge Locations
@@ -204,7 +222,8 @@ export default function ImportPage() {
       description: l.description,
       importance: l.importance || 'medium',
       associatedRules: l.associated_rules || [],
-      canonStatus: 'draft'
+      canonStatus: 'draft',
+      source: 'ai-inferred' as const,
     }));
 
     // Merge Themes
@@ -212,7 +231,8 @@ export default function ImportPage() {
       id: t.theme_id || crypto.randomUUID(),
       theme: t.theme,
       evidence: t.evidence || [],
-      canonStatus: 'draft'
+      canonStatus: 'draft',
+      source: 'ai-inferred' as const,
     }));
 
     // Merge Canon Items
@@ -238,7 +258,8 @@ export default function ImportPage() {
       id: l.loop_id || crypto.randomUUID(),
       description: l.description,
       status: l.status === 'resolved' ? 'closed' : 'open',
-      canonStatus: 'draft'
+      canonStatus: 'draft',
+      source: 'ai-inferred' as const,
     }));
 
     // Merge Foreshadowing
@@ -246,7 +267,8 @@ export default function ImportPage() {
       id: f.foreshadowing_id || crypto.randomUUID(),
       clue: f.description || f.clue,
       payoff: f.payoff_status || '',
-      canonStatus: 'draft'
+      canonStatus: 'draft',
+      source: 'ai-inferred' as const,
     }));
 
     updateField('characters', [...state.characters, ...dedup(state.characters, newCharacters, 'name')]);

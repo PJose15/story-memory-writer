@@ -97,9 +97,16 @@ export default function AssistantPage() {
     const activeThemes = notDiscarded(state.themes);
     const activeOpenLoops = notDiscarded(state.open_loops);
 
-    // Build rich character descriptions
+    // Helper to append source provenance tag
+    const sourceTag = (item: { source?: string }) =>
+      item.source === 'ai-inferred' ? ' [AI-inferred]' : item.source === 'user-entered' ? ' [User-entered]' : '';
+
+    // Track data integrity issues for the inventory
+    const integrityNotes: string[] = [];
+
+    // Build rich character descriptions with fixed relationship resolution
     const formatCharacter = (c: typeof state.characters[0]) => {
-      const parts = [`[Character] ${c.name} (${c.role}): ${c.description}`];
+      const parts = [`[Character] ${c.name} (${c.role}): ${c.description}${sourceTag(c)}`];
       if (c.coreIdentity) parts.push(`  Core Identity: ${c.coreIdentity}`);
       if (c.currentState) {
         const s = c.currentState;
@@ -108,11 +115,19 @@ export default function AssistantPage() {
         if (s.currentKnowledge) parts.push(`  Knows: ${s.currentKnowledge}`);
       }
       if (c.dynamicRelationships?.length) {
-        const rels = c.dynamicRelationships.map(r => {
-          const target = state.characters.find(ch => ch.id === r.targetId);
-          return `${target?.name || 'Unknown'} (Trust:${r.trustLevel}% Tension:${r.tensionLevel}%): ${r.dynamics}`;
-        });
-        parts.push(`  Relationships: ${rels.join('; ')}`);
+        // Fix: match by both id AND name (since import sometimes stores names as IDs)
+        const resolvedRels = c.dynamicRelationships.map(r => {
+          const target = state.characters.find(ch => ch.id === r.targetId)
+            || state.characters.find(ch => ch.name.toLowerCase() === r.targetId.toLowerCase());
+          if (!target) {
+            integrityNotes.push(`Orphaned relationship on "${c.name}": targetId "${r.targetId}" does not match any character`);
+            return null; // Skip unresolvable relationships
+          }
+          return `${target.name} (Trust:${r.trustLevel}% Tension:${r.tensionLevel}%): ${r.dynamics}`;
+        }).filter(Boolean);
+        if (resolvedRels.length) {
+          parts.push(`  Relationships: ${resolvedRels.join('; ')}`);
+        }
       }
       return parts.join('\n');
     };
@@ -126,18 +141,26 @@ export default function AssistantPage() {
         ...getByStatus(activeCharacters, status).map(formatCharacter),
         ...getByStatus(activeChapters, status).map(c => {
           const scenes = activeScenes.filter(s => s.chapterId === c.id);
+          // Check for scenes pointing to non-existent chapters
           const sceneLine = scenes.length ? `\n  Scenes: ${scenes.map(s => `${s.title}: ${s.summary}`).join(' | ')}` : '';
-          return `[Chapter] ${c.title}: ${c.summary}${sceneLine}`;
+          return `[Chapter] ${c.title}: ${c.summary}${sceneLine}${sourceTag(c)}`;
         }),
-        ...getByStatus(activeTimeline, status).map(t => `[Timeline] ${t.date}: ${t.description}${t.impact ? ' -> ' + t.impact : ''}`),
-        ...getByStatus(activeConflicts, status).map(c => `[Conflict] ${c.title} (${c.status}): ${c.description}`),
-        ...getByStatus(activeRules, status).map(r => `[World Rule] ${r.category}: ${r.rule}`),
-        ...getByStatus(activeForeshadowing, status).map(f => `[Foreshadowing] ${f.clue}${f.payoff ? ' -> ' + f.payoff : ' (unresolved)'}`),
-        ...getByStatus(activeLocations, status).map(l => `[Location] ${l.name}: ${l.description}`),
-        ...getByStatus(activeThemes, status).map(t => `[Theme] ${t.theme}: ${t.evidence.join(', ')}`),
+        ...getByStatus(activeTimeline, status).map(t => `[Timeline] ${t.date}: ${t.description}${t.impact ? ' -> ' + t.impact : ''}${sourceTag(t)}`),
+        ...getByStatus(activeConflicts, status).map(c => `[Conflict] ${c.title} (${c.status}): ${c.description}${sourceTag(c)}`),
+        ...getByStatus(activeRules, status).map(r => `[World Rule] ${r.category}: ${r.rule}${sourceTag(r)}`),
+        ...getByStatus(activeForeshadowing, status).map(f => `[Foreshadowing] ${f.clue}${f.payoff ? ' -> ' + f.payoff : ' (unresolved)'}${sourceTag(f)}`),
+        ...getByStatus(activeLocations, status).map(l => `[Location] ${l.name}: ${l.description}${sourceTag(l)}`),
+        ...getByStatus(activeThemes, status).map(t => `[Theme] ${t.theme}: ${t.evidence.join(', ')}${sourceTag(t)}`),
       ];
       return items;
     };
+
+    // Check for orphaned scenes (pointing to non-existent chapters)
+    const chapterIds = new Set(activeChapters.map(c => c.id));
+    const orphanedScenes = activeScenes.filter(s => s.chapterId && !chapterIds.has(s.chapterId));
+    if (orphanedScenes.length) {
+      integrityNotes.push(`${orphanedScenes.length} scene(s) reference non-existent chapters`);
+    }
 
     const confirmedItems = buildCanonBlock('confirmed');
     const flexibleItems = buildCanonBlock('flexible');
@@ -145,21 +168,48 @@ export default function AssistantPage() {
 
     const latestChapter = activeChapters.length > 0 ? activeChapters[activeChapters.length - 1] : null;
 
+    // Build chapter summaries for ALL chapters (not just the latest)
+    const chapterSummaries = activeChapters.map((c, i) =>
+      `  ${i + 1}. ${c.title}: ${c.summary}`
+    ).join('\n');
+
     // Open loops and ambiguities (not canon-locked, always included)
-    const openLoops = activeOpenLoops.filter(l => l.status === 'open').map(l => `- ${l.description}`);
+    const openLoops = activeOpenLoops.filter(l => l.status === 'open').map(l => `- ${l.description}${sourceTag(l)}`);
     const canonItems = state.canon_items.map(c => `- [${c.category}] ${c.description} (${c.status})`);
     const ambiguities = state.ambiguities.map(a => `- ${a.issue} (affects: ${a.affectedSection}, confidence: ${a.confidence})`);
 
     const MAX_CONTEXT_LENGTH = 120000; // ~30K tokens, safe for Gemini context window
 
+    // Build CONTEXT INVENTORY header
+    const inventory = `CONTEXT INVENTORY:
+- Characters: ${activeCharacters.length}
+- Chapters: ${activeChapters.length}
+- Scenes: ${activeScenes.length}
+- Timeline Events: ${activeTimeline.length}
+- Active Conflicts: ${activeConflicts.length}
+- World Rules: ${activeRules.length}
+- Locations: ${activeLocations.length}
+- Themes: ${activeThemes.length}
+- Foreshadowing Elements: ${activeForeshadowing.length}
+- Open Loops: ${activeOpenLoops.filter(l => l.status === 'open').length}
+- Canon Items: ${state.canon_items.length}
+- Ambiguities: ${state.ambiguities.length}
+
+IMPORTANT: The above counts are the COMPLETE data available. If you cannot find information about something, it is NOT in the data — do not guess or invent it.
+${integrityNotes.length ? `\nDATA INTEGRITY NOTES:\n${integrityNotes.map(n => `- ${n}`).join('\n')}\n` : ''}`;
+
     // Build context in priority-ordered sections so we can drop low-priority ones first
-    const header = `STORY BIBLE:
+    const header = `${inventory}
+STORY BIBLE:
 Title: ${state.title}
 Synopsis: ${state.synopsis}
 Style Profile: ${state.style_profile}
 ${state.author_intent ? `\nCURRENT AUTHOR INTENT:\n${state.author_intent}\n` : ''}
+ALL CHAPTER SUMMARIES:
+${chapterSummaries || 'None'}
+
 LATEST CHAPTER:
-${latestChapter ? `Title: ${latestChapter.title}\nSummary: ${latestChapter.summary}\nContent (last 3000 chars): ${latestChapter.content.slice(-3000)}` : 'None'}
+${latestChapter ? `Title: ${latestChapter.title}\nSummary: ${latestChapter.summary}\nContent (last 8000 chars): ${latestChapter.content.slice(-8000)}` : 'None'}
 
 CANON LOCK STATUS:
 You must respect the following certainty levels:
@@ -177,16 +227,15 @@ ${confirmedItems.length ? confirmedItems.join('\n') : 'None'}`;
     ];
 
     let context = header;
-    let truncated = false;
+    const droppedSections: { label: string; totalItems: number; includedItems: number }[] = [];
 
     for (const section of sections) {
       const block = `\n\n${section.label}:\n${section.content.length ? section.content.join('\n') : 'None'}`;
       if (context.length + block.length > MAX_CONTEXT_LENGTH) {
-        truncated = true;
         // Try to include partial section
-        const remaining = MAX_CONTEXT_LENGTH - context.length - 100; // reserve space for notice
+        const remaining = MAX_CONTEXT_LENGTH - context.length - 500; // reserve space for truncation manifest
         if (remaining > 200) {
-          const partialItems = [];
+          const partialItems: string[] = [];
           let partialLen = section.label.length + 4;
           for (const item of section.content) {
             if (partialLen + item.length + 1 > remaining) break;
@@ -196,14 +245,36 @@ ${confirmedItems.length ? confirmedItems.join('\n') : 'None'}`;
           if (partialItems.length > 0) {
             context += `\n\n${section.label}:\n${partialItems.join('\n')}`;
           }
+          droppedSections.push({
+            label: section.label,
+            totalItems: section.content.length,
+            includedItems: partialItems.length,
+          });
+        } else {
+          droppedSections.push({
+            label: section.label,
+            totalItems: section.content.length,
+            includedItems: 0,
+          });
         }
-        break;
+        continue; // Try remaining sections instead of breaking
       }
       context += block;
     }
 
-    if (truncated) {
-      context += '\n\n[Context truncated due to size. Some draft/flexible items may be omitted.]';
+    if (droppedSections.length > 0) {
+      const manifest = droppedSections.map(d => {
+        const omitted = d.totalItems - d.includedItems;
+        if (omitted === 0) return null;
+        return `- ${d.label}: ${omitted} of ${d.totalItems} items omitted`;
+      }).filter(Boolean).join('\n');
+
+      if (manifest) {
+        context += `\n\nCONTEXT TRUNCATION MANIFEST:
+The following sections were partially or fully omitted due to context size limits:
+${manifest}
+IMPORTANT: If the user asks about something in the omitted sections, tell them you don't have that information loaded in your current context and suggest they ask about it specifically.`;
+      }
     }
 
     return context;
@@ -286,9 +357,9 @@ ${confirmedItems.length ? confirmedItems.join('\n') : 'None'}`;
 
     try {
       const context = buildContext();
-      // Include last 10 messages as conversation history
-      const recentHistory = messages.slice(-10).map(m =>
-        `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content.substring(0, 500)}`
+      // Include last 20 messages as conversation history
+      const recentHistory = messages.slice(-20).map(m =>
+        `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content.substring(0, 1500)}`
       );
       abortRef.current?.abort();
       abortRef.current = new AbortController();
@@ -318,12 +389,17 @@ ${confirmedItems.length ? confirmedItems.join('\n') : 'None'}`;
       };
 
       setMessages((prev) => [...prev, assistantMsg]);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Chat error:', error);
-      setMessages((prev) => [
-        ...prev,
-        { id: crypto.randomUUID(), role: 'assistant', content: 'Sorry, I encountered an error processing your request.' },
-      ]);
+      const isAbort = error?.name === 'AbortError';
+      if (!isAbort) {
+        const errorMsg = error?.message || 'Something went wrong';
+        toast(errorMsg, 'error');
+        setMessages((prev) => [
+          ...prev,
+          { id: crypto.randomUUID(), role: 'assistant', content: errorMsg },
+        ]);
+      }
     } finally {
       setIsLoading(false);
     }
