@@ -57,7 +57,8 @@ export function buildCharacterAnalysisPrompt(params: CharacterAnalysisParams): s
     .map(r => `- With ${r.targetName || 'Unknown'}: Trust ${r.trustLevel}%, Tension ${r.tensionLevel}%. Dynamics: ${r.dynamics}`)
     .join('\n');
 
-  return `Character Name: ${params.name}
+  return `<character_data>
+Character Name: ${params.name}
 Role: ${params.role}
 Core Identity (Permanent): ${params.coreIdentity}
 
@@ -75,5 +76,6 @@ Recent History:
 ${historyLines || 'No history recorded.'}
 
 Relationships:
-${relationshipLines || 'No relationships recorded.'}`;
+${relationshipLines || 'No relationships recorded.'}
+</character_data>`;
 }

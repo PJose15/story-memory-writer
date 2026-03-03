@@ -4,9 +4,11 @@ import { useState, useRef } from 'react';
 import { useStory } from '@/lib/store';
 import { UploadCloud, FileText, CheckCircle2, AlertCircle, Loader2, ArrowRight, Save, X, ChevronUp, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useToast } from '@/components/toast';
 
 export default function ImportPage() {
   const { state, updateField } = useStory();
+  const { toast } = useToast();
   const [files, setFiles] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'analyzing' | 'review' | 'success'>('idle');
@@ -68,7 +70,7 @@ export default function ImportPage() {
       setUploadStatus('review');
     } catch (error: any) {
       console.error(error);
-      alert(error.message || 'An error occurred during ingestion.');
+      toast(error.message || 'An error occurred during ingestion.', 'error');
       setUploadStatus('idle');
     } finally {
       setIsUploading(false);
@@ -339,9 +341,9 @@ export default function ImportPage() {
                     <div className="flex items-center gap-4">
                       <span className="text-xs text-zinc-500">{(file.size / 1024 / 1024).toFixed(2)} MB</span>
                       <div className="flex items-center gap-1">
-                        <button onClick={() => moveFile(idx, 'up')} disabled={idx === 0} className="p-1 text-zinc-500 hover:text-zinc-300 disabled:opacity-30"><ChevronUp size={16} /></button>
-                        <button onClick={() => moveFile(idx, 'down')} disabled={idx === files.length - 1} className="p-1 text-zinc-500 hover:text-zinc-300 disabled:opacity-30"><ChevronDown size={16} /></button>
-                        <button onClick={() => setFiles(files.filter((_, i) => i !== idx))} className="p-1 text-red-500 hover:text-red-400 ml-2"><X size={16} /></button>
+                        <button onClick={() => moveFile(idx, 'up')} disabled={idx === 0} className="p-1 text-zinc-500 hover:text-zinc-300 disabled:opacity-30" aria-label={`Move ${file.name} up`}><ChevronUp size={16} /></button>
+                        <button onClick={() => moveFile(idx, 'down')} disabled={idx === files.length - 1} className="p-1 text-zinc-500 hover:text-zinc-300 disabled:opacity-30" aria-label={`Move ${file.name} down`}><ChevronDown size={16} /></button>
+                        <button onClick={() => setFiles(files.filter((_, i) => i !== idx))} className="p-1 text-red-500 hover:text-red-400 ml-2" aria-label={`Remove ${file.name}`}><X size={16} /></button>
                       </div>
                     </div>
                   </li>

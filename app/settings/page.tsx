@@ -1,18 +1,31 @@
 'use client';
 
-import { useStory } from '@/lib/store';
+import { useStory, StoryState } from '@/lib/store';
 import { useRef } from 'react';
 import { Settings, Download, Upload, Trash2, AlertTriangle, Globe } from 'lucide-react';
+import { useToast } from '@/components/toast';
+import { useConfirm } from '@/components/confirm-dialog';
+
+// Only these keys from StoryState are allowed during import
+const ALLOWED_KEYS = new Set<keyof StoryState>([
+  'language', 'title', 'genre', 'synopsis', 'author_intent',
+  'chapters', 'scenes', 'characters', 'timeline_events',
+  'open_loops', 'world_rules', 'style_profile', 'active_conflicts',
+  'foreshadowing_elements', 'locations', 'themes', 'canon_items',
+  'ambiguities', 'chat_messages',
+]);
 
 export default function SettingsPage() {
   const { state, setState, updateField } = useStory();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
+  const { confirm } = useConfirm();
 
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       try {
         const data = JSON.parse(event.target?.result as string);
         if (
@@ -20,13 +33,35 @@ export default function SettingsPage() {
           !Array.isArray(data.characters) ||
           !Array.isArray(data.chapters)
         ) {
-          alert('Invalid file: missing or malformed required fields (title, characters, chapters).');
+          toast('Invalid file: missing or malformed required fields (title, characters, chapters).', 'error');
           return;
         }
-        if (!confirm('This will replace ALL current project data. Are you sure?')) return;
-        setState((prev) => ({ ...prev, ...data }));
+        const confirmed = await confirm({
+          title: 'Replace project data?',
+          message: 'This will replace ALL current project data with the imported file. A backup of your current data will be saved automatically.',
+          confirmLabel: 'Replace Data',
+          variant: 'danger',
+        });
+        if (!confirmed) return;
+
+        // Auto-backup current state before overwriting
+        try {
+          localStorage.setItem('story_memory_state_backup', JSON.stringify(state));
+        } catch {
+          // Quota exceeded — proceed anyway
+        }
+
+        // Whitelist keys to prevent arbitrary state injection
+        const sanitized: Record<string, unknown> = {};
+        for (const key of Object.keys(data)) {
+          if (ALLOWED_KEYS.has(key as keyof StoryState)) {
+            sanitized[key] = data[key];
+          }
+        }
+        setState((prev) => ({ ...prev, ...sanitized }));
+        toast('Project data imported successfully.', 'success');
       } catch {
-        alert('Failed to parse JSON file. Make sure it is a valid Story Bible export.');
+        toast('Failed to parse JSON file. Make sure it is a valid Story Bible export.', 'error');
       }
       if (fileInputRef.current) fileInputRef.current.value = '';
     };
@@ -34,26 +69,34 @@ export default function SettingsPage() {
   };
 
   const handleExport = () => {
+    const safeName = state.title.replace(/[^a-zA-Z0-9_-]/g, '_').toLowerCase() || 'story_bible';
     const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const downloadAnchorNode = document.createElement('a');
     downloadAnchorNode.href = url;
-    downloadAnchorNode.download = `${state.title.replace(/\s+/g, '_').toLowerCase()}_story_bible.json`;
+    downloadAnchorNode.download = `${safeName}_story_bible.json`;
     document.body.appendChild(downloadAnchorNode);
     downloadAnchorNode.click();
     downloadAnchorNode.remove();
     URL.revokeObjectURL(url);
+    toast('Project exported successfully.', 'success');
   };
 
-  const handleClear = () => {
-    if (confirm('Are you sure you want to delete all your project data? This cannot be undone.')) {
+  const handleClear = async () => {
+    const confirmed = await confirm({
+      title: 'Delete all project data?',
+      message: 'This will permanently delete all your project data from local storage. This cannot be undone. Make sure you have exported your data first.',
+      confirmLabel: 'Delete Everything',
+      variant: 'danger',
+    });
+    if (confirmed) {
       localStorage.removeItem('story_memory_state');
       window.location.reload();
     }
   };
 
   return (
-    <div className="p-8 max-w-4xl mx-auto space-y-10">
+    <div className="p-4 md:p-8 max-w-4xl mx-auto space-y-10">
       <header className="flex items-center gap-3 border-b border-zinc-800 pb-6">
         <Settings className="text-zinc-400" size={28} />
         <div>
@@ -75,6 +118,7 @@ export default function SettingsPage() {
             value={state.language || 'English'}
             onChange={(e) => updateField('language', e.target.value)}
             className="bg-zinc-800 border border-zinc-700 text-zinc-100 px-4 py-2 rounded-lg font-medium focus:border-indigo-500 outline-none"
+            aria-label="Project language"
           >
             <option value="English">English</option>
             <option value="Spanish">Español (Spanish)</option>

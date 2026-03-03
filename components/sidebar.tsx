@@ -38,7 +38,7 @@ export function Sidebar() {
       {/* Mobile Header */}
       <div className="md:hidden flex items-center justify-between p-4 bg-zinc-950 border-b border-zinc-800">
         <span className="font-serif font-semibold text-zinc-100">Story Memory</span>
-        <button onClick={() => setIsOpen(!isOpen)} className="text-zinc-400 hover:text-zinc-100">
+        <button onClick={() => setIsOpen(!isOpen)} className="text-zinc-400 hover:text-zinc-100" aria-label={isOpen ? 'Close navigation' : 'Open navigation'}>
           {isOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
       </div>

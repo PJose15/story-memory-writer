@@ -5,6 +5,7 @@ import { useStory, ChatMessage } from '@/lib/store';
 import { Send, Bot, User, Loader2, ShieldAlert, X, AlertTriangle, CheckCircle2, LockKeyhole } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import Markdown from 'react-markdown';
+import { useToast } from '@/components/toast';
 
 interface Message {
   id: string;
@@ -35,6 +36,7 @@ const welcomeMessage: Message = {
 
 export default function AssistantPage() {
   const { state, updateField } = useStory();
+  const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([welcomeMessage]);
   const hasLoadedRef = useRef(false);
   const [input, setInput] = useState('');
@@ -209,7 +211,7 @@ ${ambiguities.length ? ambiguities.join('\n') : 'None'}`;
       
     } catch (error) {
       console.error('Audit error:', error);
-      alert('Failed to perform continuity audit.');
+      toast('Failed to perform continuity audit.', 'error');
     } finally {
       setIsAuditing(false);
     }
@@ -371,7 +373,7 @@ ${ambiguities.length ? ambiguities.join('\n') : 'None'}`;
                   <ShieldAlert className="text-amber-400" />
                   Continuity Audit Results
                 </h3>
-                <button onClick={() => setPendingAudit(null)} className="text-zinc-500 hover:text-zinc-300">
+                <button onClick={() => setPendingAudit(null)} className="text-zinc-500 hover:text-zinc-300" aria-label="Dismiss audit results">
                   <X size={20} />
                 </button>
               </div>
@@ -502,7 +504,7 @@ ${ambiguities.length ? ambiguities.join('\n') : 'None'}`;
               onClick={handleAudit}
               disabled={!input.trim() || isLoading || isAuditing || pendingAudit !== null}
               className="p-2 bg-zinc-800 text-amber-400 rounded-xl hover:bg-zinc-700 disabled:opacity-50 disabled:hover:bg-zinc-800 transition-colors"
-              title="Continuity Audit"
+              aria-label="Continuity Audit"
             >
               {isAuditing ? <Loader2 size={20} className="animate-spin" /> : <ShieldAlert size={20} />}
             </button>
@@ -510,6 +512,7 @@ ${ambiguities.length ? ambiguities.join('\n') : 'None'}`;
               onClick={() => handleSend()}
               disabled={!input.trim() || isLoading || isAuditing || pendingAudit !== null}
               className="p-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-500 disabled:opacity-50 disabled:hover:bg-indigo-600 transition-colors"
+              aria-label="Send message"
             >
               <Send size={20} />
             </button>

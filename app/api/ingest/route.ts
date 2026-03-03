@@ -511,7 +511,7 @@ export async function POST(req: NextRequest) {
         ? `\n\n[This is part ${i + 1} of ${chunks.length} of the manuscript. Extract all narrative data from this section.]\n\n`
         : '';
 
-      const userPrompt = `${chunkLabel}Raw Text to Analyze:\n${chunks[i]}`;
+      const userPrompt = `${chunkLabel}<manuscript_content>\n${chunks[i]}\n</manuscript_content>`;
 
       console.log(`Sending chunk ${i + 1}/${chunks.length} (${chunks[i].length} chars)...`);
 

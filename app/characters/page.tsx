@@ -6,6 +6,7 @@ import { useUnsavedChanges } from '@/hooks/use-unsaved-changes';
 import { Plus, Trash2, Edit3, Save, X, Users, ShieldCheck, Shield, ShieldAlert, ShieldOff, Activity, Heart, History, AlertCircle, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import ReactMarkdown from 'react-markdown';
+import { useConfirm } from '@/components/confirm-dialog';
 
 const defaultCurrentState: CharacterState = {
   emotionalState: '',
@@ -36,6 +37,7 @@ const indicatorConfig = {
 
 export default function CharactersPage() {
   const { state, updateField } = useStory();
+  const { confirm } = useConfirm();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<Character>>({});
@@ -141,14 +143,20 @@ export default function CharactersPage() {
     setIsNewItem(false);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     const char = state.characters.find(c => c.id === id);
-    if (!confirm(`Delete "${char?.name || 'this character'}"? This cannot be undone.`)) return;
+    const confirmed = await confirm({
+      title: 'Delete character?',
+      message: `Are you sure you want to delete "${char?.name || 'this character'}"? This cannot be undone.`,
+      confirmLabel: 'Delete',
+      variant: 'danger',
+    });
+    if (!confirmed) return;
     updateField('characters', state.characters.filter((c) => c.id !== id));
   };
 
   return (
-    <div className="p-8 max-w-5xl mx-auto space-y-8">
+    <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-8">
       <header className="flex items-center justify-between border-b border-zinc-800 pb-6">
         <div>
           <h1 className="text-3xl font-serif font-bold text-zinc-100 tracking-tight flex items-center gap-3">
@@ -182,7 +190,7 @@ export default function CharactersPage() {
             >
               {isEditing ? (
                 <div className="p-6 space-y-6">
-                  <div className="flex items-center gap-4 border-b border-zinc-800 pb-4">
+                  <div className="flex items-center gap-2 md:gap-4 border-b border-zinc-800 pb-4 overflow-x-auto">
                     <button onClick={() => setActiveTab('profile')} className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${activeTab === 'profile' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-400 hover:text-zinc-200'}`}>Static Profile</button>
                     <button onClick={() => setActiveTab('state')} className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center gap-2 ${activeTab === 'state' ? 'bg-indigo-500/20 text-indigo-300' : 'text-zinc-400 hover:text-zinc-200'}`}><Activity size={16} /> Live State Engine</button>
                     <button onClick={() => setActiveTab('relationships')} className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center gap-2 ${activeTab === 'relationships' ? 'bg-pink-500/20 text-pink-300' : 'text-zinc-400 hover:text-zinc-200'}`}><Heart size={16} /> Relationships</button>
@@ -587,6 +595,7 @@ export default function CharactersPage() {
                             setActiveTab('profile');
                           }}
                           className="p-2 text-zinc-500 hover:text-indigo-400 hover:bg-zinc-800 rounded-lg transition-colors"
+                          aria-label={`Edit ${char.name}`}
                         >
                           <Edit3 size={18} />
                         </button>
@@ -596,6 +605,7 @@ export default function CharactersPage() {
                             handleDelete(char.id);
                           }}
                           className="p-2 text-zinc-500 hover:text-red-400 hover:bg-zinc-800 rounded-lg transition-colors"
+                          aria-label={`Delete ${char.name}`}
                         >
                           <Trash2 size={18} />
                         </button>

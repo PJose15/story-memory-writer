@@ -35,14 +35,16 @@ export async function POST(req: NextRequest) {
     const ai = new GoogleGenAI({ apiKey });
     const systemPrompt = buildWritingAssistantPrompt(language);
 
-    const prompt = `
+    const prompt = `<story_context>
 ${storyContext}
+</story_context>
 
 Perform a Continuity Audit on the following requested idea/scene:
-"${userInput}"
+<user_request>
+${userInput}
+</user_request>
 
-Analyze it against the established canon. Detect contradictions, broken character logic, timeline inconsistencies, tone mismatch, unresolved setup ignored, emotional continuity gaps, and lore/world rule conflicts.
-    `;
+Analyze it against the established canon. Detect contradictions, broken character logic, timeline inconsistencies, tone mismatch, unresolved setup ignored, emotional continuity gaps, and lore/world rule conflicts.`;
 
     const response = await ai.models.generateContent({
       model: AI_MODEL,

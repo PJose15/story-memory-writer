@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useUnsavedChanges } from '@/hooks/use-unsaved-changes';
 import { Plus, Trash2, Edit3, Save, X, Swords, CheckCircle2, ShieldCheck, Shield, ShieldAlert, ShieldOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useConfirm } from '@/components/confirm-dialog';
 
 const statusConfig = {
   confirmed: { icon: ShieldCheck, color: 'text-emerald-400', bg: 'bg-emerald-400/10', label: 'Confirmed Canon' },
@@ -15,6 +16,7 @@ const statusConfig = {
 
 export default function ConflictsPage() {
   const { state, updateField } = useStory();
+  const { confirm } = useConfirm();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<Conflict>>({});
   const [isNewItem, setIsNewItem] = useState(false);
@@ -52,9 +54,15 @@ export default function ConflictsPage() {
     setIsNewItem(false);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     const conflict = state.active_conflicts.find(c => c.id === id);
-    if (!confirm(`Delete "${conflict?.title || 'this conflict'}"? This cannot be undone.`)) return;
+    const confirmed = await confirm({
+      title: 'Delete conflict?',
+      message: `Are you sure you want to delete "${conflict?.title || 'this conflict'}"? This cannot be undone.`,
+      confirmLabel: 'Delete',
+      variant: 'danger',
+    });
+    if (!confirmed) return;
     updateField('active_conflicts', state.active_conflicts.filter((c) => c.id !== id));
   };
 
@@ -66,7 +74,7 @@ export default function ConflictsPage() {
   };
 
   return (
-    <div className="p-8 max-w-5xl mx-auto space-y-8">
+    <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-8">
       <header className="flex items-center justify-between border-b border-zinc-800 pb-6">
         <div>
           <h1 className="text-3xl font-serif font-bold text-zinc-100 tracking-tight flex items-center gap-3">
@@ -155,7 +163,7 @@ export default function ConflictsPage() {
                         className={`p-1 rounded-full transition-colors ${
                           conflict.status === 'resolved' ? 'text-emerald-500 bg-emerald-500/10' : 'text-zinc-600 hover:text-amber-500 hover:bg-amber-500/10'
                         }`}
-                        title={conflict.status === 'resolved' ? 'Mark Active' : 'Mark Resolved'}
+                        aria-label={conflict.status === 'resolved' ? `Mark "${conflict.title}" active` : `Mark "${conflict.title}" resolved`}
                       >
                         <CheckCircle2 size={20} />
                       </button>
@@ -179,12 +187,14 @@ export default function ConflictsPage() {
                           setEditForm(conflict);
                         }}
                         className="p-2 text-zinc-500 hover:text-indigo-400 hover:bg-zinc-800 rounded-lg transition-colors"
+                        aria-label={`Edit ${conflict.title}`}
                       >
                         <Edit3 size={18} />
                       </button>
                       <button
                         onClick={() => handleDelete(conflict.id)}
                         className="p-2 text-zinc-500 hover:text-red-400 hover:bg-zinc-800 rounded-lg transition-colors"
+                        aria-label={`Delete ${conflict.title}`}
                       >
                         <Trash2 size={18} />
                       </button>

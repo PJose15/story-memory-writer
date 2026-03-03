@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useUnsavedChanges } from '@/hooks/use-unsaved-changes';
 import { Plus, Trash2, Edit3, Save, X, Clock, ShieldCheck, Shield, ShieldAlert, ShieldOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useConfirm } from '@/components/confirm-dialog';
 
 const statusConfig = {
   confirmed: { icon: ShieldCheck, color: 'text-emerald-400', bg: 'bg-emerald-400/10', label: 'Confirmed Canon' },
@@ -15,6 +16,7 @@ const statusConfig = {
 
 export default function TimelinePage() {
   const { state, updateField } = useStory();
+  const { confirm } = useConfirm();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<TimelineEvent>>({});
   const [isNewItem, setIsNewItem] = useState(false);
@@ -52,14 +54,20 @@ export default function TimelinePage() {
     setIsNewItem(false);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     const event = state.timeline_events.find(e => e.id === id);
-    if (!confirm(`Delete "${event?.date || 'this event'}"? This cannot be undone.`)) return;
+    const confirmed = await confirm({
+      title: 'Delete timeline event?',
+      message: `Are you sure you want to delete "${event?.date || 'this event'}"? This cannot be undone.`,
+      confirmLabel: 'Delete',
+      variant: 'danger',
+    });
+    if (!confirmed) return;
     updateField('timeline_events', state.timeline_events.filter((e) => e.id !== id));
   };
 
   return (
-    <div className="p-8 max-w-4xl mx-auto space-y-8">
+    <div className="p-4 md:p-8 max-w-4xl mx-auto space-y-8">
       <header className="flex items-center justify-between border-b border-zinc-800 pb-6">
         <div>
           <h1 className="text-3xl font-serif font-bold text-zinc-100 tracking-tight flex items-center gap-3">
@@ -156,19 +164,21 @@ export default function TimelinePage() {
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100 transition-opacity">
                         <button
                           onClick={() => {
                             setEditingId(event.id);
                             setEditForm(event);
                           }}
                           className="p-1.5 text-zinc-500 hover:text-indigo-400 hover:bg-zinc-800 rounded-md transition-colors"
+                          aria-label={`Edit event: ${event.date}`}
                         >
                           <Edit3 size={16} />
                         </button>
                         <button
                           onClick={() => handleDelete(event.id)}
                           className="p-1.5 text-zinc-500 hover:text-red-400 hover:bg-zinc-800 rounded-md transition-colors"
+                          aria-label={`Delete event: ${event.date}`}
                         >
                           <Trash2 size={16} />
                         </button>

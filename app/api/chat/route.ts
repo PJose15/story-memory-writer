@@ -73,7 +73,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing required field: language' }, { status: 400 });
     }
 
-    const historyText = Array.isArray(chatHistory) ? chatHistory.join('\n') : '';
+    // Validate and sanitize chat history entries
+    const sanitizedHistory = Array.isArray(chatHistory)
+      ? chatHistory.filter((item): item is string => typeof item === 'string').map(s => s.slice(0, 500))
+      : [];
+    const historyText = sanitizedHistory.join('\n');
     const totalLength = (storyContext?.length || 0) + (userInput?.length || 0) + historyText.length;
     if (totalLength > 500000) {
       return NextResponse.json({ error: 'Request payload too large (max 500KB of text)' }, { status: 413 });
@@ -89,17 +93,18 @@ export async function POST(req: NextRequest) {
     const outputFormat = buildOutputFormat(!!isBlockedRequest);
 
     const historyBlock = historyText
-      ? `\nRECENT CONVERSATION:\n${historyText}\n`
+      ? `\n<conversation_history>\n${historyText}\n</conversation_history>\n`
       : '';
 
-    const contents = `
+    const contents = `<story_context>
 ${storyContext}
+</story_context>
 
 ${outputFormat}
 ${historyBlock}
-USER REQUEST:
+<user_request>
 ${userInput}
-`;
+</user_request>`;
 
     const response = await ai.models.generateContent({
       model: AI_MODEL,

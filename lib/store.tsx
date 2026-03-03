@@ -227,7 +227,16 @@ export function StoryProvider({ children }: { children: React.ReactNode }) {
     setState((prev) => ({ ...prev, [field]: value }));
   };
 
-  if (!isLoaded) return null;
+  if (!isLoaded) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-zinc-950">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-zinc-700 border-t-indigo-400 rounded-full animate-spin" />
+          <span className="text-sm text-zinc-500">Loading project...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <StoryContext.Provider value={{ state, setState, updateField }}>

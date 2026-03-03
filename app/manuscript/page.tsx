@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useUnsavedChanges } from '@/hooks/use-unsaved-changes';
 import { Plus, Trash2, Edit3, Save, X, BookOpen, ShieldCheck, Shield, ShieldAlert, ShieldOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useConfirm } from '@/components/confirm-dialog';
 
 const statusConfig = {
   confirmed: { icon: ShieldCheck, color: 'text-emerald-400', bg: 'bg-emerald-400/10', label: 'Confirmed Canon' },
@@ -15,6 +16,7 @@ const statusConfig = {
 
 export default function ManuscriptPage() {
   const { state, updateField } = useStory();
+  const { confirm } = useConfirm();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<Chapter>>({});
   const [isNewItem, setIsNewItem] = useState(false);
@@ -52,14 +54,20 @@ export default function ManuscriptPage() {
     setIsNewItem(false);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     const chapter = state.chapters.find(c => c.id === id);
-    if (!confirm(`Delete "${chapter?.title || 'this chapter'}"? This cannot be undone.`)) return;
+    const confirmed = await confirm({
+      title: 'Delete chapter?',
+      message: `Are you sure you want to delete "${chapter?.title || 'this chapter'}"? This cannot be undone.`,
+      confirmLabel: 'Delete',
+      variant: 'danger',
+    });
+    if (!confirmed) return;
     updateField('chapters', state.chapters.filter((c) => c.id !== id));
   };
 
   return (
-    <div className="p-8 max-w-5xl mx-auto space-y-8">
+    <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-8">
       <header className="flex items-center justify-between border-b border-zinc-800 pb-6">
         <div>
           <h1 className="text-3xl font-serif font-bold text-zinc-100 tracking-tight">Manuscript</h1>
@@ -155,12 +163,14 @@ export default function ManuscriptPage() {
                           setEditForm(chapter);
                         }}
                         className="p-2 text-zinc-500 hover:text-indigo-400 hover:bg-zinc-800 rounded-lg transition-colors"
+                        aria-label={`Edit ${chapter.title}`}
                       >
                         <Edit3 size={18} />
                       </button>
                       <button
                         onClick={() => handleDelete(chapter.id)}
                         className="p-2 text-zinc-500 hover:text-red-400 hover:bg-zinc-800 rounded-lg transition-colors"
+                        aria-label={`Delete ${chapter.title}`}
                       >
                         <Trash2 size={18} />
                       </button>
