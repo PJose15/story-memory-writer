@@ -3,7 +3,7 @@
 import { useStory, Chapter, CanonStatus } from '@/lib/store';
 import { useState } from 'react';
 import { useUnsavedChanges } from '@/hooks/use-unsaved-changes';
-import { Plus, Trash2, Edit3, Save, X, BookOpen, ShieldCheck, Shield, ShieldAlert, ShieldOff } from 'lucide-react';
+import { Plus, Trash2, Edit3, Save, X, BookOpen, ShieldCheck, Shield, ShieldAlert, ShieldOff, ChevronUp, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useConfirm } from '@/components/confirm-dialog';
 
@@ -67,12 +67,39 @@ export default function ManuscriptPage() {
     updateField('chapters', state.chapters.filter((c) => c.id !== id));
   };
 
+  const handleMoveUp = (index: number) => {
+    if (index <= 0) return;
+    const updated = [...state.chapters];
+    [updated[index - 1], updated[index]] = [updated[index], updated[index - 1]];
+    updateField('chapters', updated);
+  };
+
+  const handleMoveDown = (index: number) => {
+    if (index >= state.chapters.length - 1) return;
+    const updated = [...state.chapters];
+    [updated[index], updated[index + 1]] = [updated[index + 1], updated[index]];
+    updateField('chapters', updated);
+  };
+
+  const wordCount = (text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed) return 0;
+    return trimmed.split(/\s+/).length;
+  };
+
   return (
     <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-8">
       <header className="flex items-center justify-between border-b border-zinc-800 pb-6">
         <div>
           <h1 className="text-3xl font-serif font-bold text-zinc-100 tracking-tight">Manuscript</h1>
-          <p className="text-zinc-400 mt-2 text-sm">Write and organize your chapters.</p>
+          <p className="text-zinc-400 mt-2 text-sm">
+            Write and organize your chapters.
+            {state.chapters.length > 0 && (
+              <span className="ml-2 text-zinc-500 font-mono">
+                {state.chapters.reduce((sum, c) => sum + wordCount(c.content), 0).toLocaleString()} total words
+              </span>
+            )}
+          </p>
         </div>
         <button
           onClick={handleAddChapter}
@@ -85,7 +112,7 @@ export default function ManuscriptPage() {
 
       <div className="space-y-6">
         <AnimatePresence>
-          {state.chapters.map((chapter) => (
+          {state.chapters.map((chapter, index) => (
             <motion.div
               key={chapter.id}
               initial={{ opacity: 0, y: 10 }}
@@ -157,7 +184,23 @@ export default function ManuscriptPage() {
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleMoveUp(index)}
+                        disabled={index === 0}
+                        className="p-1.5 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded-lg transition-colors disabled:opacity-30 disabled:hover:text-zinc-500 disabled:hover:bg-transparent"
+                        aria-label={`Move ${chapter.title} up`}
+                      >
+                        <ChevronUp size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleMoveDown(index)}
+                        disabled={index === state.chapters.length - 1}
+                        className="p-1.5 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded-lg transition-colors disabled:opacity-30 disabled:hover:text-zinc-500 disabled:hover:bg-transparent"
+                        aria-label={`Move ${chapter.title} down`}
+                      >
+                        <ChevronDown size={16} />
+                      </button>
                       <button
                         onClick={() => {
                           setEditingId(chapter.id);
@@ -179,6 +222,9 @@ export default function ManuscriptPage() {
                   </div>
                   <div className="prose prose-invert prose-zinc max-w-none font-serif text-zinc-300 leading-relaxed line-clamp-4">
                     {chapter.content || <span className="text-zinc-600 italic">Empty chapter...</span>}
+                  </div>
+                  <div className="mt-2 text-xs text-zinc-600 font-mono">
+                    {wordCount(chapter.content).toLocaleString()} words
                   </div>
                   {chapter.summary && (
                     <div className="mt-6 pt-4 border-t border-zinc-800">

@@ -2,10 +2,11 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useStory, ChatMessage } from '@/lib/store';
-import { Send, Bot, User, Loader2, ShieldAlert, X, AlertTriangle, CheckCircle2, LockKeyhole } from 'lucide-react';
+import { Send, Bot, User, Loader2, ShieldAlert, X, AlertTriangle, CheckCircle2, LockKeyhole, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import Markdown from 'react-markdown';
 import { useToast } from '@/components/toast';
+import { useConfirm } from '@/components/confirm-dialog';
 
 interface Message {
   id: string;
@@ -37,6 +38,7 @@ const welcomeMessage: Message = {
 export default function AssistantPage() {
   const { state, updateField } = useStory();
   const { toast } = useToast();
+  const { confirm } = useConfirm();
   const [messages, setMessages] = useState<Message[]>([welcomeMessage]);
   const hasLoadedRef = useRef(false);
   const [input, setInput] = useState('');
@@ -207,6 +209,19 @@ ${confirmedItems.length ? confirmedItems.join('\n') : 'None'}`;
     return context;
   };
 
+  const handleClearChat = async () => {
+    if (messages.length <= 1) return;
+    const confirmed = await confirm({
+      title: 'Clear chat history?',
+      message: 'This will remove all messages. This cannot be undone.',
+      confirmLabel: 'Clear',
+      variant: 'danger',
+    });
+    if (!confirmed) return;
+    setMessages([welcomeMessage]);
+    setPendingAudit(null);
+  };
+
   const handleAudit = async () => {
     if (!input.trim() || isLoading || isAuditing) return;
 
@@ -324,7 +339,15 @@ ${confirmedItems.length ? confirmedItems.join('\n') : 'None'}`;
           </h1>
           <p className="text-zinc-400 text-sm mt-1">Chat with your story&apos;s memory.</p>
         </div>
-        
+        <button
+          onClick={handleClearChat}
+          disabled={messages.length <= 1 || isLoading || isAuditing}
+          className="flex items-center gap-2 text-sm text-zinc-500 hover:text-red-400 hover:bg-zinc-800 px-3 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:hover:text-zinc-500 disabled:hover:bg-transparent"
+          aria-label="Clear chat history"
+        >
+          <Trash2 size={16} />
+          Clear
+        </button>
       </header>
 
       <div className="flex-1 overflow-y-auto space-y-6 pr-4 pb-4">
@@ -521,6 +544,7 @@ ${confirmedItems.length ? confirmedItems.join('\n') : 'None'}`;
               }
             }}
             placeholder="Ask about your story, request ideas, or say 'I'm stuck'..."
+            maxLength={5000}
             className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl pl-5 pr-24 py-4 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none h-24"
           />
           <div className="absolute right-3 bottom-3 flex items-center gap-2">
