@@ -38,6 +38,7 @@ function getUpstashLimiter(maxRequests: number, windowMs: number): Ratelimit {
 }
 
 // --- In-memory rate limiter (local development) ---
+let hasWarnedMemory = false;
 const memoryStore = new Map<string, number[]>();
 const MAX_STORE_KEYS = 10000;
 let lastCleanup = Date.now();
@@ -101,6 +102,14 @@ export async function rateLimit(
     const { success } = await limiter.limit(key);
     if (!success) return rateLimitResponse();
   } else {
+    if (!hasWarnedMemory && process.env.NODE_ENV === 'production') {
+      hasWarnedMemory = true;
+      console.warn(
+        '[rate-limit] UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN are not set. ' +
+        'Using in-memory rate limiter, which does not persist across serverless invocations. ' +
+        'Set Upstash env vars for production rate limiting.'
+      );
+    }
     const allowed = memoryRateLimit(key, maxRequests, windowMs);
     if (!allowed) return rateLimitResponse();
   }

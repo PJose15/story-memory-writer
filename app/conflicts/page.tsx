@@ -38,6 +38,7 @@ export default function ConflictsPage() {
 
   const handleSave = () => {
     if (!editingId) return;
+    if (!editForm.title?.trim()) return;
     const updated = state.active_conflicts.map((c) =>
       c.id === editingId ? { ...c, ...editForm } : c
     );

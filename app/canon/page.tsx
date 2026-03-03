@@ -1,7 +1,7 @@
 'use client';
 
 import { useStory, CanonStatus } from '@/lib/store';
-import { useState } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Lock, Trash2, ShieldCheck, ShieldAlert, Shield, ShieldOff, Filter } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -27,8 +27,8 @@ export default function CanonLockPage() {
   const [filterStatus, setFilterStatus] = useState<CanonStatus | 'all'>('all');
   const [filterType, setFilterType] = useState<ItemType | 'all'>('all');
 
-  // Aggregate all items with canonStatus
-  const allItems: CanonItem[] = [
+  // Aggregate all items with canonStatus (memoized to avoid rebuilding on every render)
+  const allItems = useMemo<CanonItem[]>(() => [
     ...state.characters.map(c => ({ id: c.id, type: 'character' as ItemType, title: c.name, description: c.description, status: c.canonStatus || 'draft' })),
     ...state.timeline_events.map(t => ({ id: t.id, type: 'timeline' as ItemType, title: t.date, description: t.description, status: t.canonStatus || 'draft' })),
     ...state.active_conflicts.map(c => ({ id: c.id, type: 'conflict' as ItemType, title: c.title, description: c.description, status: c.canonStatus || 'draft' })),
@@ -39,32 +39,31 @@ export default function CanonLockPage() {
     ...state.themes.map(t => ({ id: t.id, type: 'theme' as ItemType, title: t.theme, description: t.evidence.join(', '), status: t.canonStatus || 'draft' })),
     ...state.open_loops.map(o => ({ id: o.id, type: 'open_loop' as ItemType, title: o.description, description: o.status, status: o.canonStatus || 'draft' })),
     ...state.foreshadowing_elements.map(f => ({ id: f.id, type: 'foreshadowing' as ItemType, title: f.clue, description: f.payoff, status: f.canonStatus || 'draft' })),
-  ];
+  ], [state.characters, state.timeline_events, state.active_conflicts, state.chapters, state.scenes, state.world_rules, state.locations, state.themes, state.open_loops, state.foreshadowing_elements]);
 
-  const filteredItems = allItems.filter(item => {
+  const filteredItems = useMemo(() => allItems.filter(item => {
     if (filterStatus !== 'all' && item.status !== filterStatus) return false;
     if (filterType !== 'all' && item.type !== filterType) return false;
     return true;
-  });
+  }), [allItems, filterStatus, filterType]);
 
-  const typeToField: Record<ItemType, keyof typeof state> = {
-    character: 'characters',
-    timeline: 'timeline_events',
-    conflict: 'active_conflicts',
-    chapter: 'chapters',
-    scene: 'scenes',
-    world_rule: 'world_rules',
-    location: 'locations',
-    theme: 'themes',
-    open_loop: 'open_loops',
-    foreshadowing: 'foreshadowing_elements',
-  };
-
-  const updateItemStatus = (id: string, type: ItemType, newStatus: CanonStatus) => {
+  const updateItemStatus = useCallback((id: string, type: ItemType, newStatus: CanonStatus) => {
+    const typeToField: Record<ItemType, keyof typeof state> = {
+      character: 'characters',
+      timeline: 'timeline_events',
+      conflict: 'active_conflicts',
+      chapter: 'chapters',
+      scene: 'scenes',
+      world_rule: 'world_rules',
+      location: 'locations',
+      theme: 'themes',
+      open_loop: 'open_loops',
+      foreshadowing: 'foreshadowing_elements',
+    };
     const field = typeToField[type];
     const items = state[field] as any[];
     updateField(field as any, items.map((item: any) => item.id === id ? { ...item, canonStatus: newStatus } : item));
-  };
+  }, [state, updateField]);
 
   return (
     <div className="p-8 max-w-5xl mx-auto space-y-8">

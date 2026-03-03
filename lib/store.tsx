@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 
 export type CanonStatus = 'confirmed' | 'flexible' | 'draft' | 'discarded';
 
@@ -207,25 +207,42 @@ export function StoryProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [saveError, setSaveError] = useState(false);
   useEffect(() => {
     if (isLoaded) {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
       saveTimerRef.current = setTimeout(() => {
         try {
           localStorage.setItem('story_memory_state', JSON.stringify(state));
-        } catch (e) {
-          console.error('Failed to save state to localStorage (quota may be exceeded)', e);
+          if (saveError) setSaveError(false);
+        } catch {
+          if (!saveError) setSaveError(true);
         }
       }, 500);
     }
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     };
-  }, [state, isLoaded]);
+  }, [state, isLoaded, saveError]);
 
-  const updateField = <K extends keyof StoryState>(field: K, value: StoryState[K]) => {
+  // Sync state across tabs via storage events
+  useEffect(() => {
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'story_memory_state' && e.newValue) {
+        try {
+          setState({ ...defaultState, ...JSON.parse(e.newValue) });
+        } catch {
+          // Ignore parse errors from other tabs
+        }
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, []);
+
+  const updateField = useCallback(<K extends keyof StoryState>(field: K, value: StoryState[K]) => {
     setState((prev) => ({ ...prev, [field]: value }));
-  };
+  }, []);
 
   if (!isLoaded) {
     return (
@@ -240,6 +257,11 @@ export function StoryProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <StoryContext.Provider value={{ state, setState, updateField }}>
+      {saveError && (
+        <div className="fixed top-0 left-0 right-0 z-[100] bg-red-900/90 text-red-100 text-sm text-center px-4 py-2 backdrop-blur">
+          Storage quota exceeded — your changes may not be saved. Export your project from Settings.
+        </div>
+      )}
       {children}
     </StoryContext.Provider>
   );

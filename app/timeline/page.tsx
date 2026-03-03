@@ -38,6 +38,7 @@ export default function TimelinePage() {
 
   const handleSave = () => {
     if (!editingId) return;
+    if (!editForm.description?.trim()) return;
     const updated = state.timeline_events.map((e) =>
       e.id === editingId ? { ...e, ...editForm } : e
     );

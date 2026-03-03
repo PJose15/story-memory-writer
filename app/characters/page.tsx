@@ -127,8 +127,14 @@ export default function CharactersPage() {
 
   const handleSave = () => {
     if (!editingId) return;
+    if (!editForm.name?.trim()) return;
+    // Filter out relationships with no target selected
+    const cleanedForm = {
+      ...editForm,
+      dynamicRelationships: (editForm.dynamicRelationships || []).filter(r => r.targetId),
+    };
     const updated = state.characters.map((c) =>
-      c.id === editingId ? { ...c, ...editForm } : c
+      c.id === editingId ? { ...c, ...cleanedForm } : c
     );
     updateField('characters', updated as Character[]);
     setEditingId(null);

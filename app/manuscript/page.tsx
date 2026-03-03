@@ -38,6 +38,7 @@ export default function ManuscriptPage() {
 
   const handleSave = () => {
     if (!editingId) return;
+    if (!editForm.title?.trim()) return;
     const updatedChapters = state.chapters.map((c) =>
       c.id === editingId ? { ...c, ...editForm } : c
     );

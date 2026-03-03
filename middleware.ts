@@ -40,8 +40,8 @@ export function middleware(req: NextRequest) {
     }
   }
 
-  // Allow localhost in development
-  if (origin) {
+  // Allow localhost in development only
+  if (process.env.NODE_ENV === 'development' && origin) {
     try {
       const originUrl = new URL(origin);
       if (originUrl.hostname === 'localhost' || originUrl.hostname === '127.0.0.1') {

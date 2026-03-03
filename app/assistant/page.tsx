@@ -64,6 +64,11 @@ export default function AssistantPage() {
     scrollToBottom();
   }, [messages]);
 
+  // Abort any in-flight request on unmount
+  useEffect(() => {
+    return () => { abortRef.current?.abort(); };
+  }, []);
+
   // Persist chat messages to store (strip isThinking) — only after initial load
   // Cap at 100 messages to prevent localStorage from growing indefinitely
   useEffect(() => {
@@ -145,7 +150,8 @@ export default function AssistantPage() {
 
     const MAX_CONTEXT_LENGTH = 120000; // ~30K tokens, safe for Gemini context window
 
-    let context = `STORY BIBLE:
+    // Build context in priority-ordered sections so we can drop low-priority ones first
+    const header = `STORY BIBLE:
 Title: ${state.title}
 Synopsis: ${state.synopsis}
 Style Profile: ${state.style_profile}
@@ -157,27 +163,45 @@ CANON LOCK STATUS:
 You must respect the following certainty levels:
 
 1. CONFIRMED CANON (LOCKED - DO NOT CONTRADICT):
-${confirmedItems.length ? confirmedItems.join('\n') : 'None'}
+${confirmedItems.length ? confirmedItems.join('\n') : 'None'}`;
 
-2. FLEXIBLE CANON (Build around carefully):
-${flexibleItems.length ? flexibleItems.join('\n') : 'None'}
+    // Sections in priority order (lowest priority last, dropped first)
+    const sections = [
+      { label: 'OPEN LOOPS (Unresolved narrative threads)', content: openLoops },
+      { label: 'CANON ITEMS', content: canonItems },
+      { label: '2. FLEXIBLE CANON (Build around carefully)', content: flexibleItems },
+      { label: 'AMBIGUITIES (Uncertain elements needing review)', content: ambiguities },
+      { label: '3. DRAFT IDEAS (Exploratory, not final)', content: draftItems },
+    ];
 
-3. DRAFT IDEAS (Exploratory, not final):
-${draftItems.length ? draftItems.join('\n') : 'None'}
+    let context = header;
+    let truncated = false;
 
-OPEN LOOPS (Unresolved narrative threads):
-${openLoops.length ? openLoops.join('\n') : 'None'}
+    for (const section of sections) {
+      const block = `\n\n${section.label}:\n${section.content.length ? section.content.join('\n') : 'None'}`;
+      if (context.length + block.length > MAX_CONTEXT_LENGTH) {
+        truncated = true;
+        // Try to include partial section
+        const remaining = MAX_CONTEXT_LENGTH - context.length - 100; // reserve space for notice
+        if (remaining > 200) {
+          const partialItems = [];
+          let partialLen = section.label.length + 4;
+          for (const item of section.content) {
+            if (partialLen + item.length + 1 > remaining) break;
+            partialItems.push(item);
+            partialLen += item.length + 1;
+          }
+          if (partialItems.length > 0) {
+            context += `\n\n${section.label}:\n${partialItems.join('\n')}`;
+          }
+        }
+        break;
+      }
+      context += block;
+    }
 
-CANON ITEMS:
-${canonItems.length ? canonItems.join('\n') : 'None'}
-
-AMBIGUITIES (Uncertain elements needing review):
-${ambiguities.length ? ambiguities.join('\n') : 'None'}`;
-
-    // Truncate if context is too large, prioritizing confirmed canon
-    if (context.length > MAX_CONTEXT_LENGTH) {
-      console.warn(`Story context truncated: ${context.length} chars -> ${MAX_CONTEXT_LENGTH} chars`);
-      context = context.slice(0, MAX_CONTEXT_LENGTH) + '\n\n[Context truncated due to size. Some draft items may be omitted.]';
+    if (truncated) {
+      context += '\n\n[Context truncated due to size. Some draft/flexible items may be omitted.]';
     }
 
     return context;
