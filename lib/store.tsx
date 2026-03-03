@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 
 export type CanonStatus = 'confirmed' | 'flexible' | 'draft' | 'discarded';
+export type DataSource = 'manuscript' | 'ai-inferred' | 'user-entered';
 
 export interface Chapter {
   id: string;
@@ -10,6 +11,7 @@ export interface Chapter {
   content: string;
   summary: string;
   canonStatus?: CanonStatus;
+  source?: DataSource;
 }
 
 export interface Scene {
@@ -19,6 +21,7 @@ export interface Scene {
   content: string;
   summary: string;
   canonStatus?: CanonStatus;
+  source?: DataSource;
 }
 
 export interface CharacterState {
@@ -58,6 +61,7 @@ export interface Character {
   currentState?: CharacterState;
   stateHistory?: CharacterStateHistory[];
   canonStatus?: CanonStatus;
+  source?: DataSource;
 }
 
 export interface TimelineEvent {
@@ -66,6 +70,7 @@ export interface TimelineEvent {
   description: string;
   impact: string;
   canonStatus?: CanonStatus;
+  source?: DataSource;
 }
 
 export interface OpenLoop {
@@ -73,6 +78,7 @@ export interface OpenLoop {
   description: string;
   status: 'open' | 'closed';
   canonStatus?: CanonStatus;
+  source?: DataSource;
 }
 
 export interface WorldRule {
@@ -80,6 +86,7 @@ export interface WorldRule {
   category: string;
   rule: string;
   canonStatus?: CanonStatus;
+  source?: DataSource;
 }
 
 export interface Conflict {
@@ -88,6 +95,7 @@ export interface Conflict {
   description: string;
   status: 'active' | 'resolved';
   canonStatus?: CanonStatus;
+  source?: DataSource;
 }
 
 export interface Foreshadowing {
@@ -95,6 +103,7 @@ export interface Foreshadowing {
   clue: string;
   payoff: string;
   canonStatus?: CanonStatus;
+  source?: DataSource;
 }
 
 export interface Location {
@@ -104,6 +113,7 @@ export interface Location {
   importance: string;
   associatedRules: string[];
   canonStatus?: CanonStatus;
+  source?: DataSource;
 }
 
 export interface Theme {
@@ -111,6 +121,7 @@ export interface Theme {
   theme: string;
   evidence: string[];
   canonStatus?: CanonStatus;
+  source?: DataSource;
 }
 
 export interface CanonItem {
@@ -158,7 +169,7 @@ export interface StoryState {
   chat_messages: ChatMessage[];
 }
 
-const defaultState: StoryState = {
+export const defaultState: StoryState = {
   language: 'English',
   title: 'Untitled Project',
   genre: [],

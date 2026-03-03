@@ -85,6 +85,29 @@ function memoryRateLimit(key: string, maxRequests: number, windowMs: number): bo
 }
 
 /**
+ * Validate rate-limit configuration at startup.
+ * Logs a prominent ASCII banner warning when Upstash is not configured in production.
+ */
+export function validateRateLimitConfig(): void {
+  if (process.env.NODE_ENV !== 'production') return;
+  if (hasUpstash) return;
+
+  console.warn(`
+╔══════════════════════════════════════════════════════════════╗
+║  ⚠  RATE LIMITING: UPSTASH NOT CONFIGURED                  ║
+║                                                              ║
+║  UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN are     ║
+║  missing. The server is using an in-memory rate limiter      ║
+║  that does NOT persist across serverless invocations.        ║
+║                                                              ║
+║  This means rate limiting is effectively DISABLED on Vercel. ║
+║                                                              ║
+║  → Set Upstash env vars in your Vercel project settings.     ║
+╚══════════════════════════════════════════════════════════════╝
+`);
+}
+
+/**
  * Check rate limit for a request.
  * Uses Upstash Redis in production (when UPSTASH env vars are set),
  * falls back to in-memory for local development.
