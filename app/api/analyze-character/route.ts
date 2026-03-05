@@ -3,6 +3,7 @@ import { GoogleGenAI, FinishReason } from '@google/genai';
 import { buildCharacterAnalysisSystemPrompt, buildCharacterAnalysisPrompt } from '@/lib/prompts/character-analysis';
 import { rateLimit } from '@/lib/rate-limit';
 import { AI_MODEL, SAFETY_SETTINGS } from '@/lib/ai-config';
+import { getErrorStatus } from '@/lib/api-error';
 
 export const maxDuration = 60;
 
@@ -69,10 +70,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ analysis });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Character analysis API error:', error);
-    const status = typeof error?.status === 'number' && error.status >= 400 && error.status < 600
-      ? error.status : 500;
+    const status = getErrorStatus(error);
     return NextResponse.json({ error: 'Failed to analyze character' }, { status });
   }
 }

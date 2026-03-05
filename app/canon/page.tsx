@@ -1,6 +1,6 @@
 'use client';
 
-import { useStory, CanonStatus } from '@/lib/store';
+import { useStory, CanonStatus, StoryState } from '@/lib/store';
 import { useState, useMemo, useCallback } from 'react';
 import { Lock, Trash2, ShieldCheck, ShieldAlert, Shield, ShieldOff, Filter } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -61,8 +61,8 @@ export default function CanonLockPage() {
       foreshadowing: 'foreshadowing_elements',
     };
     const field = typeToField[type];
-    const items = state[field] as any[];
-    updateField(field as any, items.map((item: any) => item.id === id ? { ...item, canonStatus: newStatus } : item));
+    const items = state[field] as { id: string; canonStatus?: CanonStatus }[];
+    updateField(field, items.map(item => item.id === id ? { ...item, canonStatus: newStatus } : item) as StoryState[typeof field]);
   }, [state, updateField]);
 
   return (

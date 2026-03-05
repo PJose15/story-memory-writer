@@ -262,7 +262,7 @@ export default function CharactersPage() {
                             <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-1">State Indicator</label>
                             <select
                               value={editForm.currentState?.indicator || 'stable'}
-                              onChange={(e) => setEditForm({ ...editForm, currentState: { ...(editForm.currentState || defaultCurrentState), indicator: e.target.value as any } })}
+                              onChange={(e) => setEditForm({ ...editForm, currentState: { ...(editForm.currentState || defaultCurrentState), indicator: e.target.value as CharacterState['indicator'] } })}
                               className="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1.5 text-sm text-zinc-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
                             >
                               <option value="stable">Stable</option>
@@ -276,7 +276,7 @@ export default function CharactersPage() {
                             <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-1">Pressure Level</label>
                             <select
                               value={editForm.currentState?.pressureLevel || 'Low'}
-                              onChange={(e) => setEditForm({ ...editForm, currentState: { ...(editForm.currentState || defaultCurrentState), pressureLevel: e.target.value as any } })}
+                              onChange={(e) => setEditForm({ ...editForm, currentState: { ...(editForm.currentState || defaultCurrentState), pressureLevel: e.target.value as CharacterState['pressureLevel'] } })}
                               className="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1.5 text-sm text-zinc-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
                             >
                               <option value="Low">Low</option>

@@ -3,6 +3,7 @@ import { GoogleGenAI, Type, FinishReason } from '@google/genai';
 import { buildWritingAssistantPrompt } from '@/lib/prompts/writing-assistant';
 import { rateLimit } from '@/lib/rate-limit';
 import { AI_MODEL, SAFETY_SETTINGS } from '@/lib/ai-config';
+import { getErrorStatus } from '@/lib/api-error';
 
 export const maxDuration = 60;
 
@@ -106,10 +107,9 @@ Analyze it against the established canon. Detect contradictions, broken characte
       safeVersion: typeof result.safeVersion === 'string' ? result.safeVersion : '',
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Audit API error:', error);
-    const status = typeof error?.status === 'number' && error.status >= 400 && error.status < 600
-      ? error.status : 500;
+    const status = getErrorStatus(error);
     return NextResponse.json({ error: 'Failed to perform audit' }, { status });
   }
 }

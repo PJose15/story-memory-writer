@@ -3,6 +3,7 @@ import { GoogleGenAI, FinishReason } from '@google/genai';
 import { buildWritingAssistantPrompt } from '@/lib/prompts/writing-assistant';
 import { rateLimit } from '@/lib/rate-limit';
 import { AI_MODEL, SAFETY_SETTINGS } from '@/lib/ai-config';
+import { getErrorStatus } from '@/lib/api-error';
 
 export const maxDuration = 60;
 
@@ -140,10 +141,9 @@ ${userInput}
       isBlockedMode: !!isBlockedRequest,
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Chat API error:', error);
-    const status = typeof error?.status === 'number' && error.status >= 400 && error.status < 600
-      ? error.status : 500;
+    const status = getErrorStatus(error);
     const message = status === 429
       ? 'AI quota exceeded. Please wait a few minutes and try again, or upgrade your API key.'
       : 'Failed to generate response';

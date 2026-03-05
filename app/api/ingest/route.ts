@@ -4,6 +4,8 @@ import pdf from 'pdf-parse';
 import mammoth from 'mammoth';
 import { rateLimit } from '@/lib/rate-limit';
 import { AI_MODEL, SAFETY_SETTINGS } from '@/lib/ai-config';
+import { getErrorStatus, getErrorMessage } from '@/lib/api-error';
+import type { ExtractedData, ExtractedCharacter, ExtractedLocation, ExtractedConflict, ExtractedTimelineEvent, ExtractedWorldRule, ExtractedTheme, ExtractedOpenLoop } from '@/lib/types/extracted-data';
 
 const responseSchema = {
   type: Type.OBJECT,
@@ -359,8 +361,8 @@ function splitTextIntoChunks(text: string): string[] {
   return chunks;
 }
 
-function mergeResults(results: any[]): any {
-  const merged: any = {
+function mergeResults(results: ExtractedData[]): ExtractedData {
+  const merged: ExtractedData = {
     project: results[0]?.project || {},
     chapters: [],
     scenes: [],
@@ -378,19 +380,21 @@ function mergeResults(results: any[]): any {
     foreshadowing_elements: [],
   };
 
-  const arrayKeys = Object.keys(merged).filter(k => k !== 'project');
+  const arrayKeys = (Object.keys(merged) as (keyof ExtractedData)[]).filter(k => k !== 'project');
 
   for (const result of results) {
     for (const key of arrayKeys) {
-      if (result[key] && Array.isArray(result[key])) {
-        merged[key].push(...result[key]);
+      const source = result[key];
+      const target = merged[key];
+      if (Array.isArray(source) && Array.isArray(target)) {
+        target.push(...source);
       }
     }
   }
 
   // Deduplicate characters by name
-  const seenCharacters = new Map<string, any>();
-  for (const char of merged.characters) {
+  const seenCharacters = new Map<string, ExtractedCharacter>();
+  for (const char of merged.characters!) {
     const key = char.name?.toLowerCase();
     if (key && !seenCharacters.has(key)) {
       seenCharacters.set(key, char);
@@ -399,8 +403,8 @@ function mergeResults(results: any[]): any {
   merged.characters = Array.from(seenCharacters.values());
 
   // Deduplicate locations by name
-  const seenLocations = new Map<string, any>();
-  for (const loc of merged.locations) {
+  const seenLocations = new Map<string, ExtractedLocation>();
+  for (const loc of merged.locations!) {
     const key = loc.name?.toLowerCase();
     if (key && !seenLocations.has(key)) {
       seenLocations.set(key, loc);
@@ -409,8 +413,8 @@ function mergeResults(results: any[]): any {
   merged.locations = Array.from(seenLocations.values());
 
   // Deduplicate conflicts by title
-  const seenConflicts = new Map<string, any>();
-  for (const conflict of merged.active_conflicts) {
+  const seenConflicts = new Map<string, ExtractedConflict>();
+  for (const conflict of merged.active_conflicts!) {
     const key = (conflict.title || conflict.conflict_type || '')?.toLowerCase().trim();
     if (key && !seenConflicts.has(key)) {
       seenConflicts.set(key, conflict);
@@ -419,8 +423,8 @@ function mergeResults(results: any[]): any {
   merged.active_conflicts = Array.from(seenConflicts.values());
 
   // Deduplicate timeline events by event name
-  const seenTimeline = new Map<string, any>();
-  for (const event of merged.timeline_events) {
+  const seenTimeline = new Map<string, ExtractedTimelineEvent>();
+  for (const event of merged.timeline_events!) {
     const key = (event.event || '')?.toLowerCase().trim();
     if (key && !seenTimeline.has(key)) {
       seenTimeline.set(key, event);
@@ -429,8 +433,8 @@ function mergeResults(results: any[]): any {
   merged.timeline_events = Array.from(seenTimeline.values());
 
   // Deduplicate world rules by rule text
-  const seenRules = new Map<string, any>();
-  for (const rule of merged.world_rules) {
+  const seenRules = new Map<string, ExtractedWorldRule>();
+  for (const rule of merged.world_rules!) {
     const key = (rule.rule || '')?.toLowerCase().trim();
     if (key && !seenRules.has(key)) {
       seenRules.set(key, rule);
@@ -439,12 +443,12 @@ function mergeResults(results: any[]): any {
   merged.world_rules = Array.from(seenRules.values());
 
   // Deduplicate themes by theme name, merging evidence arrays
-  const seenThemes = new Map<string, any>();
-  for (const theme of merged.themes) {
+  const seenThemes = new Map<string, ExtractedTheme>();
+  for (const theme of merged.themes!) {
     const key = (theme.theme || '')?.toLowerCase().trim();
     if (key) {
       if (seenThemes.has(key)) {
-        const existing = seenThemes.get(key);
+        const existing = seenThemes.get(key)!;
         const mergedEvidence = [...(existing.evidence || [])];
         for (const e of (theme.evidence || [])) {
           if (!mergedEvidence.some((me: string) => me.toLowerCase() === e.toLowerCase())) {
@@ -460,8 +464,8 @@ function mergeResults(results: any[]): any {
   merged.themes = Array.from(seenThemes.values());
 
   // Deduplicate open loops by description
-  const seenLoops = new Map<string, any>();
-  for (const loop of merged.open_loops) {
+  const seenLoops = new Map<string, ExtractedOpenLoop>();
+  for (const loop of merged.open_loops!) {
     const key = (loop.description || '')?.toLowerCase().trim();
     if (key && !seenLoops.has(key)) {
       seenLoops.set(key, loop);
@@ -543,9 +547,9 @@ export async function POST(req: NextRequest) {
 
         combinedText += `\n\n--- FILE: ${file.name} ---\n\n${text}`;
         fileParsingStatus.push({ name: file.name, status: 'success' });
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error(`Error parsing ${file.name}:`, err);
-        fileParsingStatus.push({ name: file.name, status: 'failed', error: err.message });
+        fileParsingStatus.push({ name: file.name, status: 'failed', error: getErrorMessage(err, 'Unknown parse error') });
       }
     }
 
@@ -565,7 +569,7 @@ export async function POST(req: NextRequest) {
 
     console.log(`Processing ${chunks.length} chunk(s), total ${combinedText.length} characters`);
 
-    const results: any[] = [];
+    const results: ExtractedData[] = [];
 
     for (let i = 0; i < chunks.length; i++) {
       const chunkLabel = chunks.length > 1
@@ -624,10 +628,9 @@ export async function POST(req: NextRequest) {
       extractedData
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Ingestion error:', error);
-    const status = typeof error?.status === 'number' && error.status >= 400 && error.status < 600
-      ? error.status : 500;
+    const status = getErrorStatus(error);
     return NextResponse.json({ error: 'Failed to process files' }, { status });
   }
 }

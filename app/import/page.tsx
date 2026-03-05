@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { useStory } from '@/lib/store';
+import { useStory, type CharacterState } from '@/lib/store';
+import type { ExtractedData, ExtractedChapter, ExtractedCharacter, ExtractedCharacterState, ExtractedRelationship, ExtractedConflict, ExtractedTimelineEvent, ExtractedWorldRule, ExtractedLocation, ExtractedTheme, ExtractedCanonItem, ExtractedAmbiguity, ExtractedOpenLoop, ExtractedForeshadowing, ExtractedScene } from '@/lib/types/extracted-data';
 import { UploadCloud, FileText, CheckCircle2, AlertCircle, Loader2, ArrowRight, Save, X, ChevronUp, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useToast } from '@/components/toast';
@@ -12,7 +13,7 @@ export default function ImportPage() {
   const [files, setFiles] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'analyzing' | 'review' | 'success'>('idle');
-  const [extractedData, setExtractedData] = useState<any>(null);
+  const [extractedData, setExtractedData] = useState<ExtractedData | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -68,16 +69,16 @@ export default function ImportPage() {
       const data = await res.json();
       setExtractedData(data.extractedData || {});
       setUploadStatus('review');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(error);
-      toast(error.message || 'An error occurred during ingestion.', 'error');
+      toast(error instanceof Error ? error.message : 'An error occurred during ingestion.', 'error');
       setUploadStatus('idle');
     } finally {
       setIsUploading(false);
     }
   };
 
-  const dedup = <T extends Record<string, any>>(existing: T[], incoming: T[], key: keyof T): T[] => {
+  const dedup = <T,>(existing: T[], incoming: T[], key: keyof T): T[] => {
     const existingKeys = new Set(existing.map(item => String(item[key]).toLowerCase().trim()));
     return incoming.filter(item => !existingKeys.has(String(item[key]).toLowerCase().trim()));
   };
@@ -88,6 +89,7 @@ export default function ImportPage() {
     // Build stable ID map so relationships resolve correctly
     const charIdMap = new Map<string, string>();
     for (const c of (extractedData.characters || [])) {
+      if (!c.name) continue;
       const id = c.character_id || crypto.randomUUID();
       charIdMap.set(c.name, id);
       charIdMap.set(c.name.toLowerCase(), id); // case-insensitive fallback
@@ -98,19 +100,19 @@ export default function ImportPage() {
       charIdMap.get(ref) || charIdMap.get(ref.toLowerCase());
 
     // Merge Characters
-    const newCharacters = (extractedData.characters || []).map((c: any) => {
-      const charState = extractedData.character_states?.find((s: any) => s.character_id === c.character_id || s.name === c.name);
-      const charId = charIdMap.get(c.name) || crypto.randomUUID();
+    const newCharacters = (extractedData.characters || []).map((c: ExtractedCharacter) => {
+      const charState = extractedData.character_states?.find((s: ExtractedCharacterState) => s.character_id === c.character_id || s.name === c.name);
+      const charId = charIdMap.get(c.name!) || crypto.randomUUID();
 
       // Find relationships where this character is character_1
       const relsAsSource = (extractedData.relationships || [])
-        .filter((r: any) => r.character_1 === c.name || r.character_1 === c.character_id)
-        .map((r: any) => {
-          const resolvedId = resolveCharId(r.character_2);
+        .filter((r: ExtractedRelationship) => r.character_1 === c.name || r.character_1 === c.character_id)
+        .map((r: ExtractedRelationship) => {
+          const resolvedId = resolveCharId(r.character_2!);
           if (!resolvedId) return null; // Skip unresolvable relationships
           return {
             targetId: resolvedId,
-            targetName: (extractedData.characters?.find((tc: any) => tc.name === r.character_2 || tc.character_id === r.character_2))?.name || r.character_2,
+            targetName: (extractedData.characters?.find((tc: ExtractedCharacter) => tc.name === r.character_2 || tc.character_id === r.character_2))?.name || r.character_2,
             trustLevel: r.trust_level || 50,
             tensionLevel: r.tension_level || 50,
             dynamics: r.current_dynamic || r.relationship_type || ''
@@ -119,13 +121,13 @@ export default function ImportPage() {
 
       // Find relationships where this character is character_2 (inverse)
       const relsAsTarget = (extractedData.relationships || [])
-        .filter((r: any) => r.character_2 === c.name || r.character_2 === c.character_id)
-        .map((r: any) => {
-          const resolvedId = resolveCharId(r.character_1);
+        .filter((r: ExtractedRelationship) => r.character_2 === c.name || r.character_2 === c.character_id)
+        .map((r: ExtractedRelationship) => {
+          const resolvedId = resolveCharId(r.character_1!);
           if (!resolvedId) return null; // Skip unresolvable relationships
           return {
             targetId: resolvedId,
-            targetName: (extractedData.characters?.find((tc: any) => tc.name === r.character_1 || tc.character_id === r.character_1))?.name || r.character_1,
+            targetName: (extractedData.characters?.find((tc: ExtractedCharacter) => tc.name === r.character_1 || tc.character_id === r.character_1))?.name || r.character_1,
             trustLevel: r.trust_level || 50,
             tensionLevel: r.tension_level || 50,
             dynamics: r.current_dynamic || r.relationship_type || ''
@@ -134,7 +136,8 @@ export default function ImportPage() {
 
       // Merge and deduplicate by targetId
       const seenTargets = new Set<string>();
-      const rels = [...relsAsSource, ...relsAsTarget].filter(r => {
+      const allRels = [...relsAsSource, ...relsAsTarget].filter((r): r is NonNullable<typeof r> => r !== null);
+      const rels = allRels.filter(r => {
         if (seenTargets.has(r.targetId)) return false;
         seenTargets.add(r.targetId);
         return true;
@@ -142,16 +145,16 @@ export default function ImportPage() {
 
       return {
         id: charId,
-        name: c.name,
-        role: c.role,
-        description: c.description,
+        name: c.name!,
+        role: c.role || '',
+        description: c.description || '',
         coreIdentity: c.core_traits ? c.core_traits.join(', ') : '',
         relationships: '',
-        canonStatus: 'draft',
+        canonStatus: 'draft' as const,
         source: 'ai-inferred' as const,
         currentState: {
-          indicator: 'stable',
-          pressureLevel: charState?.current_pressure_level || 'Low',
+          indicator: 'stable' as const,
+          pressureLevel: (charState?.current_pressure_level || 'Low') as CharacterState['pressureLevel'],
           emotionalState: charState?.current_emotional_state || '',
           visibleGoal: charState?.visible_goal || '',
           hiddenNeed: charState?.hidden_need || '',
@@ -166,108 +169,108 @@ export default function ImportPage() {
     });
 
     // Merge Chapters
-    const newChapters = (extractedData.chapters || []).map((c: any, idx: number) => ({
+    const newChapters = (extractedData.chapters || []).map((c: ExtractedChapter, idx: number) => ({
       id: c.chapter_id || crypto.randomUUID(),
       title: c.title || `Chapter ${idx + 1}`,
-      summary: c.summary,
+      summary: c.summary || '',
       content: c.raw_text_reference || '',
-      canonStatus: 'draft',
+      canonStatus: 'draft' as const,
       source: 'ai-inferred' as const,
     }));
 
     // Merge Scenes
-    const newScenes = (extractedData.scenes || []).map((s: any) => ({
+    const newScenes = (extractedData.scenes || []).map((s: ExtractedScene) => ({
       id: s.scene_id || crypto.randomUUID(),
       chapterId: s.chapter_id || '',
       title: `Scene ${s.order_index || ''}`,
-      summary: s.summary,
+      summary: s.summary || '',
       content: '',
-      canonStatus: 'draft',
+      canonStatus: 'draft' as const,
       source: 'ai-inferred' as const,
     }));
 
     // Merge Plot Points -> active_conflicts (or we can just map active_conflicts directly)
-    const newConflicts = (extractedData.active_conflicts || []).map((c: any) => ({
+    const newConflicts = (extractedData.active_conflicts || []).map((c: ExtractedConflict) => ({
       id: c.conflict_id || crypto.randomUUID(),
       title: c.title || c.conflict_type || 'Conflict',
-      description: c.description,
-      status: c.status === 'resolved' ? 'resolved' : 'active',
-      canonStatus: 'draft',
+      description: c.description || '',
+      status: c.status === 'resolved' ? 'resolved' as const : 'active' as const,
+      canonStatus: 'draft' as const,
       source: 'ai-inferred' as const,
     }));
 
     // Merge Timeline -> timeline_events
-    const newTimelineEvents = (extractedData.timeline_events || extractedData.timeline || []).map((t: any) => ({
+    const newTimelineEvents = (extractedData.timeline_events || []).map((t: ExtractedTimelineEvent) => ({
       id: t.timeline_event_id || crypto.randomUUID(),
-      date: t.event || t.date, // Using event as date/title for now
-      description: t.immediate_effect || t.cause || t.description || '',
+      date: t.event || '', // Using event as date/title for now
+      description: t.immediate_effect || '',
       impact: t.latent_effect || '',
-      canonStatus: 'draft',
+      canonStatus: 'draft' as const,
       source: 'ai-inferred' as const,
     }));
 
     // Merge Worldbuilding -> world_rules
-    const newWorldRules = (extractedData.world_rules || extractedData.worldbuilding || []).map((w: any) => ({
+    const newWorldRules = (extractedData.world_rules || []).map((w: ExtractedWorldRule) => ({
       id: w.world_rule_id || crypto.randomUUID(),
       category: w.scope || 'Lore',
-      rule: w.rule || `${w.title}: ${w.description}`,
-      canonStatus: 'draft',
+      rule: w.rule || '',
+      canonStatus: 'draft' as const,
       source: 'ai-inferred' as const,
     }));
 
     // Merge Locations
-    const newLocations = (extractedData.locations || []).map((l: any) => ({
+    const newLocations = (extractedData.locations || []).map((l: ExtractedLocation) => ({
       id: l.location_id || crypto.randomUUID(),
-      name: l.name,
-      description: l.description,
+      name: l.name || '',
+      description: l.description || '',
       importance: l.importance || 'medium',
       associatedRules: l.associated_rules || [],
-      canonStatus: 'draft',
+      canonStatus: 'draft' as const,
       source: 'ai-inferred' as const,
     }));
 
     // Merge Themes
-    const newThemes = (extractedData.themes || []).map((t: any) => ({
+    const newThemes = (extractedData.themes || []).map((t: ExtractedTheme) => ({
       id: t.theme_id || crypto.randomUUID(),
-      theme: t.theme,
+      theme: t.theme || '',
       evidence: t.evidence || [],
-      canonStatus: 'draft',
+      canonStatus: 'draft' as const,
       source: 'ai-inferred' as const,
     }));
 
     // Merge Canon Items
-    const newCanonItems = (extractedData.canon_items || []).map((c: any) => ({
+    const newCanonItems = (extractedData.canon_items || []).map((c: ExtractedCanonItem) => ({
       id: c.canon_item_id || crypto.randomUUID(),
       category: c.category || 'other',
-      description: c.description,
+      description: c.description || '',
       status: c.status || 'draft_idea',
       sourceReference: c.source_reference || ''
     }));
 
     // Merge Ambiguities
-    const newAmbiguities = (extractedData.ambiguities || []).map((a: any) => ({
+    const newAmbiguities = (extractedData.ambiguities || []).map((a: ExtractedAmbiguity) => ({
       id: a.ambiguity_id || crypto.randomUUID(),
-      issue: a.issue,
+      issue: a.issue || '',
       affectedSection: a.affected_section || '',
       confidence: a.confidence || 'medium',
       recommendedReview: a.recommended_review || ''
     }));
 
     // Merge Open Loops
-    const newOpenLoops = (extractedData.open_loops || []).map((l: any) => ({
+    const newOpenLoops = (extractedData.open_loops || []).map((l: ExtractedOpenLoop) => ({
       id: l.loop_id || crypto.randomUUID(),
-      description: l.description,
-      status: l.status === 'resolved' ? 'closed' : 'open',
-      canonStatus: 'draft',
+      description: l.description || '',
+      status: l.status === 'resolved' ? 'closed' as const : 'open' as const,
+      canonStatus: 'draft' as const,
       source: 'ai-inferred' as const,
     }));
 
     // Merge Foreshadowing
-    const newForeshadowing = (extractedData.foreshadowing_elements || []).map((f: any) => ({
+    const newForeshadowing = (extractedData.foreshadowing_elements || []).map((f: ExtractedForeshadowing) => ({
       id: f.foreshadowing_id || crypto.randomUUID(),
-      clue: f.description || f.clue,
+      clue: f.clue || '',
       payoff: f.payoff_status || '',
-      canonStatus: 'draft',
+      canonStatus: 'draft' as const,
       source: 'ai-inferred' as const,
     }));
 
@@ -453,19 +456,19 @@ export default function ImportPage() {
                 <span className="bg-zinc-800 text-zinc-300 px-2 py-0.5 rounded text-xs">{extractedData.chapters?.length || 0}</span>
               </h4>
               <ul className="space-y-3 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
-                {(extractedData.chapters || []).map((c: any, i: number) => (
+                {(extractedData.chapters || []).map((c: ExtractedChapter, i: number) => (
                   <li key={i} className="bg-zinc-950 p-3 rounded-lg border border-zinc-800/50 relative group">
-                    <button 
-                      onClick={() => setExtractedData({ ...extractedData, chapters: extractedData.chapters.filter((_: any, idx: number) => idx !== i) })}
+                    <button
+                      onClick={() => setExtractedData({ ...extractedData, chapters: (extractedData.chapters || []).filter((_: ExtractedChapter, idx: number) => idx !== i) })}
                       className="absolute top-2 right-2 p-1 text-zinc-500 hover:text-red-400 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                     >
                       <X size={14} />
                     </button>
-                    <input 
-                      type="text" 
-                      value={c.title} 
+                    <input
+                      type="text"
+                      value={c.title}
                       onChange={(e) => {
-                        const newChapters = extractedData.chapters.map((ch: any, idx: number) =>
+                        const newChapters = (extractedData.chapters || []).map((ch: ExtractedChapter, idx: number) =>
                           idx === i ? { ...ch, title: e.target.value } : ch
                         );
                         setExtractedData({ ...extractedData, chapters: newChapters });
@@ -485,31 +488,31 @@ export default function ImportPage() {
                 <span className="bg-zinc-800 text-zinc-300 px-2 py-0.5 rounded text-xs">{extractedData.characters?.length || 0}</span>
               </h4>
               <ul className="space-y-3 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
-                {(extractedData.characters || []).map((c: any, i: number) => (
+                {(extractedData.characters || []).map((c: ExtractedCharacter, i: number) => (
                   <li key={i} className="bg-zinc-950 p-3 rounded-lg border border-zinc-800/50 relative group">
-                    <button 
-                      onClick={() => setExtractedData({ ...extractedData, characters: extractedData.characters.filter((_: any, idx: number) => idx !== i) })}
+                    <button
+                      onClick={() => setExtractedData({ ...extractedData, characters: (extractedData.characters || []).filter((_: ExtractedCharacter, idx: number) => idx !== i) })}
                       className="absolute top-2 right-2 p-1 text-zinc-500 hover:text-red-400 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                     >
                       <X size={14} />
                     </button>
                     <div className="flex gap-2 mb-1 pr-6">
-                      <input 
-                        type="text" 
-                        value={c.name} 
+                      <input
+                        type="text"
+                        value={c.name}
                         onChange={(e) => {
-                          const newChars = extractedData.characters.map((ch: any, idx: number) =>
+                          const newChars = (extractedData.characters || []).map((ch: ExtractedCharacter, idx: number) =>
                             idx === i ? { ...ch, name: e.target.value } : ch
                           );
                           setExtractedData({ ...extractedData, characters: newChars });
                         }}
                         className="flex-1 bg-transparent border-b border-zinc-800 focus:border-indigo-500 text-sm text-zinc-200 font-medium outline-none px-1"
                       />
-                      <input 
-                        type="text" 
-                        value={c.role} 
+                      <input
+                        type="text"
+                        value={c.role}
                         onChange={(e) => {
-                          const newChars = extractedData.characters.map((ch: any, idx: number) =>
+                          const newChars = (extractedData.characters || []).map((ch: ExtractedCharacter, idx: number) =>
                             idx === i ? { ...ch, role: e.target.value } : ch
                           );
                           setExtractedData({ ...extractedData, characters: newChars });
@@ -520,21 +523,21 @@ export default function ImportPage() {
                     <p className="text-xs text-zinc-500 line-clamp-2 px-1 mb-2">{c.description}</p>
                     
                     {/* Character State (if available) */}
-                    {extractedData.character_states?.find((s: any) => s.character_id === c.character_id || s.name === c.name) && (
+                    {extractedData.character_states?.find((s: ExtractedCharacterState) => s.character_id === c.character_id || s.name === c.name) && (
                       <div className="mt-2 pt-2 border-t border-zinc-800/50">
                         <span className="text-[10px] text-zinc-500 uppercase tracking-wider mb-1 block">Current State</span>
                         <div className="grid grid-cols-2 gap-2 text-xs">
                           <div>
-                            <span className="text-zinc-600">Goal:</span> <span className="text-zinc-400">{extractedData.character_states.find((s: any) => s.character_id === c.character_id || s.name === c.name).visible_goal}</span>
+                            <span className="text-zinc-600">Goal:</span> <span className="text-zinc-400">{extractedData.character_states?.find((s: ExtractedCharacterState) => s.character_id === c.character_id || s.name === c.name)?.visible_goal}</span>
                           </div>
                           <div>
-                            <span className="text-zinc-600">Need:</span> <span className="text-zinc-400">{extractedData.character_states.find((s: any) => s.character_id === c.character_id || s.name === c.name).hidden_need}</span>
+                            <span className="text-zinc-600">Need:</span> <span className="text-zinc-400">{extractedData.character_states?.find((s: ExtractedCharacterState) => s.character_id === c.character_id || s.name === c.name)?.hidden_need}</span>
                           </div>
                           <div>
-                            <span className="text-zinc-600">Emotion:</span> <span className="text-zinc-400">{extractedData.character_states.find((s: any) => s.character_id === c.character_id || s.name === c.name).current_emotional_state}</span>
+                            <span className="text-zinc-600">Emotion:</span> <span className="text-zinc-400">{extractedData.character_states?.find((s: ExtractedCharacterState) => s.character_id === c.character_id || s.name === c.name)?.current_emotional_state}</span>
                           </div>
                           <div>
-                            <span className="text-zinc-600">Pressure:</span> <span className="text-zinc-400">{extractedData.character_states.find((s: any) => s.character_id === c.character_id || s.name === c.name).current_pressure_level}</span>
+                            <span className="text-zinc-600">Pressure:</span> <span className="text-zinc-400">{extractedData.character_states?.find((s: ExtractedCharacterState) => s.character_id === c.character_id || s.name === c.name)?.current_pressure_level}</span>
                           </div>
                         </div>
                       </div>
@@ -551,10 +554,10 @@ export default function ImportPage() {
                 <span className="bg-zinc-800 text-zinc-300 px-2 py-0.5 rounded text-xs">{extractedData.active_conflicts?.length || 0}</span>
               </h4>
               <ul className="space-y-3 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
-                {(extractedData.active_conflicts || []).map((c: any, i: number) => (
+                {(extractedData.active_conflicts || []).map((c: ExtractedConflict, i: number) => (
                   <li key={i} className="bg-zinc-950 p-3 rounded-lg border border-zinc-800/50 relative group">
-                    <button 
-                      onClick={() => setExtractedData({ ...extractedData, active_conflicts: extractedData.active_conflicts.filter((_: any, idx: number) => idx !== i) })}
+                    <button
+                      onClick={() => setExtractedData({ ...extractedData, active_conflicts: (extractedData.active_conflicts || []).filter((_: ExtractedConflict, idx: number) => idx !== i) })}
                       className="absolute top-2 right-2 p-1 text-zinc-500 hover:text-red-400 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                     >
                       <X size={14} />
@@ -573,10 +576,10 @@ export default function ImportPage() {
                 <span className="bg-zinc-800 text-zinc-300 px-2 py-0.5 rounded text-xs">{(extractedData.world_rules?.length || 0) + (extractedData.timeline_events?.length || 0)}</span>
               </h4>
               <ul className="space-y-3 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
-                {(extractedData.world_rules || []).map((w: any, i: number) => (
+                {(extractedData.world_rules || []).map((w: ExtractedWorldRule, i: number) => (
                   <li key={`w-${i}`} className="bg-zinc-950 p-3 rounded-lg border border-zinc-800/50 relative group">
-                    <button 
-                      onClick={() => setExtractedData({ ...extractedData, world_rules: extractedData.world_rules.filter((_: any, idx: number) => idx !== i) })}
+                    <button
+                      onClick={() => setExtractedData({ ...extractedData, world_rules: (extractedData.world_rules || []).filter((_: ExtractedWorldRule, idx: number) => idx !== i) })}
                       className="absolute top-2 right-2 p-1 text-zinc-500 hover:text-red-400 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                     >
                       <X size={14} />
@@ -586,10 +589,10 @@ export default function ImportPage() {
                     <p className="text-xs text-zinc-500 line-clamp-2">{w.rule || w.description}</p>
                   </li>
                 ))}
-                {(extractedData.timeline_events || []).map((t: any, i: number) => (
+                {(extractedData.timeline_events || []).map((t: ExtractedTimelineEvent, i: number) => (
                   <li key={`t-${i}`} className="bg-zinc-950 p-3 rounded-lg border border-zinc-800/50 relative group">
-                    <button 
-                      onClick={() => setExtractedData({ ...extractedData, timeline_events: extractedData.timeline_events.filter((_: any, idx: number) => idx !== i) })}
+                    <button
+                      onClick={() => setExtractedData({ ...extractedData, timeline_events: (extractedData.timeline_events || []).filter((_: ExtractedTimelineEvent, idx: number) => idx !== i) })}
                       className="absolute top-2 right-2 p-1 text-zinc-500 hover:text-red-400 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                     >
                       <X size={14} />
@@ -613,10 +616,10 @@ export default function ImportPage() {
                 
                 {/* Themes & Locations */}
                 <ul className="space-y-3 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
-                  {(extractedData.themes || []).map((t: any, i: number) => (
+                  {(extractedData.themes || []).map((t: ExtractedTheme, i: number) => (
                     <li key={`th-${i}`} className="bg-zinc-950 p-3 rounded-lg border border-zinc-800/50 relative group">
-                      <button 
-                        onClick={() => setExtractedData({ ...extractedData, themes: extractedData.themes.filter((_: any, idx: number) => idx !== i) })}
+                      <button
+                        onClick={() => setExtractedData({ ...extractedData, themes: (extractedData.themes || []).filter((_: ExtractedTheme, idx: number) => idx !== i) })}
                         className="absolute top-2 right-2 p-1 text-zinc-500 hover:text-red-400 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                       >
                         <X size={14} />
@@ -626,10 +629,10 @@ export default function ImportPage() {
                       <p className="text-xs text-zinc-500 line-clamp-2">{t.evidence?.join(', ')}</p>
                     </li>
                   ))}
-                  {(extractedData.locations || []).map((l: any, i: number) => (
+                  {(extractedData.locations || []).map((l: ExtractedLocation, i: number) => (
                     <li key={`loc-${i}`} className="bg-zinc-950 p-3 rounded-lg border border-zinc-800/50 relative group">
-                      <button 
-                        onClick={() => setExtractedData({ ...extractedData, locations: extractedData.locations.filter((_: any, idx: number) => idx !== i) })}
+                      <button
+                        onClick={() => setExtractedData({ ...extractedData, locations: (extractedData.locations || []).filter((_: ExtractedLocation, idx: number) => idx !== i) })}
                         className="absolute top-2 right-2 p-1 text-zinc-500 hover:text-red-400 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                       >
                         <X size={14} />
@@ -646,10 +649,10 @@ export default function ImportPage() {
 
                 {/* Open Loops & Foreshadowing */}
                 <ul className="space-y-3 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
-                  {(extractedData.open_loops || []).map((l: any, i: number) => (
+                  {(extractedData.open_loops || []).map((l: ExtractedOpenLoop, i: number) => (
                     <li key={`ol-${i}`} className="bg-zinc-950 p-3 rounded-lg border border-zinc-800/50 relative group">
-                      <button 
-                        onClick={() => setExtractedData({ ...extractedData, open_loops: extractedData.open_loops.filter((_: any, idx: number) => idx !== i) })}
+                      <button
+                        onClick={() => setExtractedData({ ...extractedData, open_loops: (extractedData.open_loops || []).filter((_: ExtractedOpenLoop, idx: number) => idx !== i) })}
                         className="absolute top-2 right-2 p-1 text-zinc-500 hover:text-red-400 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                       >
                         <X size={14} />
@@ -658,10 +661,10 @@ export default function ImportPage() {
                       <p className="text-xs text-zinc-300 line-clamp-2 pr-6">{l.description}</p>
                     </li>
                   ))}
-                  {(extractedData.foreshadowing_elements || []).map((f: any, i: number) => (
+                  {(extractedData.foreshadowing_elements || []).map((f: ExtractedForeshadowing, i: number) => (
                     <li key={`fs-${i}`} className="bg-zinc-950 p-3 rounded-lg border border-zinc-800/50 relative group">
-                      <button 
-                        onClick={() => setExtractedData({ ...extractedData, foreshadowing_elements: extractedData.foreshadowing_elements.filter((_: any, idx: number) => idx !== i) })}
+                      <button
+                        onClick={() => setExtractedData({ ...extractedData, foreshadowing_elements: (extractedData.foreshadowing_elements || []).filter((_: ExtractedForeshadowing, idx: number) => idx !== i) })}
                         className="absolute top-2 right-2 p-1 text-zinc-500 hover:text-red-400 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                       >
                         <X size={14} />
@@ -685,10 +688,10 @@ export default function ImportPage() {
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <ul className="space-y-3 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
-                  {(extractedData.canon_items || []).map((c: any, i: number) => (
+                  {(extractedData.canon_items || []).map((c: ExtractedCanonItem, i: number) => (
                     <li key={`c-${i}`} className="bg-zinc-950 p-3 rounded-lg border border-zinc-800/50 relative group">
-                      <button 
-                        onClick={() => setExtractedData({ ...extractedData, canon_items: extractedData.canon_items.filter((_: any, idx: number) => idx !== i) })}
+                      <button
+                        onClick={() => setExtractedData({ ...extractedData, canon_items: (extractedData.canon_items || []).filter((_: ExtractedCanonItem, idx: number) => idx !== i) })}
                         className="absolute top-2 right-2 p-1 text-zinc-500 hover:text-red-400 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                       >
                         <X size={14} />
@@ -702,10 +705,10 @@ export default function ImportPage() {
                   )}
                 </ul>
                 <ul className="space-y-3 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
-                  {(extractedData.ambiguities || []).map((a: any, i: number) => (
+                  {(extractedData.ambiguities || []).map((a: ExtractedAmbiguity, i: number) => (
                     <li key={`a-${i}`} className="bg-amber-950/30 p-3 rounded-lg border border-amber-900/50 relative group">
-                      <button 
-                        onClick={() => setExtractedData({ ...extractedData, ambiguities: extractedData.ambiguities.filter((_: any, idx: number) => idx !== i) })}
+                      <button
+                        onClick={() => setExtractedData({ ...extractedData, ambiguities: (extractedData.ambiguities || []).filter((_: ExtractedAmbiguity, idx: number) => idx !== i) })}
                         className="absolute top-2 right-2 p-1 text-zinc-500 hover:text-red-400 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                       >
                         <X size={14} />
