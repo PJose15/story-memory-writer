@@ -389,11 +389,11 @@ IMPORTANT: If the user asks about something in the omitted sections, tell them y
       };
 
       setMessages((prev) => [...prev, assistantMsg]);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Chat error:', error);
-      const isAbort = error?.name === 'AbortError';
+      const isAbort = error instanceof DOMException && error.name === 'AbortError';
       if (!isAbort) {
-        const errorMsg = error?.message || 'Something went wrong';
+        const errorMsg = error instanceof Error ? error.message : 'Something went wrong';
         toast(errorMsg, 'error');
         setMessages((prev) => [
           ...prev,
