@@ -5,6 +5,7 @@ import { useRef } from 'react';
 import { Settings, Download, Upload, Trash2, AlertTriangle, Globe } from 'lucide-react';
 import { useToast } from '@/components/toast';
 import { useConfirm } from '@/components/confirm-dialog';
+import { HeteronymSettings } from '@/components/heteronyms/heteronym-settings';
 
 // Only these keys from StoryState are allowed during import
 const ALLOWED_KEYS = new Set<keyof StoryState>([
@@ -133,6 +134,8 @@ export default function SettingsPage() {
             <option value="Arabic">العربية (Arabic)</option>
           </select>
         </section>
+
+        <HeteronymSettings />
 
         <section className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 space-y-4">
           <h2 className="text-xl font-serif font-semibold text-zinc-100 flex items-center gap-2">

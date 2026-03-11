@@ -1,0 +1,88 @@
+'use client';
+
+import { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+
+type BreathPhase = 'inhale' | 'hold' | 'exhale';
+
+const phases: { phase: BreathPhase; duration: number; label: string }[] = [
+  { phase: 'inhale', duration: 4000, label: 'Breathe in...' },
+  { phase: 'hold', duration: 4000, label: 'Hold...' },
+  { phase: 'exhale', duration: 4000, label: 'Breathe out...' },
+];
+
+// 12s per cycle, 5 cycles = 60s total
+const TOTAL_CYCLES = 5;
+
+interface BreathingGuideProps {
+  onComplete: () => void;
+}
+
+export function BreathingGuide({ onComplete }: BreathingGuideProps) {
+  const [currentPhase, setCurrentPhase] = useState(0);
+  const [cycle, setCycle] = useState(0);
+  const [done, setDone] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (done) {
+      onComplete();
+    }
+  }, [done, onComplete]);
+
+  useEffect(() => {
+    const advancePhase = () => {
+      setCurrentPhase(prev => {
+        const nextPhase = (prev + 1) % phases.length;
+        if (nextPhase === 0) {
+          setCycle(prevCycle => {
+            const nextCycle = prevCycle + 1;
+            if (nextCycle >= TOTAL_CYCLES) {
+              setDone(true);
+              return prevCycle;
+            }
+            return nextCycle;
+          });
+        }
+        return nextPhase;
+      });
+    };
+
+    timerRef.current = setTimeout(advancePhase, phases[currentPhase].duration);
+
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [currentPhase, cycle, onComplete]);
+
+  const phase = phases[currentPhase];
+  const scale = phase.phase === 'inhale' ? 1.4 : phase.phase === 'hold' ? 1.4 : 1;
+
+  return (
+    <div className="flex flex-col items-center justify-center gap-8">
+      <motion.div
+        animate={{ scale }}
+        transition={{ duration: phase.duration / 1000, ease: 'easeInOut' }}
+        className="w-32 h-32 rounded-full border-2 border-indigo-400/40 bg-indigo-500/10 flex items-center justify-center"
+      >
+        <div className="w-4 h-4 rounded-full bg-indigo-400/60" />
+      </motion.div>
+
+      <AnimatePresence mode="wait">
+        <motion.p
+          key={`${cycle}-${currentPhase}`}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          className="text-lg text-zinc-300 font-serif"
+        >
+          {phase.label}
+        </motion.p>
+      </AnimatePresence>
+
+      <p className="text-xs text-zinc-500">
+        Cycle {Math.min(cycle + 1, TOTAL_CYCLES)} of {TOTAL_CYCLES}
+      </p>
+    </div>
+  );
+}

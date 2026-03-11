@@ -1,0 +1,482 @@
+[
+  {
+    "id": "q001",
+    "text": "Start writing, no matter what. The water does not flow until the faucet is turned on.",
+    "author": "Louis L'Amour",
+    "source": "Education of a Wandering Man",
+    "blockTypes": ["fear", "perfectionism"],
+    "zagafyPhrase": "The faucet is already in your hand."
+  },
+  {
+    "id": "q002",
+    "text": "You can always edit a bad page. You can't edit a blank page.",
+    "author": "Jodi Picoult",
+    "source": "Interview with The Guardian",
+    "blockTypes": ["perfectionism", "fear"],
+    "zagafyPhrase": "The page is waiting. It doesn't judge."
+  },
+  {
+    "id": "q003",
+    "text": "The first draft is just you telling yourself the story.",
+    "author": "Terry Pratchett",
+    "source": "A Slip of the Keyboard",
+    "blockTypes": ["perfectionism"],
+    "zagafyPhrase": "Nobody else needs to hear it yet."
+  },
+  {
+    "id": "q004",
+    "text": "I write only when inspiration strikes. Fortunately it strikes every morning at nine o'clock sharp.",
+    "author": "W. Somerset Maugham",
+    "source": "The Summing Up",
+    "blockTypes": ["fear", "exhaustion"],
+    "zagafyPhrase": "You showed up. That is the hardest part."
+  },
+  {
+    "id": "q005",
+    "text": "Almost all good writing begins with terrible first efforts.",
+    "author": "Anne Lamott",
+    "source": "Bird by Bird",
+    "blockTypes": ["perfectionism"],
+    "zagafyPhrase": "Terrible is the beginning of something real."
+  },
+  {
+    "id": "q006",
+    "text": "You don't start out writing good stuff. You start out writing crap and thinking it's good stuff, and then gradually you get better at it.",
+    "author": "Octavia E. Butler",
+    "source": "Bloodchild and Other Stories",
+    "blockTypes": ["perfectionism", "fear"],
+    "zagafyPhrase": "Getting better starts with getting started."
+  },
+  {
+    "id": "q007",
+    "text": "I can fix a bad page. I can't fix a blank page.",
+    "author": "Nora Roberts",
+    "source": "Interview with USA Today",
+    "blockTypes": ["perfectionism", "fear"],
+    "zagafyPhrase": "One imperfect sentence is all it takes."
+  },
+  {
+    "id": "q008",
+    "text": "The scariest moment is always just before you start.",
+    "author": "Stephen King",
+    "source": "On Writing",
+    "blockTypes": ["fear"],
+    "zagafyPhrase": "You're already past the scariest part."
+  },
+  {
+    "id": "q009",
+    "text": "Writing is like driving at night in the fog. You can only see as far as your headlights, but you can make the whole trip that way.",
+    "author": "E. L. Doctorow",
+    "source": "Interview with The Paris Review",
+    "blockTypes": ["direction"],
+    "zagafyPhrase": "The next few feet are enough."
+  },
+  {
+    "id": "q010",
+    "text": "I don't know where I'm going, but I'm on my way.",
+    "author": "Carl Sandburg",
+    "source": "Incidentals",
+    "blockTypes": ["direction"],
+    "zagafyPhrase": "The path appears as you walk it."
+  },
+  {
+    "id": "q011",
+    "text": "If you wait for inspiration to write, you're not a writer, you're a waiter.",
+    "author": "Dan Poynter",
+    "source": "The Self-Publishing Manual",
+    "blockTypes": ["fear", "exhaustion"],
+    "zagafyPhrase": "You chose to write. That makes you a writer."
+  },
+  {
+    "id": "q012",
+    "text": "Close the door. Write with no one looking over your shoulder.",
+    "author": "Barbara Kingsolver",
+    "source": "Interview with The Atlantic",
+    "blockTypes": ["fear"],
+    "zagafyPhrase": "This space is yours alone."
+  },
+  {
+    "id": "q013",
+    "text": "Don't get it right, just get it written.",
+    "author": "James Thurber",
+    "source": "The Years with Ross",
+    "blockTypes": ["perfectionism"],
+    "zagafyPhrase": "Written beats right. Every time."
+  },
+  {
+    "id": "q014",
+    "text": "The desire to write grows with writing.",
+    "author": "Erasmus",
+    "source": "Adagia",
+    "blockTypes": ["exhaustion", "fear"],
+    "zagafyPhrase": "Start small. The rest will follow."
+  },
+  {
+    "id": "q015",
+    "text": "You might not write well every day, but you can always edit a bad page. You can't edit a blank page.",
+    "author": "Jodi Picoult",
+    "source": "Interview with Huffington Post",
+    "blockTypes": ["perfectionism", "exhaustion"],
+    "zagafyPhrase": "Even a rough page is progress."
+  },
+  {
+    "id": "q016",
+    "text": "When I sit down to write a book, I do not say to myself, 'I am going to produce a work of art.' I write it because there is some lie that I want to expose.",
+    "author": "George Orwell",
+    "source": "Why I Write",
+    "blockTypes": ["direction", "fear"],
+    "zagafyPhrase": "What truth is waiting inside your story?"
+  },
+  {
+    "id": "q017",
+    "text": "I went for years not finishing anything. Because, of course, when you finish something you can be judged.",
+    "author": "Erica Jong",
+    "source": "The Writer on Her Work",
+    "blockTypes": ["fear", "perfectionism"],
+    "zagafyPhrase": "Finishing is an act of courage."
+  },
+  {
+    "id": "q018",
+    "text": "There is no greater agony than bearing an untold story inside you.",
+    "author": "Maya Angelou",
+    "source": "I Know Why the Caged Bird Sings",
+    "blockTypes": ["fear", "direction"],
+    "zagafyPhrase": "Your story needs you to tell it."
+  },
+  {
+    "id": "q019",
+    "text": "We are all apprentices in a craft where no one ever becomes a master.",
+    "author": "Ernest Hemingway",
+    "source": "New York Journal-American",
+    "blockTypes": ["perfectionism"],
+    "zagafyPhrase": "Mastery is a direction, not a destination."
+  },
+  {
+    "id": "q020",
+    "text": "If the book is true, it will find an audience that is meant to read it.",
+    "author": "Wally Lamb",
+    "source": "Interview with Oprah",
+    "blockTypes": ["fear"],
+    "zagafyPhrase": "Write what is true to you."
+  },
+  {
+    "id": "q021",
+    "text": "A writer is someone for whom writing is more difficult than it is for other people.",
+    "author": "Thomas Mann",
+    "source": "Essays of Three Decades",
+    "blockTypes": ["exhaustion", "perfectionism"],
+    "zagafyPhrase": "Difficulty is not a sign of failure."
+  },
+  {
+    "id": "q022",
+    "text": "You can't think yourself out of a writing block; you have to write yourself out of a thinking block.",
+    "author": "John Rogers",
+    "source": "Kung Fu Monkey blog",
+    "blockTypes": ["direction", "fear"],
+    "zagafyPhrase": "The words will untangle the thoughts."
+  },
+  {
+    "id": "q023",
+    "text": "Rest is not idleness, and to lie sometimes on the grass under trees on a summer's day, listening to the murmur of the water, is by no means a waste of time.",
+    "author": "John Lubbock",
+    "source": "The Use of Life",
+    "blockTypes": ["exhaustion"],
+    "zagafyPhrase": "Rest is part of the work."
+  },
+  {
+    "id": "q024",
+    "text": "When you're exhausted, stop. When you're rested, write. There is no heroism in burnout.",
+    "author": "Ursula K. Le Guin",
+    "source": "Steering the Craft",
+    "blockTypes": ["exhaustion"],
+    "zagafyPhrase": "Gentleness is not weakness."
+  },
+  {
+    "id": "q025",
+    "text": "I learned that you should feel when writing, not like Lord Byron on a mountain top, but like a child stringing beads in kindergarten — happy, absorbed and quietly putting one bead on after another.",
+    "author": "Brenda Ueland",
+    "source": "If You Want to Write",
+    "blockTypes": ["perfectionism", "fear"],
+    "zagafyPhrase": "One bead at a time."
+  },
+  {
+    "id": "q026",
+    "text": "Tomorrow may be hell, but today was a good writing day, and on the good writing days nothing else matters.",
+    "author": "Neil Gaiman",
+    "source": "Journal entry",
+    "blockTypes": ["exhaustion", "fear"],
+    "zagafyPhrase": "Today is the day that matters."
+  },
+  {
+    "id": "q027",
+    "text": "Not knowing what comes next is the condition of the creative life.",
+    "author": "John McPhee",
+    "source": "Draft No. 4",
+    "blockTypes": ["direction"],
+    "zagafyPhrase": "Uncertainty is where stories come alive."
+  },
+  {
+    "id": "q028",
+    "text": "The beautiful part of writing is that you don't have to get it right the first time, unlike, say, a brain surgeon.",
+    "author": "Robert Cormier",
+    "source": "Interview with Horn Book Magazine",
+    "blockTypes": ["perfectionism"],
+    "zagafyPhrase": "Revision exists so you can be free."
+  },
+  {
+    "id": "q029",
+    "text": "Writing a novel is like driving a car at night. You can see only as far as your headlights, but you can make the whole trip that way.",
+    "author": "E. L. Doctorow",
+    "source": "Writers at Work",
+    "blockTypes": ["direction", "fear"],
+    "zagafyPhrase": "Trust the next few words."
+  },
+  {
+    "id": "q030",
+    "text": "You don't have to be great to start, but you have to start to be great.",
+    "author": "Zig Ziglar",
+    "source": "See You at the Top",
+    "blockTypes": ["fear", "perfectionism"],
+    "zagafyPhrase": "Starting is the first act of greatness."
+  },
+  {
+    "id": "q031",
+    "text": "I write to discover what I know.",
+    "author": "Flannery O'Connor",
+    "source": "Mystery and Manners",
+    "blockTypes": ["direction"],
+    "zagafyPhrase": "The answer is inside the writing."
+  },
+  {
+    "id": "q032",
+    "text": "All you have to do is write one true sentence. Write the truest sentence that you know.",
+    "author": "Ernest Hemingway",
+    "source": "A Moveable Feast",
+    "blockTypes": ["fear", "direction", "exhaustion"],
+    "zagafyPhrase": "One true sentence. That's all."
+  },
+  {
+    "id": "q033",
+    "text": "Writing is its own reward.",
+    "author": "Henry Miller",
+    "source": "Henry Miller on Writing",
+    "blockTypes": ["exhaustion"],
+    "zagafyPhrase": "The act itself is the gift."
+  },
+  {
+    "id": "q034",
+    "text": "If I waited for perfection, I would never write a word.",
+    "author": "Margaret Atwood",
+    "source": "Interview with The Paris Review",
+    "blockTypes": ["perfectionism"],
+    "zagafyPhrase": "Perfection is the enemy of your story."
+  },
+  {
+    "id": "q035",
+    "text": "The only way out is through.",
+    "author": "Robert Frost",
+    "source": "A Servant to Servants",
+    "blockTypes": ["fear", "direction", "exhaustion"],
+    "zagafyPhrase": "Through is one word at a time."
+  },
+  {
+    "id": "q036",
+    "text": "I do not over-intellectualize the production process. I try to keep it simple: Tell the damned story.",
+    "author": "Tom Clancy",
+    "source": "Interview with Writer's Digest",
+    "blockTypes": ["perfectionism", "direction"],
+    "zagafyPhrase": "Your story doesn't need to be clever. It needs to be told."
+  },
+  {
+    "id": "q037",
+    "text": "Whatever you do, don't stop writing. Keep going, even if it's terrible.",
+    "author": "Sylvia Plath",
+    "source": "The Unabridged Journals",
+    "blockTypes": ["fear", "perfectionism", "exhaustion"],
+    "zagafyPhrase": "Terrible is temporary. Silence is louder."
+  },
+  {
+    "id": "q038",
+    "text": "When I'm writing, I know I'm doing the thing I was born to do.",
+    "author": "Anne Sexton",
+    "source": "No Evil Star",
+    "blockTypes": ["exhaustion", "fear"],
+    "zagafyPhrase": "You were made for this."
+  },
+  {
+    "id": "q039",
+    "text": "The story will tell you where to go. You just have to listen.",
+    "author": "Toni Morrison",
+    "source": "Interview with The Guardian",
+    "blockTypes": ["direction"],
+    "zagafyPhrase": "Listen. Your characters know the way."
+  },
+  {
+    "id": "q040",
+    "text": "Being a writer is a very peculiar sort of a job: it's always you versus a blank sheet of paper and quite often the blank sheet wins.",
+    "author": "Neil Gaiman",
+    "source": "Masterclass",
+    "blockTypes": ["fear", "direction"],
+    "zagafyPhrase": "Today, you win."
+  },
+  {
+    "id": "q041",
+    "text": "I can shake off everything as I write; my sorrows disappear, my courage is reborn.",
+    "author": "Anne Frank",
+    "source": "The Diary of a Young Girl",
+    "blockTypes": ["exhaustion", "fear"],
+    "zagafyPhrase": "Writing is how you find your strength."
+  },
+  {
+    "id": "q042",
+    "text": "Write what should not be forgotten.",
+    "author": "Isabel Allende",
+    "source": "Interview with NPR",
+    "blockTypes": ["direction", "fear"],
+    "zagafyPhrase": "What must your reader remember?"
+  },
+  {
+    "id": "q043",
+    "text": "A professional writer is an amateur who didn't quit.",
+    "author": "Richard Bach",
+    "source": "A Gift of Wings",
+    "blockTypes": ["exhaustion", "fear"],
+    "zagafyPhrase": "You haven't quit. You're here."
+  },
+  {
+    "id": "q044",
+    "text": "One day I will find the right words, and they will be simple.",
+    "author": "Jack Kerouac",
+    "source": "The Dharma Bums",
+    "blockTypes": ["perfectionism", "direction"],
+    "zagafyPhrase": "Simple is waiting for you."
+  },
+  {
+    "id": "q045",
+    "text": "Fill your paper with the breathings of your heart.",
+    "author": "William Wordsworth",
+    "source": "Letter to Lady Beaumont",
+    "blockTypes": ["fear", "exhaustion"],
+    "zagafyPhrase": "Your heart already knows what to say."
+  },
+  {
+    "id": "q046",
+    "text": "I think all writing is a disease. You can't stop it.",
+    "author": "William Carlos Williams",
+    "source": "Interview with The Paris Review",
+    "blockTypes": ["exhaustion"],
+    "zagafyPhrase": "The urge is still there. Trust it."
+  },
+  {
+    "id": "q047",
+    "text": "Imagination is the beginning of creation. You imagine what you desire, you will what you imagine, and at last you create what you will.",
+    "author": "George Bernard Shaw",
+    "source": "Back to Methuselah",
+    "blockTypes": ["direction"],
+    "zagafyPhrase": "Imagine the next scene. Then write it."
+  },
+  {
+    "id": "q048",
+    "text": "The act of writing is the act of discovering what you believe.",
+    "author": "David Hare",
+    "source": "Interview with The Guardian",
+    "blockTypes": ["direction", "fear"],
+    "zagafyPhrase": "Belief comes from writing, not before it."
+  },
+  {
+    "id": "q049",
+    "text": "Every secret of a writer's soul, every experience of his life, every quality of his mind, is written large in his works.",
+    "author": "Virginia Woolf",
+    "source": "Orlando",
+    "blockTypes": ["fear"],
+    "zagafyPhrase": "Your soul is the story's greatest strength."
+  },
+  {
+    "id": "q050",
+    "text": "I love deadlines. I love the whooshing noise they make as they go by.",
+    "author": "Douglas Adams",
+    "source": "The Salmon of Doubt",
+    "blockTypes": ["exhaustion", "perfectionism"],
+    "zagafyPhrase": "There is no deadline here. Only you and your words."
+  },
+  {
+    "id": "q051",
+    "text": "Amateurs sit and wait for inspiration, the rest of us just get up and go to work.",
+    "author": "Stephen King",
+    "source": "On Writing",
+    "blockTypes": ["fear", "exhaustion"],
+    "zagafyPhrase": "You got up. Now write."
+  },
+  {
+    "id": "q052",
+    "text": "Every first draft is perfect because all the first draft has to do is exist.",
+    "author": "Jane Smiley",
+    "source": "Interview with The Atlantic",
+    "blockTypes": ["perfectionism"],
+    "zagafyPhrase": "Existence is the only bar to clear."
+  },
+  {
+    "id": "q053",
+    "text": "To gain your own voice, you have to forget about having it heard.",
+    "author": "Allen Ginsberg",
+    "source": "Spontaneous Mind",
+    "blockTypes": ["fear"],
+    "zagafyPhrase": "Write for no one. Find everyone."
+  },
+  {
+    "id": "q054",
+    "text": "I have been successful probably because I have always realized that I knew nothing about writing and have merely tried to tell an interesting story entertainingly.",
+    "author": "Edgar Rice Burroughs",
+    "source": "Interview with Writer's Digest",
+    "blockTypes": ["perfectionism", "direction"],
+    "zagafyPhrase": "Tell the story. That's all there is."
+  },
+  {
+    "id": "q055",
+    "text": "I would advise anyone who aspires to a writing career that before developing his talent he would be wise to develop a thick skin.",
+    "author": "Harper Lee",
+    "source": "Letter to Oprah",
+    "blockTypes": ["fear"],
+    "zagafyPhrase": "Your skin grows thicker with every word."
+  },
+  {
+    "id": "q056",
+    "text": "Write freely and as rapidly as possible and throw the whole thing on paper. Never correct or rewrite until the whole thing is down.",
+    "author": "John Steinbeck",
+    "source": "Journal of a Novel",
+    "blockTypes": ["perfectionism"],
+    "zagafyPhrase": "Down first. Perfect later."
+  },
+  {
+    "id": "q057",
+    "text": "I do not know what I think until I write it down.",
+    "author": "Joan Didion",
+    "source": "Why I Write",
+    "blockTypes": ["direction"],
+    "zagafyPhrase": "The writing knows before you do."
+  },
+  {
+    "id": "q058",
+    "text": "The pages are still blank, but there is a miraculous feeling of the words being there, written in invisible ink and clamoring to become visible.",
+    "author": "Vladimir Nabokov",
+    "source": "Strong Opinions",
+    "blockTypes": ["fear", "direction"],
+    "zagafyPhrase": "The words are already there. Let them through."
+  },
+  {
+    "id": "q059",
+    "text": "Easy reading is damn hard writing.",
+    "author": "Nathaniel Hawthorne",
+    "source": "The Scarlet Letter preface notes",
+    "blockTypes": ["perfectionism", "exhaustion"],
+    "zagafyPhrase": "Hard writing is honest work."
+  },
+  {
+    "id": "q060",
+    "text": "Sleep on your writing; take a walk over it; scrutinize it of a morning; review it of an afternoon; digest it after a meal; let it sleep in your drawer a twelvemonth.",
+    "author": "A. Bronson Alcott",
+    "source": "Table Talk",
+    "blockTypes": ["exhaustion"],
+    "zagafyPhrase": "Sometimes the best writing happens after rest."
+  }
+]

@@ -1,0 +1,109 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, cleanup, waitFor } from '@testing-library/react';
+import React from 'react';
+import { StoryProvider } from '@/lib/store';
+import type { Chapter, StoryState } from '@/lib/store';
+
+vi.mock('motion/react', () => {
+  const MockMotionDiv = React.forwardRef<HTMLDivElement, Record<string, unknown>>(
+    function MockMotionDiv({ children, initial, animate, exit, transition, ...props }, ref) {
+      return <div ref={ref as React.Ref<HTMLDivElement>} {...props as React.HTMLAttributes<HTMLDivElement>}>{children as React.ReactNode}</div>;
+    }
+  );
+  return {
+    AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+    motion: { div: MockMotionDiv },
+  };
+});
+
+vi.mock('lucide-react', () => ({
+  BookOpen: () => <span data-testid="icon-book-open" />,
+  X: () => <span data-testid="icon-x" />,
+}));
+
+import { ChapterSelectModal } from '@/components/flow/chapter-select-modal';
+
+const testChapters: Chapter[] = [
+  { id: 'ch-1', title: 'The Beginning', content: '', summary: 'How it all started' },
+  { id: 'ch-2', title: 'The Journey', content: '', summary: 'On the road' },
+  { id: 'ch-3', title: 'The End', content: '', summary: '' },
+];
+
+function setupLocalStorage(chapters: Chapter[]) {
+  const state: Partial<StoryState> = { chapters };
+  localStorage.setItem('story_memory_state', JSON.stringify(state));
+}
+
+function wrapper({ children }: { children: React.ReactNode }) {
+  return <StoryProvider>{children}</StoryProvider>;
+}
+
+describe('ChapterSelectModal', () => {
+  beforeEach(() => {
+    cleanup();
+    localStorage.clear();
+  });
+
+  it('renders chapter list heading', async () => {
+    setupLocalStorage(testChapters);
+    render(
+      <ChapterSelectModal onSelect={vi.fn()} onClose={vi.fn()} />,
+      { wrapper }
+    );
+    await waitFor(() => {
+      expect(screen.getByText('Choose a chapter')).toBeDefined();
+    });
+  });
+
+  it('shows "No chapters" message when chapters array is empty', async () => {
+    setupLocalStorage([]);
+    render(
+      <ChapterSelectModal onSelect={vi.fn()} onClose={vi.fn()} />,
+      { wrapper }
+    );
+    await waitFor(() => {
+      expect(screen.getByText(/No chapters yet/)).toBeDefined();
+    });
+  });
+
+  it('renders chapter titles', async () => {
+    setupLocalStorage(testChapters);
+    render(
+      <ChapterSelectModal onSelect={vi.fn()} onClose={vi.fn()} />,
+      { wrapper }
+    );
+    await waitFor(() => {
+      expect(screen.getByText(/The Beginning/)).toBeDefined();
+    });
+    expect(screen.getByText(/The Journey/)).toBeDefined();
+    expect(screen.getByText(/The End/)).toBeDefined();
+  });
+
+  it('clicking a chapter calls onSelect with chapter ID', async () => {
+    setupLocalStorage(testChapters);
+    const onSelect = vi.fn();
+    render(
+      <ChapterSelectModal onSelect={onSelect} onClose={vi.fn()} />,
+      { wrapper }
+    );
+    await waitFor(() => {
+      expect(screen.getByText(/The Journey/)).toBeDefined();
+    });
+    screen.getByText(/The Journey/).click();
+    expect(onSelect).toHaveBeenCalledWith('ch-2');
+  });
+
+  it('close button calls onClose', async () => {
+    setupLocalStorage(testChapters);
+    const onClose = vi.fn();
+    render(
+      <ChapterSelectModal onSelect={vi.fn()} onClose={onClose} />,
+      { wrapper }
+    );
+    await waitFor(() => {
+      expect(screen.getByLabelText('Close')).toBeDefined();
+    });
+    screen.getByLabelText('Close').click();
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+});

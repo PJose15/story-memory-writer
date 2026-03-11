@@ -1,10 +1,7 @@
 import type {Metadata} from 'next';
 import { Inter, JetBrains_Mono, Playfair_Display } from 'next/font/google';
 import './globals.css';
-import { Sidebar } from '@/components/sidebar';
-import { StoryProvider } from '@/lib/store';
-import { ToastProvider } from '@/components/toast';
-import { ConfirmProvider } from '@/components/confirm-dialog';
+import { AppShell } from '@/components/app-shell';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -33,16 +30,7 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
         <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-[200] focus:top-4 focus:left-4 focus:bg-indigo-600 focus:text-white focus:px-4 focus:py-2 focus:rounded-lg focus:text-sm focus:font-medium">
           Skip to content
         </a>
-        <StoryProvider>
-          <ToastProvider>
-            <ConfirmProvider>
-              <Sidebar />
-              <main id="main-content" className="flex-1 overflow-y-auto bg-zinc-900/50 md:rounded-tl-3xl border-t md:border-t-0 md:border-l border-zinc-800 relative shadow-2xl">
-                {children}
-              </main>
-            </ConfirmProvider>
-          </ToastProvider>
-        </StoryProvider>
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );

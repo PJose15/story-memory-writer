@@ -1,0 +1,92 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, cleanup } from '@testing-library/react';
+import React from 'react';
+
+// Mock next/navigation
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: vi.fn() }),
+}));
+
+// Mock recharts
+vi.mock('recharts', () => ({
+  BarChart: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  Bar: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  XAxis: () => <div />,
+  YAxis: () => <div />,
+  Tooltip: () => <div />,
+  ResponsiveContainer: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  Cell: () => <div />,
+}));
+
+// Mock writing-session module
+vi.mock('@/lib/types/writing-session', () => ({
+  readSessions: () => [
+    {
+      id: 'sess-1',
+      projectId: 'proj-1',
+      projectName: 'My Novel',
+      startedAt: '2026-03-10T10:00:00Z',
+      endedAt: '2026-03-10T10:30:00Z',
+      wordsStart: 100,
+      wordsEnd: 250,
+      wordsAdded: 150,
+      flowScore: 4,
+      heteronymId: null,
+      heteronymName: null,
+    },
+    {
+      id: 'sess-2',
+      projectId: 'proj-1',
+      projectName: 'My Novel',
+      startedAt: '2026-03-09T14:00:00Z',
+      endedAt: '2026-03-09T15:00:00Z',
+      wordsStart: 0,
+      wordsEnd: 300,
+      wordsAdded: 300,
+      flowScore: 5,
+      heteronymId: null,
+      heteronymName: null,
+    },
+  ],
+}));
+
+import WritingMapPage from '@/app/writing-map/page';
+
+describe('WritingMapPage', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-03-11T12:00:00Z'));
+    cleanup();
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.useRealTimers();
+  });
+
+  it('renders the page title', () => {
+    render(<WritingMapPage />);
+    expect(screen.getByText('Writing Map')).toBeTruthy();
+  });
+
+  it('shows session count and word total', () => {
+    render(<WritingMapPage />);
+    expect(screen.getByText(/2 sessions — 450 words tracked/)).toBeTruthy();
+  });
+
+  it('renders all 4 sections', () => {
+    render(<WritingMapPage />);
+    expect(screen.getByText('Activity')).toBeTruthy();
+    expect(screen.getByText('Words by Hour')).toBeTruthy();
+    expect(screen.getByText('Recent Sessions')).toBeTruthy();
+    expect(screen.getByTestId('insight-card')).toBeTruthy();
+  });
+
+  it('renders section ARIA labels', () => {
+    render(<WritingMapPage />);
+    expect(screen.getByLabelText('Writing activity heatmap')).toBeTruthy();
+    expect(screen.getByLabelText('Words written by hour of day')).toBeTruthy();
+    expect(screen.getByLabelText('Writing insight')).toBeTruthy();
+    expect(screen.getByLabelText('Recent writing sessions')).toBeTruthy();
+  });
+});

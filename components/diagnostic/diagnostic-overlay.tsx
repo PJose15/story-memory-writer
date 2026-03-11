@@ -1,0 +1,95 @@
+'use client';
+
+import { motion, AnimatePresence } from 'motion/react';
+import { useSession } from '@/lib/session';
+import { incrementStreak, getStreak } from '@/lib/diagnostic-streak';
+import { BlockCard, blockCards } from './block-card';
+import type { BlockType } from '@/lib/session';
+import { useState } from 'react';
+
+export function DiagnosticOverlay() {
+  const { setBlockType, completeDiagnostic } = useSession();
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  const [streak, setStreak] = useState(() => {
+    // Read streak on initial render (client-side only)
+    if (typeof window !== 'undefined') {
+      return getStreak();
+    }
+    return 0;
+  });
+
+  const handleSelect = (type: Exclude<BlockType, null>) => {
+    setBlockType(type);
+    const newStreak = incrementStreak();
+    setStreak(newStreak);
+    completeDiagnostic(false);
+  };
+
+  const handleSkip = () => {
+    const newStreak = incrementStreak();
+    setStreak(newStreak);
+    completeDiagnostic(true);
+  };
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-[200] bg-zinc-950 flex items-center justify-center p-4"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="diagnostic-title"
+      >
+        <div className="max-w-xl w-full space-y-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center space-y-3"
+          >
+            <h2
+              id="diagnostic-title"
+              className="text-3xl font-serif font-bold text-zinc-100 tracking-tight"
+            >
+              Before you begin...
+            </h2>
+            <p className="text-zinc-400 text-sm max-w-md mx-auto">
+              How are you feeling about writing today? This helps Zagafy adapt to where you are right now.
+            </p>
+            {streak > 0 && (
+              <p className="text-xs text-zinc-500">
+                Check-in streak: {streak} {streak === 1 ? 'day' : 'days'}
+              </p>
+            )}
+          </motion.div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {blockCards.map((card, i) => (
+              <BlockCard
+                key={card.type}
+                card={card}
+                index={i}
+                onSelect={handleSelect}
+              />
+            ))}
+          </div>
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            className="text-center"
+          >
+            <button
+              onClick={handleSkip}
+              className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors underline underline-offset-4"
+            >
+              Skip check-in
+            </button>
+          </motion.div>
+        </div>
+      </motion.div>
+    </AnimatePresence>
+  );
+}

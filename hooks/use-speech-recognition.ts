@@ -1,0 +1,275 @@
+'use client';
+
+import { useState, useRef, useCallback, useEffect } from 'react';
+import { saveBraindumpTemp } from '@/lib/types/braindump';
+
+const AUTO_SAVE_INTERVAL = 10000; // 10 seconds
+
+export interface UseSpeechRecognitionReturn {
+  isSupported: boolean;
+  permissionState: 'prompt' | 'granted' | 'denied' | 'unknown';
+  isRecording: boolean;
+  isPaused: boolean;
+  finalTranscript: string;
+  interimTranscript: string;
+  elapsedSeconds: number;
+  language: string;
+  error: string | null;
+  start(): Promise<void>;
+  stop(): void;
+  pause(): void;
+  resume(): void;
+  setLanguage(lang: string): void;
+  reset(): void;
+}
+
+function getSpeechRecognition(): typeof SpeechRecognition | null {
+  if (typeof window === 'undefined') return null;
+  return (
+    (window as unknown as { SpeechRecognition?: typeof SpeechRecognition }).SpeechRecognition ||
+    (window as unknown as { webkitSpeechRecognition?: typeof SpeechRecognition }).webkitSpeechRecognition ||
+    null
+  );
+}
+
+export function useSpeechRecognition(): UseSpeechRecognitionReturn {
+  const [isSupported] = useState(() => getSpeechRecognition() !== null);
+  const [permissionState, setPermissionState] = useState<'prompt' | 'granted' | 'denied' | 'unknown'>('unknown');
+  const [isRecording, setIsRecording] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [finalTranscript, setFinalTranscript] = useState('');
+  const [interimTranscript, setInterimTranscript] = useState('');
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [language, setLanguageState] = useState('en-US');
+  const [error, setError] = useState<string | null>(null);
+
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const autoSaveRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const finalTranscriptRef = useRef('');
+  const isRecordingRef = useRef(false);
+  const isPausedRef = useRef(false);
+  const elapsedSecondsRef = useRef(0);
+
+  // Keep refs in sync
+  useEffect(() => { finalTranscriptRef.current = finalTranscript; }, [finalTranscript]);
+  useEffect(() => { isRecordingRef.current = isRecording; }, [isRecording]);
+  useEffect(() => { isPausedRef.current = isPaused; }, [isPaused]);
+  useEffect(() => { elapsedSecondsRef.current = elapsedSeconds; }, [elapsedSeconds]);
+
+  const clearTimers = useCallback(() => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    if (autoSaveRef.current) {
+      clearInterval(autoSaveRef.current);
+      autoSaveRef.current = null;
+    }
+  }, []);
+
+  const startTimers = useCallback(() => {
+    clearTimers();
+    timerRef.current = setInterval(() => {
+      if (!isPausedRef.current) {
+        elapsedSecondsRef.current += 1;
+        setElapsedSeconds(elapsedSecondsRef.current);
+      }
+    }, 1000);
+    autoSaveRef.current = setInterval(() => {
+      if (finalTranscriptRef.current) {
+        saveBraindumpTemp({
+          transcript: finalTranscriptRef.current,
+          language,
+          elapsedSeconds: elapsedSecondsRef.current,
+          savedAt: new Date().toISOString(),
+        });
+      }
+    }, AUTO_SAVE_INTERVAL);
+  }, [clearTimers, language]);
+
+  const createRecognition = useCallback((lang: string): SpeechRecognition | null => {
+    const SpeechRecognitionClass = getSpeechRecognition();
+    if (!SpeechRecognitionClass) return null;
+
+    const recognition = new SpeechRecognitionClass();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = lang;
+
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      let interim = '';
+      let finalChunk = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const result = event.results[i];
+        if (result.isFinal) {
+          finalChunk += result[0].transcript;
+        } else {
+          interim += result[0].transcript;
+        }
+      }
+      if (finalChunk) {
+        setFinalTranscript(prev => {
+          const separator = prev && !prev.endsWith(' ') ? ' ' : '';
+          return prev + separator + finalChunk.trim();
+        });
+      }
+      setInterimTranscript(interim);
+    };
+
+    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+      if (event.error === 'not-allowed') {
+        setPermissionState('denied');
+        setError('Microphone access denied. Please allow microphone access in your browser settings.');
+        setIsRecording(false);
+        setIsPaused(false);
+        recognitionRef.current = null;
+        clearTimers();
+      } else if (event.error === 'no-speech') {
+        // Not fatal — keep going
+        setError('No speech detected — keep going or stop.');
+      } else if (event.error !== 'aborted') {
+        setError(`Speech recognition error: ${event.error}`);
+      }
+    };
+
+    recognition.onend = () => {
+      // Auto-restart if still recording (browser can stop recognition)
+      if (isRecordingRef.current && !isPausedRef.current) {
+        try {
+          recognition.start();
+        } catch {
+          // Already started or other issue
+        }
+      }
+    };
+
+    return recognition;
+  }, [clearTimers]);
+
+  const start = useCallback(async () => {
+    if (!isSupported) {
+      setError('Speech recognition is not supported in this browser.');
+      return;
+    }
+
+    setError(null);
+
+    // Request microphone permission
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach(t => t.stop());
+      setPermissionState('granted');
+    } catch {
+      setPermissionState('denied');
+      setError('Microphone access denied. Please allow microphone access in your browser settings.');
+      return;
+    }
+
+    const recognition = createRecognition(language);
+    if (!recognition) return;
+
+    recognitionRef.current = recognition;
+    setIsRecording(true);
+    setIsPaused(false);
+    startTimers();
+
+    try {
+      recognition.start();
+    } catch {
+      setError('Failed to start speech recognition.');
+      setIsRecording(false);
+      clearTimers();
+    }
+  }, [isSupported, language, createRecognition, startTimers, clearTimers]);
+
+  const stop = useCallback(() => {
+    if (recognitionRef.current) {
+      try { recognitionRef.current.stop(); } catch { /* already stopped */ }
+      recognitionRef.current = null;
+    }
+    setIsRecording(false);
+    setIsPaused(false);
+    setInterimTranscript('');
+    clearTimers();
+  }, [clearTimers]);
+
+  const pause = useCallback(() => {
+    if (!isRecording || isPaused) return;
+    if (recognitionRef.current) {
+      try { recognitionRef.current.stop(); } catch { /* ok */ }
+    }
+    setIsPaused(true);
+    setInterimTranscript('');
+  }, [isRecording, isPaused]);
+
+  const resume = useCallback(() => {
+    if (!isRecording || !isPaused) return;
+    setIsPaused(false);
+    setError(null);
+
+    const recognition = createRecognition(language);
+    if (!recognition) return;
+    recognitionRef.current = recognition;
+    try {
+      recognition.start();
+    } catch {
+      setError('Failed to resume speech recognition.');
+    }
+  }, [isRecording, isPaused, language, createRecognition]);
+
+  const setLanguage = useCallback((lang: string) => {
+    setLanguageState(lang);
+    if (isRecordingRef.current && !isPausedRef.current) {
+      // Restart with new language
+      if (recognitionRef.current) {
+        try { recognitionRef.current.stop(); } catch { /* ok */ }
+      }
+      const recognition = createRecognition(lang);
+      if (!recognition) return;
+      recognitionRef.current = recognition;
+      try {
+        recognition.start();
+      } catch {
+        // fail silently
+      }
+    }
+  }, [createRecognition]);
+
+  const reset = useCallback(() => {
+    stop();
+    setFinalTranscript('');
+    setInterimTranscript('');
+    elapsedSecondsRef.current = 0;
+    setElapsedSeconds(0);
+    setError(null);
+  }, [stop]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current) {
+        try { recognitionRef.current.stop(); } catch { /* ok */ }
+      }
+      clearTimers();
+    };
+  }, [clearTimers]);
+
+  return {
+    isSupported,
+    permissionState,
+    isRecording,
+    isPaused,
+    finalTranscript,
+    interimTranscript,
+    elapsedSeconds,
+    language,
+    error,
+    start,
+    stop,
+    pause,
+    resume,
+    setLanguage,
+    reset,
+  };
+}

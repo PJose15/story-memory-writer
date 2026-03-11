@@ -1,0 +1,111 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import React from 'react';
+import { CalendarHeatmap } from '@/components/writing-map/calendar-heatmap';
+import type { WritingSession } from '@/lib/types/writing-session';
+
+function makeSession(overrides: Partial<WritingSession> = {}): WritingSession {
+  return {
+    id: 'sess-1',
+    projectId: 'proj-1',
+    projectName: 'My Novel',
+    startedAt: '2026-03-10T10:00:00Z',
+    endedAt: '2026-03-10T10:30:00Z',
+    wordsStart: 100,
+    wordsEnd: 250,
+    wordsAdded: 150,
+    flowScore: 4,
+    heteronymId: null,
+    heteronymName: null,
+    ...overrides,
+  };
+}
+
+describe('CalendarHeatmap', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-03-11T12:00:00Z'));
+    cleanup();
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.useRealTimers();
+  });
+
+  it('renders an SVG with gridcells', () => {
+    render(<CalendarHeatmap sessions={[makeSession()]} />);
+    const svg = screen.getByRole('img');
+    expect(svg).toBeTruthy();
+
+    const cells = screen.getAllByRole('gridcell');
+    expect(cells.length).toBeGreaterThan(300);
+  });
+
+  it('renders mostly empty cells when no sessions', () => {
+    render(<CalendarHeatmap sessions={[]} />);
+    const cells = screen.getAllByRole('gridcell');
+    const zincCells = cells.filter(c => c.getAttribute('class')?.includes('fill-zinc-800'));
+    // All cells should be zinc (empty) — allow small rounding variance
+    expect(zincCells.length).toBe(cells.length);
+  });
+
+  it('colors cells for days with sessions', () => {
+    const sessions = [makeSession({ startedAt: '2026-03-10T10:00:00Z', wordsAdded: 500 })];
+    render(<CalendarHeatmap sessions={sessions} />);
+    const matchingCell = screen.getByLabelText('2026-03-10: 500 words');
+    expect(matchingCell.getAttribute('class')).not.toContain('fill-zinc-800');
+  });
+
+  it('shows rich tooltip on hover with all data', () => {
+    const sessions = [makeSession({ startedAt: '2026-03-10T10:00:00Z', endedAt: '2026-03-10T10:30:00Z', wordsAdded: 200, flowScore: 4 })];
+    render(<CalendarHeatmap sessions={sessions} />);
+    const cell = screen.getByLabelText('2026-03-10: 200 words');
+    fireEvent.mouseEnter(cell);
+    const tooltip = document.querySelector('[data-testid="heatmap-tooltip"]');
+    expect(tooltip).toBeTruthy();
+    expect(tooltip!.textContent).toContain('200 words');
+    expect(tooltip!.textContent).toContain('1 session');
+    expect(tooltip!.textContent).toContain('30m');
+  });
+
+  it('renders legend', () => {
+    render(<CalendarHeatmap sessions={[]} />);
+    const lessElements = screen.getAllByText('Less');
+    expect(lessElements.length).toBeGreaterThanOrEqual(1);
+    const moreElements = screen.getAllByText('More');
+    expect(moreElements.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('uses fixed color thresholds (not relative to max)', () => {
+    // 150 words should be emerald-900 (1-200 range)
+    const sessions = [makeSession({ startedAt: '2026-03-10T10:00:00Z', wordsAdded: 150 })];
+    render(<CalendarHeatmap sessions={sessions} />);
+    const cell = screen.getByLabelText('2026-03-10: 150 words');
+    expect(cell.getAttribute('class')).toContain('fill-emerald-900');
+  });
+
+  it('applies correct color for 501-1000 word range', () => {
+    const sessions = [makeSession({ startedAt: '2026-03-10T10:00:00Z', wordsAdded: 750 })];
+    render(<CalendarHeatmap sessions={sessions} />);
+    const cell = screen.getByLabelText('2026-03-10: 750 words');
+    expect(cell.getAttribute('class')).toContain('fill-emerald-500');
+  });
+
+  it('applies highest color for 1000+ words', () => {
+    const sessions = [makeSession({ startedAt: '2026-03-10T10:00:00Z', wordsAdded: 1500 })];
+    render(<CalendarHeatmap sessions={sessions} />);
+    const cell = screen.getByLabelText('2026-03-10: 1500 words');
+    expect(cell.getAttribute('class')).toContain('fill-emerald-300');
+  });
+
+  it('aggregates multiple sessions on the same day', () => {
+    const sessions = [
+      makeSession({ id: 's1', startedAt: '2026-03-10T08:00:00Z', wordsAdded: 100 }),
+      makeSession({ id: 's2', startedAt: '2026-03-10T14:00:00Z', wordsAdded: 200 }),
+    ];
+    render(<CalendarHeatmap sessions={sessions} />);
+    const cell = screen.getByLabelText('2026-03-10: 300 words');
+    expect(cell).toBeTruthy();
+  });
+});

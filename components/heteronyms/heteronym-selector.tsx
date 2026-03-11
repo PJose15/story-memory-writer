@@ -1,0 +1,91 @@
+'use client';
+
+import { useState, useRef, useEffect } from 'react';
+import { ChevronDown } from 'lucide-react';
+import { AvatarCircle } from './avatar-circle';
+import type { Heteronym } from '@/lib/types/heteronym';
+
+interface HeteronymSelectorProps {
+  heteronyms: Heteronym[];
+  activeId: string | null;
+  onSelect: (id: string) => void;
+}
+
+export function HeteronymSelector({ heteronyms, activeId, onSelect }: HeteronymSelectorProps) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  const active = heteronyms.find(h => h.id === activeId) || heteronyms[0];
+
+  useEffect(() => {
+    if (!open) return;
+    const handleClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [open]);
+
+  if (!active) return null;
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-zinc-800 transition-colors"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-label="Select writing voice"
+      >
+        <AvatarCircle color={active.avatarColor} emoji={active.avatarEmoji} size={24} />
+        <span className="text-xs text-zinc-400 max-w-[100px] truncate">{active.name}</span>
+        <ChevronDown size={12} className={`text-zinc-500 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      {open && (
+        <div
+          role="listbox"
+          aria-label="Writing voices"
+          className="absolute top-full left-0 mt-1 bg-zinc-900 border border-zinc-700 rounded-xl shadow-xl min-w-[200px] py-1 z-20"
+        >
+          {heteronyms.map((h) => (
+            <button
+              key={h.id}
+              role="option"
+              aria-selected={h.id === activeId}
+              onClick={() => {
+                onSelect(h.id);
+                setOpen(false);
+              }}
+              className={`w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-zinc-800 transition-colors ${
+                h.id === activeId ? 'bg-zinc-800/50' : ''
+              }`}
+            >
+              <AvatarCircle color={h.avatarColor} emoji={h.avatarEmoji} size={28} />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-zinc-200 truncate">{h.name}</p>
+                {h.styleNote && (
+                  <p className="text-[11px] text-zinc-500 truncate">{h.styleNote}</p>
+                )}
+              </div>
+              {h.id === activeId && (
+                <span className="text-[10px] text-indigo-400 shrink-0">Active</span>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

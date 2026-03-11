@@ -1,0 +1,520 @@
+'use client';
+
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
+import { useMicroPrompt } from '@/hooks/use-micro-prompt';
+import { useFlowAutosave } from '@/hooks/use-flow-autosave';
+import { useSession } from '@/lib/session';
+import { useStory } from '@/lib/store';
+import { useSceneChange } from '@/hooks/use-scene-change';
+import { useToast } from '@/components/toast';
+import { useConfirm } from '@/components/confirm-dialog';
+import { MomentumGlow } from './momentum-glow';
+import { MicroPromptDisplay } from './micro-prompt-display';
+import { SceneChangeBanner } from './scene-change-banner';
+import { SceneChangeOverlay } from './scene-change-overlay';
+import { SceneChangeRecoveryModal } from './scene-change-recovery-modal';
+import type { MicroPromptStoryContext } from '@/lib/prompts/micro-prompt';
+import { HeteronymSelector } from '@/components/heteronyms/heteronym-selector';
+import { VoiceSwitchModal } from '@/components/heteronyms/voice-switch-modal';
+import { VoiceBanner } from '@/components/heteronyms/voice-banner';
+import {
+  readHeteronyms,
+  getActiveHeteronymId,
+  setActiveHeteronymId,
+  getGuestHeteronymId,
+  setGuestHeteronymId,
+} from '@/lib/types/heteronym';
+import {
+  readSceneChangeReturn,
+  clearSceneChangeReturn,
+} from '@/lib/types/scene-change';
+import { useBraindump } from '@/hooks/use-braindump';
+import { BraindumpPanel } from './braindump-panel';
+import { BraindumpHistoryDrawer } from './braindump-history-drawer';
+import { BraindumpToolbarMessage } from './braindump-toolbar-message';
+import { Theater, Shuffle, Mic, ClipboardList } from 'lucide-react';
+
+const PAUSE_TIMEOUT = 30000; // 30 seconds
+const MOMENTUM_DECAY_INTERVAL = 100; // ms
+const MOMENTUM_INCREMENT = 0.02;
+const MOMENTUM_DECAY = 0.01;
+
+interface FlowEditorProps {
+  chapterId: string;
+  onExit: () => void;
+}
+
+export function FlowEditor({ chapterId, onExit }: FlowEditorProps) {
+  const { session, setFlowChapterId } = useSession();
+  const { state } = useStory();
+  const { scheduleAutosave, saveNow, initialContent } = useFlowAutosave(chapterId);
+  const { prompt, isLoading, fetchPrompt, clearPrompt } = useMicroPrompt();
+  const { toast } = useToast();
+  const { confirm } = useConfirm();
+
+  const [content, setContent] = useState(initialContent);
+  const [momentum, setMomentum] = useState(0);
+  const pauseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const momentumTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Heteronym state
+  const [heteronyms] = useState(() => readHeteronyms());
+  const [activeHeteronymId, setActiveHId] = useState(() => getActiveHeteronymId());
+  const [guestHeteronymId, setGuestHId] = useState(() => getGuestHeteronymId());
+  const [voiceSwitchOpen, setVoiceSwitchOpen] = useState(false);
+
+  const currentVoiceId = guestHeteronymId || activeHeteronymId;
+  const guestHeteronym = guestHeteronymId ? heteronyms.find(h => h.id === guestHeteronymId) : null;
+
+  const chapter = state.chapters.find(ch => ch.id === chapterId);
+
+  // Derive word count from content
+  const wordCount = content.trim().split(/\s+/).filter(Boolean).length;
+
+  // Scene Change state
+  const nonDiscardedChapters = state.chapters.filter(ch => ch.canonStatus !== 'discarded');
+  const sceneChange = useSceneChange(nonDiscardedChapters.length);
+  const [overlayConfig, setOverlayConfig] = useState<{
+    message: string;
+    subtitle?: string;
+    onComplete: () => void;
+  } | null>(null);
+  const [showRecoveryModal, setShowRecoveryModal] = useState(false);
+
+  // Braindump state
+  const braindump = useBraindump({
+    textareaRef,
+    content,
+    setContent,
+    scheduleAutosave,
+    projectName: state.title || 'Untitled Project',
+  });
+  const [toolbarMessage, setToolbarMessage] = useState<'unsupported' | 'denied' | null>(null);
+
+  // On mount: check for pending return data (cursor restore + toast)
+  useEffect(() => {
+    const pendingReturn = readSceneChangeReturn();
+    if (pendingReturn) {
+      clearSceneChangeReturn();
+      // Restore cursor position
+      requestAnimationFrame(() => {
+        if (textareaRef.current) {
+          textareaRef.current.selectionStart = pendingReturn.cursorPosition;
+          textareaRef.current.selectionEnd = pendingReturn.cursorPosition;
+          textareaRef.current.focus();
+        }
+      });
+      toast(
+        `Scene change complete! You wrote ${pendingReturn.wordsWritten} word${pendingReturn.wordsWritten !== 1 ? 's' : ''} in the other chapter.`,
+        'success'
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // On mount: check for expired scene change (recovery modal)
+  useEffect(() => {
+    if (sceneChange.isActive && sceneChange.isExpired) {
+      setShowRecoveryModal(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleSceneChangeDepart = useCallback(() => {
+    const cursorPos = textareaRef.current?.selectionStart ?? 0;
+    saveNow(content);
+
+    const alternateId = sceneChange.depart(
+      chapterId,
+      chapter?.title || 'Untitled',
+      cursorPos,
+      wordCount,
+      nonDiscardedChapters
+    );
+
+    if (!alternateId) return;
+
+    setOverlayConfig({
+      message: 'Switching scenes...',
+      subtitle: 'A change of scenery to spark new ideas',
+      onComplete: () => {
+        setOverlayConfig(null);
+        setFlowChapterId(alternateId);
+      },
+    });
+  }, [content, saveNow, sceneChange, chapterId, chapter?.title, wordCount, nonDiscardedChapters, setFlowChapterId]);
+
+  const handleSceneChangeReturn = useCallback(() => {
+    const originalId = sceneChange.sceneState?.originalChapterId;
+    if (!originalId) return;
+
+    // Check if original chapter still exists
+    const originalExists = state.chapters.some(ch => ch.id === originalId);
+    if (!originalExists) {
+      toast('Original chapter was deleted. Staying in current chapter.', 'error');
+      sceneChange.cancelSceneChange();
+      return;
+    }
+
+    const ret = sceneChange.returnToOriginal(wordCount);
+
+    setOverlayConfig({
+      message: 'Returning to your chapter...',
+      subtitle: `You wrote ${ret.wordsWritten} word${ret.wordsWritten !== 1 ? 's' : ''} during the detour`,
+      onComplete: () => {
+        setOverlayConfig(null);
+        setFlowChapterId(originalId);
+      },
+    });
+  }, [sceneChange, wordCount, state.chapters, setFlowChapterId, toast]);
+
+  const handleRecoveryReturn = useCallback(() => {
+    setShowRecoveryModal(false);
+    handleSceneChangeReturn();
+  }, [handleSceneChangeReturn]);
+
+  const handleRecoveryStay = useCallback(() => {
+    setShowRecoveryModal(false);
+    sceneChange.cancelSceneChange();
+  }, [sceneChange]);
+
+  const handleExitWithGuard = useCallback(async () => {
+    if (braindump.panelOpen) {
+      await braindump.closePanel();
+    }
+    if (sceneChange.isActive) {
+      const confirmed = await confirm({
+        title: 'Active Scene Change',
+        message: 'You have an active scene change. Exiting will cancel it. Are you sure?',
+        confirmLabel: 'Exit anyway',
+        variant: 'danger',
+      });
+      if (!confirmed) return;
+      sceneChange.cancelSceneChange();
+    }
+    onExit();
+  }, [braindump, sceneChange, confirm, onExit]);
+
+  const handleSelectActive = useCallback((id: string) => {
+    setActiveHeteronymId(id);
+    setActiveHId(id);
+  }, []);
+
+  const handleSelectGuest = useCallback((id: string) => {
+    setGuestHeteronymId(id);
+    setGuestHId(id);
+  }, []);
+
+  const handleClearGuest = useCallback(() => {
+    setGuestHeteronymId(null);
+    setGuestHId(null);
+  }, []);
+
+  const genre = state.genre.join(', ');
+  const protagonist = state.characters.find(c => c.role === 'protagonist' || c.role === 'Protagonist');
+
+  // Build story context for micro-prompts (memoized — only changes when story state changes)
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization
+  const storyContext = useMemo((): MicroPromptStoryContext => {
+    const ctx: MicroPromptStoryContext = {};
+
+    if (state.title && state.title !== 'Untitled Project') {
+      ctx.title = state.title;
+    }
+    if (state.synopsis) {
+      ctx.synopsis = state.synopsis.slice(0, 500);
+    }
+    if (chapter?.title) {
+      ctx.currentChapterTitle = chapter.title;
+    }
+
+    // Characters — name, role, key details
+    const validChars = state.characters.filter(c => c.canonStatus !== 'discarded').slice(0, 10);
+    if (validChars.length > 0) {
+      // Explicit name list for grounding — prevents AI from inventing names
+      ctx.characterNames = validChars.map(c => c.name);
+      ctx.characters = validChars
+        .map(c => {
+          const parts = [`- ${c.name} (${c.role}): ${c.description?.slice(0, 120) || 'No description'}`];
+          if (c.currentState?.emotionalState) {
+            parts.push(`  Current state: ${c.currentState.emotionalState}`);
+          }
+          if (c.currentState?.visibleGoal) {
+            parts.push(`  Goal: ${c.currentState.visibleGoal}`);
+          }
+          if (c.currentState?.currentFear) {
+            parts.push(`  Fear: ${c.currentState.currentFear}`);
+          }
+          return parts.join('\n');
+        })
+        .join('\n');
+    }
+
+    // Chapter summaries — what happened before
+    if (state.chapters.length > 0) {
+      const currentIdx = state.chapters.findIndex(ch => ch.id === chapterId);
+      ctx.chapterSummaries = state.chapters
+        .filter(ch => ch.canonStatus !== 'discarded')
+        .map((ch, i) => {
+          const marker = i === currentIdx ? ' [CURRENT]' : '';
+          const summary = ch.summary?.slice(0, 200) || 'No summary';
+          return `- Ch${i + 1}: "${ch.title}"${marker}: ${summary}`;
+        })
+        .join('\n');
+    }
+
+    // Active conflicts
+    const conflicts = state.active_conflicts?.filter(c => c.status === 'active' && c.canonStatus !== 'discarded');
+    if (conflicts?.length) {
+      ctx.activeConflicts = conflicts
+        .slice(0, 5)
+        .map(c => `- ${c.title}: ${c.description?.slice(0, 120) || ''}`)
+        .join('\n');
+    }
+
+    // Open loops / unresolved threads
+    const loops = state.open_loops?.filter(l => l.status === 'open' && l.canonStatus !== 'discarded');
+    if (loops?.length) {
+      ctx.openLoops = loops
+        .slice(0, 5)
+        .map(l => `- ${l.description?.slice(0, 120) || ''}`)
+        .join('\n');
+    }
+
+    return ctx;
+  }, [state.title, state.synopsis, state.characters, state.chapters, state.active_conflicts, state.open_loops, chapter?.title, chapterId]);
+
+  // Momentum decay
+  useEffect(() => {
+    momentumTimerRef.current = setInterval(() => {
+      setMomentum(prev => Math.max(0, prev - MOMENTUM_DECAY));
+    }, MOMENTUM_DECAY_INTERVAL);
+    return () => {
+      if (momentumTimerRef.current) clearInterval(momentumTimerRef.current);
+    };
+  }, []);
+
+  const triggerMicroPrompt = useCallback(() => {
+    if (content.trim().length < 20) return;
+
+    // Get last ~600 words for richer scene context
+    const words = content.trim().split(/\s+/);
+    const recentText = words.slice(-600).join(' ');
+
+    fetchPrompt({
+      recentText,
+      storyContext,
+      genre: genre || undefined,
+      protagonistName: protagonist?.name,
+      blockType: session.blockType,
+    });
+  }, [content, storyContext, genre, protagonist?.name, session.blockType, fetchPrompt]);
+
+  const resetPauseTimer = useCallback(() => {
+    if (pauseTimerRef.current) clearTimeout(pauseTimerRef.current);
+    pauseTimerRef.current = setTimeout(triggerMicroPrompt, PAUSE_TIMEOUT);
+  }, [triggerMicroPrompt]);
+
+  // Cleanup
+  useEffect(() => {
+    return () => {
+      if (pauseTimerRef.current) clearTimeout(pauseTimerRef.current);
+    };
+  }, []);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Block destructive keys
+    if (
+      e.key === 'Backspace' ||
+      e.key === 'Delete' ||
+      (e.ctrlKey && e.key === 'z') ||
+      (e.metaKey && e.key === 'z') ||
+      (e.ctrlKey && e.key === 'x') ||
+      (e.metaKey && e.key === 'x') ||
+      (e.ctrlKey && e.key === 'Backspace') ||
+      (e.ctrlKey && e.key === 'Delete')
+    ) {
+      e.preventDefault();
+      return;
+    }
+
+    // Resume writing - clear prompt
+    if (prompt && !e.ctrlKey && !e.metaKey && !e.altKey && e.key.length === 1) {
+      clearPrompt();
+    }
+
+    // Increase momentum on typing
+    if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
+      setMomentum(prev => Math.min(1, prev + MOMENTUM_INCREMENT));
+    }
+
+    // Reset pause timer
+    resetPauseTimer();
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newContent = e.target.value;
+    setContent(newContent);
+    scheduleAutosave(newContent);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[150] bg-zinc-950 flex flex-col">
+      <MomentumGlow momentum={momentum} />
+
+      {/* Voice banner */}
+      {guestHeteronym && (
+        <div className="relative z-10">
+          <VoiceBanner guestHeteronym={guestHeteronym} onClear={handleClearGuest} />
+        </div>
+      )}
+
+      {/* Header */}
+      <div className="relative z-10 flex items-center justify-between px-6 py-3 border-b border-zinc-800/50">
+        <div className="flex items-center gap-4">
+          {heteronyms.length > 0 && (
+            <HeteronymSelector
+              heteronyms={heteronyms}
+              activeId={currentVoiceId}
+              onSelect={handleSelectActive}
+            />
+          )}
+          <h2 className="text-sm font-medium text-zinc-400 truncate max-w-xs">
+            {chapter?.title || 'Flow Mode'}
+          </h2>
+          <span className="text-xs text-zinc-600">{wordCount} words</span>
+        </div>
+        <div className="flex items-center gap-2">
+          {heteronyms.length > 1 && (
+            <button
+              onClick={() => setVoiceSwitchOpen(true)}
+              className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors p-1.5 rounded-lg hover:bg-zinc-800"
+              aria-label="Switch writing voice"
+            >
+              <Theater size={16} />
+            </button>
+          )}
+          {sceneChange.canActivate && (
+            <button
+              onClick={handleSceneChangeDepart}
+              className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors p-1.5 rounded-lg hover:bg-zinc-800"
+              aria-label="Scene change"
+            >
+              <Shuffle size={16} />
+            </button>
+          )}
+          <button
+            onClick={() => {
+              if (!braindump.speech.isSupported) {
+                setToolbarMessage('unsupported');
+                return;
+              }
+              if (braindump.speech.permissionState === 'denied') {
+                setToolbarMessage('denied');
+                return;
+              }
+              setToolbarMessage(null);
+              braindump.openPanel();
+            }}
+            className={`text-sm transition-colors p-1.5 rounded-lg hover:bg-zinc-800 ${
+              braindump.panelOpen ? 'text-red-400' : 'text-zinc-500 hover:text-zinc-300'
+            }`}
+            aria-label="Voice braindump"
+          >
+            <Mic size={16} />
+          </button>
+          <button
+            onClick={braindump.openHistory}
+            className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors p-1.5 rounded-lg hover:bg-zinc-800"
+            aria-label="Braindump history"
+          >
+            <ClipboardList size={16} />
+          </button>
+          <button
+            onClick={handleExitWithGuard}
+            className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors px-3 py-1 rounded-lg hover:bg-zinc-800"
+          >
+            Exit Flow
+          </button>
+        </div>
+      </div>
+
+      {/* Scene change banner */}
+      {sceneChange.isActive && sceneChange.sceneState && (
+        <div className="relative z-10">
+          <SceneChangeBanner
+            originalChapterTitle={sceneChange.sceneState.originalChapterTitle}
+            remainingSeconds={sceneChange.remainingSeconds}
+            isExpired={sceneChange.isExpired}
+            extensionsLeft={sceneChange.extensionsLeft}
+            onReturn={handleSceneChangeReturn}
+            onExtend={sceneChange.grantExtension}
+          />
+        </div>
+      )}
+
+      {/* Braindump toolbar message */}
+      {toolbarMessage && (
+        <div className="relative z-10 px-6 py-1.5">
+          <BraindumpToolbarMessage type={toolbarMessage} onDismiss={() => setToolbarMessage(null)} />
+        </div>
+      )}
+
+      {/* Editor */}
+      <div className="relative z-10 flex-1 flex flex-col items-center px-4 py-8">
+        <textarea
+          ref={textareaRef}
+          value={content}
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
+          autoFocus
+          placeholder="Start writing... no backspace, no delete, just forward."
+          className="w-full max-w-3xl flex-1 bg-transparent text-zinc-100 text-lg leading-relaxed font-serif placeholder-zinc-700 focus:outline-none resize-none"
+          spellCheck={false}
+        />
+
+        {/* Micro-prompt display */}
+        <div className="w-full max-w-3xl mt-4">
+          <MicroPromptDisplay prompt={prompt} isLoading={isLoading} />
+        </div>
+      </div>
+
+      {/* Voice switch modal */}
+      {voiceSwitchOpen && (
+        <VoiceSwitchModal
+          heteronyms={heteronyms}
+          activeId={activeHeteronymId}
+          guestId={guestHeteronymId}
+          onSelect={handleSelectGuest}
+          onClearGuest={handleClearGuest}
+          onClose={() => setVoiceSwitchOpen(false)}
+        />
+      )}
+
+      {/* Scene change overlay */}
+      {overlayConfig && (
+        <SceneChangeOverlay
+          message={overlayConfig.message}
+          subtitle={overlayConfig.subtitle}
+          onComplete={overlayConfig.onComplete}
+        />
+      )}
+
+      {/* Scene change recovery modal */}
+      {showRecoveryModal && sceneChange.sceneState && (
+        <SceneChangeRecoveryModal
+          originalChapterTitle={sceneChange.sceneState.originalChapterTitle}
+          onReturn={handleRecoveryReturn}
+          onStayHere={handleRecoveryStay}
+        />
+      )}
+
+      {/* Braindump panel */}
+      {braindump.panelOpen && <BraindumpPanel braindump={braindump} />}
+
+      {/* Braindump history drawer */}
+      {braindump.historyOpen && <BraindumpHistoryDrawer braindump={braindump} />}
+    </div>
+  );
+}

@@ -1,12 +1,33 @@
 'use client';
 
 import { useStory } from '@/lib/store';
+import { useSession } from '@/lib/session';
 import { motion } from 'motion/react';
 import { BookOpen, Users, Clock, Swords, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 
+const blockMessages: Record<string, { headline: string; nudge: string }> = {
+  fear: {
+    headline: 'You showed up. That takes courage.',
+    nudge: 'Write one paragraph nobody will ever see.',
+  },
+  perfectionism: {
+    headline: 'First drafts are supposed to be messy.',
+    nudge: 'Write the worst version first.',
+  },
+  direction: {
+    headline: "You don't need to know the ending.",
+    nudge: 'Write the next scene you can see.',
+  },
+  exhaustion: {
+    headline: "You showed up. That's enough.",
+    nudge: 'Write whatever comes. Even fragments.',
+  },
+};
+
 export default function Dashboard() {
   const { state } = useStory();
+  const { session } = useSession();
 
   const stats = [
     { name: 'Chapters', value: state.chapters.length, icon: BookOpen, href: '/manuscript' },
@@ -14,6 +35,8 @@ export default function Dashboard() {
     { name: 'Timeline Events', value: state.timeline_events.length, icon: Clock, href: '/timeline' },
     { name: 'Active Conflicts', value: state.active_conflicts.length, icon: Swords, href: '/conflicts' },
   ];
+
+  const blockMsg = session.blockType ? blockMessages[session.blockType] : null;
 
   return (
     <div className="p-8 max-w-6xl mx-auto space-y-8">
@@ -27,6 +50,18 @@ export default function Dashboard() {
           </p>
         </div>
       </header>
+
+      {blockMsg && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-zinc-900/80 border border-zinc-800 rounded-2xl p-6"
+          data-testid="block-message"
+        >
+          <p className="text-lg font-serif text-zinc-100">{blockMsg.headline}</p>
+          <p className="text-sm text-zinc-400 mt-2 italic">{blockMsg.nudge}</p>
+        </motion.div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, i) => (

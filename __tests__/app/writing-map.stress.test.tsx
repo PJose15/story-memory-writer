@@ -1,0 +1,197 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, cleanup } from '@testing-library/react';
+import React from 'react';
+import type { WritingSession } from '@/lib/types/writing-session';
+
+// Mock next/navigation
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: vi.fn() }),
+}));
+
+// Mock recharts
+vi.mock('recharts', () => ({
+  BarChart: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  Bar: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  XAxis: () => <div />,
+  YAxis: () => <div />,
+  Tooltip: () => <div />,
+  ResponsiveContainer: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  Cell: () => <div />,
+}));
+
+function makeSession(overrides: Partial<WritingSession> = {}): WritingSession {
+  return {
+    id: 'sess-1',
+    projectId: 'proj-1',
+    projectName: 'My Novel',
+    startedAt: '2026-03-10T10:00:00Z',
+    endedAt: '2026-03-10T10:30:00Z',
+    wordsStart: 0,
+    wordsEnd: 150,
+    wordsAdded: 150,
+    flowScore: 4,
+    heteronymId: null,
+    heteronymName: null,
+    ...overrides,
+  };
+}
+
+// Dynamic mock — tests set this before rendering
+let mockSessions: WritingSession[] = [];
+
+vi.mock('@/lib/types/writing-session', () => ({
+  readSessions: () => mockSessions,
+}));
+
+import WritingMapPage from '@/app/writing-map/page';
+
+describe('WritingMapPage STRESS', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-03-11T12:00:00Z'));
+    mockSessions = [];
+    cleanup();
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.useRealTimers();
+  });
+
+  // ──────────────────────────────────────────────────────
+  // EXTREME SESSION COUNTS
+  // ──────────────────────────────────────────────────────
+  describe('extreme session counts', () => {
+    it('renders with 0 sessions', () => {
+      mockSessions = [];
+      render(<WritingMapPage />);
+      expect(screen.getByText('Writing Map')).toBeTruthy();
+      expect(screen.getByText(/Your writing patterns will appear here/)).toBeTruthy();
+    });
+
+    it('renders with 1 session', () => {
+      mockSessions = [makeSession({ wordsAdded: 500 })];
+      render(<WritingMapPage />);
+      expect(screen.getByText(/1 session/)).toBeTruthy();
+      expect(screen.getByText(/500 words tracked/)).toBeTruthy();
+    });
+
+    it('renders with 500 sessions without crashing', () => {
+      mockSessions = Array.from({ length: 500 }, (_, i) => {
+        const d = new Date('2025-06-01');
+        d.setDate(d.getDate() + (i % 300));
+        return makeSession({
+          id: `s-${i}`,
+          startedAt: d.toISOString(),
+          endedAt: new Date(d.getTime() + 30 * 60_000).toISOString(),
+          wordsAdded: 100 + i,
+        });
+      });
+      render(<WritingMapPage />);
+      expect(screen.getByText('Writing Map')).toBeTruthy();
+      expect(screen.getByText(/500 sessions/)).toBeTruthy();
+    });
+
+    it('handles 1000+ sessions with large word totals', () => {
+      mockSessions = Array.from({ length: 1000 }, (_, i) =>
+        makeSession({ id: `s-${i}`, wordsAdded: 1000 })
+      );
+      render(<WritingMapPage />);
+      // 1000 × 1000 = 1,000,000 words
+      expect(screen.getByText(/1,000,000 words tracked/)).toBeTruthy();
+    });
+  });
+
+  // ──────────────────────────────────────────────────────
+  // ALL 4 SECTIONS RENDER
+  // ──────────────────────────────────────────────────────
+  describe('all sections render together', () => {
+    it('renders all sections with populated data', () => {
+      mockSessions = Array.from({ length: 10 }, (_, i) =>
+        makeSession({
+          id: `s-${i}`,
+          startedAt: `2026-03-${String(i + 1).padStart(2, '0')}T14:00:00Z`,
+          endedAt: `2026-03-${String(i + 1).padStart(2, '0')}T15:00:00Z`,
+          wordsAdded: 200 + i * 50,
+        })
+      );
+      render(<WritingMapPage />);
+      expect(screen.getByText('Activity')).toBeTruthy();
+      expect(screen.getByText('Words by Hour')).toBeTruthy();
+      expect(screen.getByText('Recent Sessions')).toBeTruthy();
+      expect(screen.getByTestId('insight-card')).toBeTruthy();
+    });
+
+    it('renders all ARIA labels', () => {
+      mockSessions = [makeSession()];
+      render(<WritingMapPage />);
+      expect(screen.getByLabelText('Writing activity heatmap')).toBeTruthy();
+      expect(screen.getByLabelText('Words written by hour of day')).toBeTruthy();
+      expect(screen.getByLabelText('Writing insight')).toBeTruthy();
+      expect(screen.getByLabelText('Recent writing sessions')).toBeTruthy();
+    });
+  });
+
+  // ──────────────────────────────────────────────────────
+  // WORD TOTAL FORMATTING
+  // ──────────────────────────────────────────────────────
+  describe('word total formatting', () => {
+    it('formats large totals with commas', () => {
+      mockSessions = Array.from({ length: 50 }, (_, i) =>
+        makeSession({ id: `s-${i}`, wordsAdded: 1000 })
+      );
+      render(<WritingMapPage />);
+      expect(screen.getByText(/50,000 words tracked/)).toBeTruthy();
+    });
+
+    it('small total no commas', () => {
+      mockSessions = [makeSession({ wordsAdded: 42 })];
+      render(<WritingMapPage />);
+      expect(screen.getByText(/42 words tracked/)).toBeTruthy();
+    });
+  });
+
+  // ──────────────────────────────────────────────────────
+  // MIXED SESSION DATA
+  // ──────────────────────────────────────────────────────
+  describe('mixed session data', () => {
+    it('handles sessions with various flowScores including null', () => {
+      mockSessions = [
+        makeSession({ id: 's1', flowScore: 1 }),
+        makeSession({ id: 's2', flowScore: 3 }),
+        makeSession({ id: 's3', flowScore: 5 }),
+        makeSession({ id: 's4', flowScore: null }),
+      ];
+      render(<WritingMapPage />);
+      expect(screen.getByText('Writing Map')).toBeTruthy();
+    });
+
+    it('handles sessions with heteronym data', () => {
+      mockSessions = [
+        makeSession({ id: 's1', heteronymId: 'het-1', heteronymName: 'Dark Poet' }),
+        makeSession({ id: 's2', heteronymId: null, heteronymName: null }),
+      ];
+      render(<WritingMapPage />);
+      expect(screen.getByText('Writing Map')).toBeTruthy();
+    });
+
+    it('handles sessions with different project names', () => {
+      mockSessions = [
+        makeSession({ id: 's1', projectName: 'Novel A' }),
+        makeSession({ id: 's2', projectName: 'Novel B' }),
+        makeSession({ id: 's3', projectName: 'A Very Long Novel Name That Exceeds Limit' }),
+      ];
+      render(<WritingMapPage />);
+      expect(screen.getByText('Writing Map')).toBeTruthy();
+    });
+
+    it('handles sessions with 0 wordsAdded', () => {
+      mockSessions = [
+        makeSession({ id: 's1', wordsAdded: 0 }),
+        makeSession({ id: 's2', wordsAdded: 500 }),
+      ];
+      render(<WritingMapPage />);
+      expect(screen.getByText(/500 words tracked/)).toBeTruthy();
+    });
+  });
+});

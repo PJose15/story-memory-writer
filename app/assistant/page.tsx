@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useStory, ChatMessage } from '@/lib/store';
+import { useSession } from '@/lib/session';
 import { Send, Bot, User, Loader2, ShieldAlert, X, AlertTriangle, CheckCircle2, LockKeyhole, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import Markdown from 'react-markdown';
@@ -37,6 +38,7 @@ const welcomeMessage: Message = {
 
 export default function AssistantPage() {
   const { state, updateField } = useStory();
+  const { session } = useSession();
   const { toast } = useToast();
   const { confirm } = useConfirm();
   const [messages, setMessages] = useState<Message[]>([welcomeMessage]);
@@ -180,8 +182,13 @@ export default function AssistantPage() {
 
     const MAX_CONTEXT_LENGTH = 120000; // ~30K tokens, safe for Gemini context window
 
+    // Inject writer emotional state if available
+    const writerStateBlock = session.blockType
+      ? `WRITER STATE: ${session.blockType.toUpperCase()}\nAdapt your tone and approach to this emotional state as described in your system prompt.\n\n`
+      : '';
+
     // Build CONTEXT INVENTORY header
-    const inventory = `CONTEXT INVENTORY:
+    const inventory = `${writerStateBlock}CONTEXT INVENTORY:
 - Characters: ${activeCharacters.length}
 - Chapters: ${activeChapters.length}
 - Scenes: ${activeScenes.length}

@@ -13,13 +13,16 @@ import {
   Menu,
   X,
   Lock,
-  UploadCloud
+  UploadCloud,
+  Zap,
+  Map
 } from 'lucide-react';
 import { useState } from 'react';
 
 const navItems = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   { name: 'Manuscript', href: '/manuscript', icon: BookOpen },
+  { name: 'Flow Mode', href: '/flow', icon: Zap },
   { name: 'Story Bible', href: '/bible', icon: BookOpen },
   { name: 'Characters', href: '/characters', icon: Users },
   { name: 'Timeline', href: '/timeline', icon: Clock },
@@ -27,6 +30,7 @@ const navItems = [
   { name: 'Canon Lock', href: '/canon', icon: Lock },
   { name: 'Assistant', href: '/assistant', icon: MessageSquareText },
   { name: 'Import', href: '/import', icon: UploadCloud },
+  { name: 'Writing Map', href: '/writing-map', icon: Map },
 ];
 
 export function Sidebar() {
