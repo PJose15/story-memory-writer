@@ -43,21 +43,21 @@ export function HeteronymSelector({ heteronyms, activeId, onSelect }: HeteronymS
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-zinc-800 transition-colors"
+        className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-parchment-200 transition-colors"
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label="Select writing voice"
       >
         <AvatarCircle color={active.avatarColor} emoji={active.avatarEmoji} size={24} />
-        <span className="text-xs text-zinc-400 max-w-[100px] truncate">{active.name}</span>
-        <ChevronDown size={12} className={`text-zinc-500 transition-transform ${open ? 'rotate-180' : ''}`} />
+        <span className="text-xs text-sepia-600 max-w-[100px] truncate">{active.name}</span>
+        <ChevronDown size={12} className={`text-sepia-500 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
       {open && (
         <div
           role="listbox"
           aria-label="Writing voices"
-          className="absolute top-full left-0 mt-1 bg-zinc-900 border border-zinc-700 rounded-xl shadow-xl min-w-[200px] py-1 z-20"
+          className="absolute top-full left-0 mt-1 bg-parchment-100 border border-sepia-300/40 rounded-xl shadow-xl min-w-[200px] py-1 z-20"
         >
           {heteronyms.map((h) => (
             <button
@@ -68,19 +68,19 @@ export function HeteronymSelector({ heteronyms, activeId, onSelect }: HeteronymS
                 onSelect(h.id);
                 setOpen(false);
               }}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-zinc-800 transition-colors ${
-                h.id === activeId ? 'bg-zinc-800/50' : ''
+              className={`w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-parchment-200 transition-colors ${
+                h.id === activeId ? 'bg-parchment-200/50' : ''
               }`}
             >
               <AvatarCircle color={h.avatarColor} emoji={h.avatarEmoji} size={28} />
               <div className="flex-1 min-w-0">
-                <p className="text-sm text-zinc-200 truncate">{h.name}</p>
+                <p className="text-sm text-sepia-800 truncate">{h.name}</p>
                 {h.styleNote && (
-                  <p className="text-[11px] text-zinc-500 truncate">{h.styleNote}</p>
+                  <p className="text-[11px] text-sepia-500 truncate">{h.styleNote}</p>
                 )}
               </div>
               {h.id === activeId && (
-                <span className="text-[10px] text-indigo-400 shrink-0">Active</span>
+                <span className="text-[10px] text-brass-500 shrink-0">Active</span>
               )}
             </button>
           ))}

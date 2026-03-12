@@ -37,7 +37,7 @@ export function DiagnosticOverlay() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[200] bg-zinc-950 flex items-center justify-center p-4"
+        className="fixed inset-0 z-[200] bg-parchment-200 flex items-center justify-center p-4"
         role="dialog"
         aria-modal="true"
         aria-labelledby="diagnostic-title"
@@ -50,15 +50,15 @@ export function DiagnosticOverlay() {
           >
             <h2
               id="diagnostic-title"
-              className="text-3xl font-serif font-bold text-zinc-100 tracking-tight"
+              className="text-3xl font-serif font-bold text-sepia-900 tracking-tight"
             >
               Before you begin...
             </h2>
-            <p className="text-zinc-400 text-sm max-w-md mx-auto">
+            <p className="text-sepia-600 text-sm max-w-md mx-auto">
               How are you feeling about writing today? This helps Zagafy adapt to where you are right now.
             </p>
             {streak > 0 && (
-              <p className="text-xs text-zinc-500">
+              <p className="text-xs text-sepia-500">
                 Check-in streak: {streak} {streak === 1 ? 'day' : 'days'}
               </p>
             )}
@@ -83,7 +83,7 @@ export function DiagnosticOverlay() {
           >
             <button
               onClick={handleSkip}
-              className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors underline underline-offset-4"
+              className="text-sm text-sepia-500 hover:text-sepia-700 transition-colors underline underline-offset-4"
             >
               Skip check-in
             </button>

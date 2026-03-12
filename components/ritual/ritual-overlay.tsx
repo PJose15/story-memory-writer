@@ -48,7 +48,7 @@ export function RitualOverlay() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[200] bg-zinc-950 flex flex-col items-center justify-center"
+      className="fixed inset-0 z-[200] bg-parchment-200 flex flex-col items-center justify-center"
       role="dialog"
       aria-modal="true"
       aria-label="Entry ritual"
@@ -65,31 +65,31 @@ export function RitualOverlay() {
               exit={{ opacity: 0, y: -10 }}
               className="text-center space-y-8"
             >
-              <h2 className="text-2xl font-serif font-bold text-zinc-100">
+              <h2 className="text-2xl font-serif font-bold text-sepia-900">
                 Take a moment before you begin
               </h2>
-              <p className="text-sm text-zinc-400 max-w-md mx-auto">
+              <p className="text-sm text-sepia-600 max-w-md mx-auto">
                 Choose how you&apos;d like to transition into your writing.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <button
                   onClick={handleChooseQuote}
-                  className="flex items-center gap-3 px-6 py-4 rounded-2xl border border-zinc-800 hover:border-indigo-500/50 hover:bg-indigo-500/5 transition-colors text-left"
+                  className="flex items-center gap-3 px-6 py-4 rounded-xl border border-sepia-300/50 hover:border-brass-500/50 hover:bg-forest-600/5 transition-colors text-left"
                 >
-                  <Sparkles size={20} className="text-indigo-400 shrink-0" />
+                  <Sparkles size={20} className="text-brass-500 shrink-0" />
                   <div>
-                    <p className="text-zinc-200 font-medium">Inspiration</p>
-                    <p className="text-xs text-zinc-500 mt-0.5">A quote to spark your session</p>
+                    <p className="text-sepia-800 font-medium">Inspiration</p>
+                    <p className="text-xs text-sepia-500 mt-0.5">A quote to spark your session</p>
                   </div>
                 </button>
                 <button
                   onClick={handleChooseMindfulness}
-                  className="flex items-center gap-3 px-6 py-4 rounded-2xl border border-zinc-800 hover:border-emerald-500/50 hover:bg-emerald-500/5 transition-colors text-left"
+                  className="flex items-center gap-3 px-6 py-4 rounded-xl border border-sepia-300/50 hover:border-forest-500/50 hover:bg-forest-500/5 transition-colors text-left"
                 >
-                  <Wind size={20} className="text-emerald-400 shrink-0" />
+                  <Wind size={20} className="text-forest-400 shrink-0" />
                   <div>
-                    <p className="text-zinc-200 font-medium">Mindfulness</p>
-                    <p className="text-xs text-zinc-500 mt-0.5">Breathe first, then write</p>
+                    <p className="text-sepia-800 font-medium">Mindfulness</p>
+                    <p className="text-xs text-sepia-500 mt-0.5">Breathe first, then write</p>
                   </div>
                 </button>
               </div>
@@ -127,7 +127,7 @@ export function RitualOverlay() {
                       onClick={handleEnter}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      className="px-8 py-3 rounded-2xl bg-indigo-600 text-white font-medium hover:bg-indigo-500 transition-colors"
+                      className="px-8 py-3 rounded-xl bg-forest-700 text-cream-50 font-medium hover:bg-forest-600 transition-colors"
                     >
                       Enter your story
                     </motion.button>
@@ -141,9 +141,9 @@ export function RitualOverlay() {
 
       {/* Progress bar */}
       {(step === 'quote') && (
-        <div className="absolute bottom-0 left-0 right-0 h-1 bg-zinc-900">
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-parchment-100">
           <motion.div
-            className="h-full bg-indigo-500/60"
+            className="h-full bg-forest-600/60"
             initial={{ width: '0%' }}
             animate={{ width: `${countdown.progress * 100}%` }}
             transition={{ duration: 0.3 }}

@@ -60,13 +60,13 @@ export function SceneChangeBanner({
           </button>
         )}
         {!isExpired && extensionsLeft === 0 && (
-          <span className="text-xs text-zinc-500">(no more extensions)</span>
+          <span className="text-xs text-sepia-500">(no more extensions)</span>
         )}
         <button
           onClick={onReturn}
           className={`text-xs font-medium px-3 py-1 rounded-lg transition-colors ${
             isExpired
-              ? 'bg-red-600 text-white hover:bg-red-500'
+              ? 'bg-wax-700 text-cream-50 hover:bg-red-500'
               : 'text-amber-300 hover:bg-amber-500/20'
           }`}
         >

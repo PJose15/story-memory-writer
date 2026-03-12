@@ -18,7 +18,7 @@ const testChapter: Chapter = {
 
 function setupLocalStorage(chapters: Chapter[]) {
   const state: Partial<StoryState> = { chapters };
-  localStorage.setItem('story_memory_state', JSON.stringify(state));
+  localStorage.setItem('zagafy_state', JSON.stringify(state));
 }
 
 describe('useFlowAutosave', () => {

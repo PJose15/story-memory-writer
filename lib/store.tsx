@@ -145,6 +145,7 @@ export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   isBlockedMode?: boolean;
+  structured?: Record<string, unknown>;
 }
 
 export interface StoryState {
@@ -204,7 +205,13 @@ export function StoryProvider({ children }: { children: React.ReactNode }) {
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    const saved = localStorage.getItem('story_memory_state');
+    // Migration: copy legacy key to new key if needed
+    if (!localStorage.getItem('zagafy_state') && localStorage.getItem('story_memory_state')) {
+      localStorage.setItem('zagafy_state', localStorage.getItem('story_memory_state')!);
+      localStorage.removeItem('story_memory_state');
+    }
+
+    const saved = localStorage.getItem('zagafy_state');
     if (saved) {
       try {
         // Merge saved data with defaults so new fields added after save get their default values
@@ -224,7 +231,7 @@ export function StoryProvider({ children }: { children: React.ReactNode }) {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
       saveTimerRef.current = setTimeout(() => {
         try {
-          localStorage.setItem('story_memory_state', JSON.stringify(state));
+          localStorage.setItem('zagafy_state', JSON.stringify(state));
           if (saveError) setSaveError(false);
         } catch {
           if (!saveError) setSaveError(true);
@@ -239,7 +246,7 @@ export function StoryProvider({ children }: { children: React.ReactNode }) {
   // Sync state across tabs via storage events
   useEffect(() => {
     const handleStorage = (e: StorageEvent) => {
-      if (e.key === 'story_memory_state' && e.newValue) {
+      if (e.key === 'zagafy_state' && e.newValue) {
         try {
           setState({ ...defaultState, ...JSON.parse(e.newValue) });
         } catch {

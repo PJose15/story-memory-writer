@@ -19,32 +19,32 @@ export const blockCards: BlockCardData[] = [
     label: 'Fear',
     description: "Heavy... like someone's watching",
     icon: Eye,
-    accent: 'text-purple-400',
-    bgAccent: 'border-purple-500/30 hover:border-purple-500/60 hover:bg-purple-500/5',
+    accent: 'text-wax-600',
+    bgAccent: 'border-wax-600/30 hover:border-wax-600/60 hover:bg-wax-600/5',
   },
   {
     type: 'perfectionism',
     label: 'Perfectionism',
     description: 'Nothing I write feels good enough',
     icon: Target,
-    accent: 'text-amber-400',
-    bgAccent: 'border-amber-500/30 hover:border-amber-500/60 hover:bg-amber-500/5',
+    accent: 'text-brass-400',
+    bgAccent: 'border-brass-500/30 hover:border-brass-500/60 hover:bg-brass-500/5',
   },
   {
     type: 'direction',
     label: 'Direction',
     description: "I don't know where to go next",
     icon: Compass,
-    accent: 'text-blue-400',
-    bgAccent: 'border-blue-500/30 hover:border-blue-500/60 hover:bg-blue-500/5',
+    accent: 'text-sepia-500',
+    bgAccent: 'border-sepia-500/30 hover:border-sepia-500/60 hover:bg-sepia-500/5',
   },
   {
     type: 'exhaustion',
     label: 'Exhaustion',
     description: "I'm running on empty",
     icon: BatteryLow,
-    accent: 'text-emerald-400',
-    bgAccent: 'border-emerald-500/30 hover:border-emerald-500/60 hover:bg-emerald-500/5',
+    accent: 'text-forest-400',
+    bgAccent: 'border-forest-500/30 hover:border-forest-500/60 hover:bg-forest-500/5',
   },
 ];
 
@@ -63,16 +63,16 @@ export function BlockCard({ card, index, onSelect }: BlockCardProps) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
       onClick={() => onSelect(card.type)}
-      className={`w-full text-left bg-zinc-900/50 border rounded-2xl p-6 transition-colors cursor-pointer ${card.bgAccent}`}
+      className={`w-full text-left bg-parchment-100/50 border rounded-xl p-6 transition-colors cursor-pointer ${card.bgAccent}`}
       aria-label={`Select ${card.label}: ${card.description}`}
     >
       <div className="flex items-start gap-4">
-        <div className={`p-2 rounded-xl bg-zinc-800 ${card.accent}`}>
+        <div className={`p-2 rounded-xl bg-parchment-200 ${card.accent}`}>
           <Icon size={24} />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="font-medium text-zinc-200 text-lg">{card.label}</h3>
-          <p className="text-sm text-zinc-400 mt-1 italic">&ldquo;{card.description}&rdquo;</p>
+          <h3 className="font-medium text-sepia-800 text-lg">{card.label}</h3>
+          <p className="text-sm text-sepia-600 mt-1 italic">&ldquo;{card.description}&rdquo;</p>
         </div>
       </div>
     </motion.button>

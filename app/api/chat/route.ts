@@ -1,65 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleGenAI, FinishReason } from '@google/genai';
+import { GoogleGenAI, FinishReason, Content } from '@google/genai';
 import { buildWritingAssistantPrompt } from '@/lib/prompts/writing-assistant';
 import { rateLimit } from '@/lib/rate-limit';
-import { AI_MODEL, SAFETY_SETTINGS } from '@/lib/ai-config';
+import { AI_MODEL, SAFETY_SETTINGS, AI_CONFIG } from '@/lib/ai-config';
 import { getErrorStatus } from '@/lib/api-error';
+import {
+  NORMAL_RESPONSE_SCHEMA,
+  BLOCKED_RESPONSE_SCHEMA,
+  type ChatResponseNormal,
+  type ChatResponseBlocked,
+} from '@/lib/types/chat-response';
+import { validateNormalResponse, validateBlockedResponse, type KnownEntities } from '@/lib/ai/chat-validation';
 
 export const maxDuration = 60;
 
-function buildOutputFormat(isBlockedRequest: boolean): string {
-  if (isBlockedRequest) {
-    return `
-BLOCKED MODE ACTIVATED:
-The user has indicated they are experiencing writer's block. You must act as a smart narrative partner to help them regain momentum.
-
-Analyze the most recent chapter/scene, unresolved conflicts, emotional state of the active arc, and story promises.
-Diagnose the reason for the block before offering solutions.
-
-OUTPUT FORMAT:
-Please structure your response with the following sections (use Markdown headings):
-### Current Narrative State
-(Summarize where the story currently stands based on the latest chapter and active conflicts)
-
-### Diagnosis: Why You Might Be Blocked
-(Identify the likely type of block: plot block, scene transition block, emotional clarity block, pacing block, or character motivation block, and explain why)
-
-### 3-5 Coherent Next Paths
-(Propose 3 to 5 possible next moves. Distinguish clearly between:
-- Safe continuation
-- Escalation option
-- Emotional/deeper character option
-- Revelation/discovery option
-- Risky but plausible option
-Explain why each path fits the canon and current story state)
-
-### Best Recommended Next Move
-(Your top recommendation for regaining momentum)
-
-### Scene Starter (Optional)
-(Only provide a scene starter if the user explicitly asked for it)
-`;
-  }
-
-  return `
-OUTPUT FORMAT:
-Please structure your response with the following sections (use Markdown headings):
-### Context Used
-(List the specific story elements you are referencing — character names, chapter titles, conflicts, timeline events, etc. Be specific so the user can verify your sources.)
-
-### Information Gaps
-(List any information that would be helpful but is missing from your context. If you have everything you need, say "None — full context available for this query.")
-
-### Conflicts Detected
-(If the user's request contradicts Confirmed Canon, warn them here. Otherwise, say "None detected")
-
-### Safe Narrative Recommendations
-(Your suggestions that respect the canon. Clearly distinguish between facts from the context and your own creative suggestions.)
-
-### Generated Text (Optional)
-(Only if the user explicitly asked you to write or generate a scene/dialogue)
-`;
-}
+const MAX_HISTORY_TURNS = 10;
+const MAX_TURN_CHARS = 2000;
 
 export async function POST(req: NextRequest) {
   const limited = await rateLimit(req, { maxRequests: 10, windowMs: 60000 });
@@ -67,7 +23,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { userInput, isBlockedRequest, language, chatHistory } = body;
+    const { userInput, isBlockedRequest, language, chatHistory, knownEntities, blockType } = body;
     const storyContext = typeof body.storyContext === 'string' ? body.storyContext : '';
 
     if (typeof userInput !== 'string' || !userInput.trim()) {
@@ -77,12 +33,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing required field: language' }, { status: 400 });
     }
 
-    // Validate and sanitize chat history entries
-    const sanitizedHistory = Array.isArray(chatHistory)
-      ? chatHistory.filter((item): item is string => typeof item === 'string').map(s => s.slice(0, 1500))
-      : [];
-    const historyText = sanitizedHistory.join('\n');
-    const totalLength = (storyContext?.length || 0) + (userInput?.length || 0) + historyText.length;
+    // Validate and build multi-turn history
+    const history = buildMultiTurnHistory(chatHistory);
+    const historyTextLength = history.reduce((sum, c) =>
+      sum + (c.parts?.reduce((s, p) => s + ((p as { text?: string }).text?.length || 0), 0) || 0), 0);
+
+    const totalLength = storyContext.length + userInput.length + historyTextLength;
     if (totalLength > 500000) {
       return NextResponse.json({ error: 'Request payload too large (max 500KB of text)' }, { status: 413 });
     }
@@ -93,31 +49,28 @@ export async function POST(req: NextRequest) {
     }
 
     const ai = new GoogleGenAI({ apiKey });
-    const systemPrompt = buildWritingAssistantPrompt(language);
-    const outputFormat = buildOutputFormat(!!isBlockedRequest);
+    const isBlocked = !!isBlockedRequest;
+    const systemPrompt = buildWritingAssistantPrompt(language, blockType);
+    const config = isBlocked ? AI_CONFIG.chatBlocked : AI_CONFIG.chat;
+    const responseSchema = isBlocked ? BLOCKED_RESPONSE_SCHEMA : NORMAL_RESPONSE_SCHEMA;
 
-    const historyBlock = historyText
-      ? `\n<conversation_history>\n${historyText}\n</conversation_history>\n`
-      : '';
+    const contextMessage = `<story_context>\n${storyContext}\n</story_context>\n\n<user_request>\n${userInput}\n</user_request>`;
 
-    const contents = `<story_context>
-${storyContext}
-</story_context>
-
-${outputFormat}
-${historyBlock}
-<user_request>
-${userInput}
-</user_request>`;
-
-    const response = await ai.models.generateContent({
+    // Use multi-turn chat with history
+    const chat = ai.chats.create({
       model: AI_MODEL,
-      contents,
+      history,
       config: {
         systemInstruction: systemPrompt,
         safetySettings: SAFETY_SETTINGS,
+        temperature: config.temperature,
+        maxOutputTokens: config.maxOutputTokens,
+        responseMimeType: 'application/json',
+        responseSchema,
       },
     });
+
+    const response = await chat.sendMessage({ message: contextMessage });
 
     // Check if the response was blocked or truncated
     const candidate = response.candidates?.[0];
@@ -126,19 +79,65 @@ ${userInput}
     if (finishReason === FinishReason.SAFETY || finishReason === FinishReason.PROHIBITED_CONTENT || finishReason === FinishReason.BLOCKLIST) {
       return NextResponse.json({
         text: 'The AI could not generate a response for this request. Try rephrasing your input or adjusting the scene context.',
-        isBlockedMode: !!isBlockedRequest,
+        isBlockedMode: isBlocked,
         blocked: true,
       });
     }
 
-    let text = response.text || '';
-    if (finishReason === FinishReason.MAX_TOKENS && text) {
-      text += '\n\n---\n*Response was truncated due to length. Ask me to continue if needed.*';
+    const rawText = response.text || '';
+
+    // Parse structured JSON response
+    let parsed: ChatResponseNormal | ChatResponseBlocked;
+    try {
+      parsed = JSON.parse(rawText);
+    } catch {
+      // Fallback: return raw text as legacy format
+      let text = rawText;
+      if (finishReason === FinishReason.MAX_TOKENS && text) {
+        text += '\n\n---\n*Response was truncated due to length. Ask me to continue if needed.*';
+      }
+      return NextResponse.json({
+        text: text || 'I could not generate a response.',
+        isBlockedMode: isBlocked,
+      });
+    }
+
+    // Validate against known entities if provided
+    const entities: KnownEntities = knownEntities && typeof knownEntities === 'object'
+      ? {
+          characters: Array.isArray(knownEntities.characters) ? knownEntities.characters : [],
+          chapters: Array.isArray(knownEntities.chapters) ? knownEntities.chapters : [],
+          locations: Array.isArray(knownEntities.locations) ? knownEntities.locations : [],
+        }
+      : { characters: [], chapters: [], locations: [] };
+
+    let validated;
+    if (isBlocked) {
+      const blockedResponse = ensureBlockedShape(parsed as ChatResponseBlocked);
+      validated = entities.characters.length > 0
+        ? validateBlockedResponse(blockedResponse, entities)
+        : { ...blockedResponse, validationWarnings: [] };
+    } else {
+      const normalResponse = ensureNormalShape(parsed as ChatResponseNormal);
+      validated = entities.characters.length > 0
+        ? validateNormalResponse(normalResponse, entities)
+        : normalResponse;
+    }
+
+    // Build legacy text from structured response for backward compatibility
+    const text = isBlocked
+      ? buildBlockedText(validated as ChatResponseBlocked & { validationWarnings?: string[] })
+      : buildNormalText(validated as ChatResponseNormal);
+
+    let finalText = text;
+    if (finishReason === FinishReason.MAX_TOKENS && finalText) {
+      finalText += '\n\n---\n*Response was truncated due to length. Ask me to continue if needed.*';
     }
 
     return NextResponse.json({
-      text: text || 'I could not generate a response.',
-      isBlockedMode: !!isBlockedRequest,
+      text: finalText || 'I could not generate a response.',
+      isBlockedMode: isBlocked,
+      structured: validated,
     });
 
   } catch (error: unknown) {
@@ -149,4 +148,140 @@ ${userInput}
       : 'Failed to generate response';
     return NextResponse.json({ error: message }, { status });
   }
+}
+
+/**
+ * Convert client chat history to Gemini multi-turn Content[] format.
+ */
+function buildMultiTurnHistory(
+  chatHistory: unknown
+): Content[] {
+  if (!Array.isArray(chatHistory)) return [];
+
+  const contents: Content[] = [];
+  const items = chatHistory.slice(-MAX_HISTORY_TURNS * 2); // Keep last N turns (user+model pairs)
+
+  for (const item of items) {
+    if (typeof item === 'object' && item !== null && 'role' in item && 'content' in item) {
+      const role = (item as { role: string }).role;
+      const content = String((item as { content: string }).content).slice(0, MAX_TURN_CHARS);
+      const geminiRole = role === 'assistant' || role === 'model' ? 'model' : 'user';
+      contents.push({ role: geminiRole, parts: [{ text: content }] });
+    } else if (typeof item === 'string') {
+      // Legacy format: "User: msg" or "Assistant: msg"
+      const text = item.slice(0, MAX_TURN_CHARS);
+      if (item.startsWith('Assistant:') || item.startsWith('Model:')) {
+        contents.push({ role: 'model', parts: [{ text: text.replace(/^(Assistant|Model):\s*/, '') }] });
+      } else {
+        contents.push({ role: 'user', parts: [{ text: text.replace(/^User:\s*/, '') }] });
+      }
+    }
+  }
+
+  // Gemini requires alternating user/model turns — deduplicate consecutive same-role
+  const deduped: Content[] = [];
+  for (const c of contents) {
+    if (deduped.length > 0 && deduped[deduped.length - 1].role === c.role) {
+      // Merge into previous
+      const prev = deduped[deduped.length - 1];
+      const prevText = (prev.parts?.[0] as { text?: string })?.text || '';
+      const curText = (c.parts?.[0] as { text?: string })?.text || '';
+      prev.parts = [{ text: prevText + '\n' + curText }];
+    } else {
+      deduped.push(c);
+    }
+  }
+
+  return deduped;
+}
+
+/** Ensure normal response has all expected fields */
+function ensureNormalShape(r: Partial<ChatResponseNormal>): ChatResponseNormal {
+  return {
+    contextUsed: Array.isArray(r.contextUsed) ? r.contextUsed : [],
+    informationGaps: Array.isArray(r.informationGaps) ? r.informationGaps : [],
+    conflictsDetected: Array.isArray(r.conflictsDetected) ? r.conflictsDetected : [],
+    recommendation: typeof r.recommendation === 'string' ? r.recommendation : '',
+    alternatives: Array.isArray(r.alternatives) ? r.alternatives : [],
+    generatedText: typeof r.generatedText === 'string' ? r.generatedText : '',
+    confidenceNotes: Array.isArray(r.confidenceNotes) ? r.confidenceNotes : [],
+  };
+}
+
+/** Ensure blocked response has all expected fields */
+function ensureBlockedShape(r: Partial<ChatResponseBlocked>): ChatResponseBlocked {
+  return {
+    currentState: typeof r.currentState === 'string' ? r.currentState : '',
+    diagnosis: typeof r.diagnosis === 'string' ? r.diagnosis : '',
+    nextPaths: Array.isArray(r.nextPaths) ? r.nextPaths : [],
+    bestRecommendation: typeof r.bestRecommendation === 'string' ? r.bestRecommendation : '',
+    sceneStarter: typeof r.sceneStarter === 'string' ? r.sceneStarter : '',
+  };
+}
+
+/** Build markdown text from normal structured response (backward compat) */
+function buildNormalText(r: ChatResponseNormal): string {
+  const parts: string[] = [];
+
+  if (r.contextUsed.length > 0 && r.contextUsed[0] !== 'None') {
+    parts.push(`### Context Used\n${r.contextUsed.map(c => `- ${c}`).join('\n')}`);
+  }
+
+  if (r.informationGaps.length > 0 && r.informationGaps[0] !== 'None') {
+    parts.push(`### Information Gaps\n${r.informationGaps.map(g => `- ${g}`).join('\n')}`);
+  }
+
+  if (r.conflictsDetected.length > 0 && r.conflictsDetected[0] !== 'None') {
+    parts.push(`### Conflicts Detected\n${r.conflictsDetected.map(c => `- ${c}`).join('\n')}`);
+  }
+
+  if (r.recommendation) {
+    parts.push(`### Recommendation\n${r.recommendation}`);
+  }
+
+  if (r.alternatives.length > 0) {
+    parts.push(`### Alternatives\n${r.alternatives.map(a => `- ${a}`).join('\n')}`);
+  }
+
+  if (r.generatedText) {
+    parts.push(`### Generated Text\n${r.generatedText}`);
+  }
+
+  if (r.confidenceNotes.length > 0) {
+    parts.push(`### Confidence Notes\n${r.confidenceNotes.map(n => `- ${n}`).join('\n')}`);
+  }
+
+  return parts.join('\n\n');
+}
+
+/** Build markdown text from blocked structured response (backward compat) */
+function buildBlockedText(r: ChatResponseBlocked & { validationWarnings?: string[] }): string {
+  const parts: string[] = [];
+
+  if (r.currentState) {
+    parts.push(`### Current Narrative State\n${r.currentState}`);
+  }
+
+  if (r.diagnosis) {
+    parts.push(`### Diagnosis: Why You Might Be Blocked\n${r.diagnosis}`);
+  }
+
+  if (r.nextPaths.length > 0) {
+    const pathLines = r.nextPaths.map(p => `- **${p.label}**: ${p.description}`).join('\n');
+    parts.push(`### Next Paths\n${pathLines}`);
+  }
+
+  if (r.bestRecommendation) {
+    parts.push(`### Best Recommended Next Move\n${r.bestRecommendation}`);
+  }
+
+  if (r.sceneStarter) {
+    parts.push(`### Scene Starter\n${r.sceneStarter}`);
+  }
+
+  if (r.validationWarnings && r.validationWarnings.length > 0) {
+    parts.push(`### Validation Notes\n${r.validationWarnings.map(w => `- ${w}`).join('\n')}`);
+  }
+
+  return parts.join('\n\n');
 }

@@ -5,6 +5,7 @@ import { useSession } from '@/lib/session';
 import { motion } from 'motion/react';
 import { BookOpen, Users, Clock, Swords, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
+import { stagger } from '@/lib/animations';
 
 const blockMessages: Record<string, { headline: string; nudge: string }> = {
   fear: {
@@ -40,14 +41,15 @@ export default function Dashboard() {
 
   return (
     <div className="p-8 max-w-6xl mx-auto space-y-8">
-      <header className="flex items-end justify-between border-b border-zinc-800 pb-6">
+      <header className="flex items-end justify-between border-b border-sepia-300/30 pb-6">
         <div>
-          <h1 className="text-4xl font-serif font-bold text-zinc-100 tracking-tight">
+          <h1 className="text-4xl font-serif font-bold text-sepia-900 tracking-tight letterpress">
             {state.title || 'Untitled Project'}
           </h1>
-          <p className="text-zinc-400 mt-2 max-w-2xl text-sm leading-relaxed">
+          <p className="text-sepia-600 mt-2 max-w-2xl text-sm leading-relaxed">
             {state.synopsis || 'No synopsis added yet. Head to the Story Bible to define your core narrative.'}
           </p>
+          <div className="mt-3 h-0.5 w-16 bg-gradient-to-r from-brass-500 to-brass-300/0 rounded-full" />
         </div>
       </header>
 
@@ -55,11 +57,11 @@ export default function Dashboard() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-zinc-900/80 border border-zinc-800 rounded-2xl p-6"
+          className="bg-parchment-200/80 border border-sepia-300/50 rounded-xl p-6 texture-parchment"
           data-testid="block-message"
         >
-          <p className="text-lg font-serif text-zinc-100">{blockMsg.headline}</p>
-          <p className="text-sm text-zinc-400 mt-2 italic">{blockMsg.nudge}</p>
+          <p className="text-lg font-serif text-sepia-900">{blockMsg.headline}</p>
+          <p className="text-sm text-sepia-600 mt-2 italic">{blockMsg.nudge}</p>
         </motion.div>
       )}
 
@@ -67,16 +69,14 @@ export default function Dashboard() {
         {stats.map((stat, i) => (
           <Link key={stat.name} href={stat.href}>
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.1 }}
-              className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 hover:bg-zinc-800/50 transition-colors group cursor-pointer"
+              {...stagger.cards(i)}
+              className="bg-parchment-100 border border-sepia-300/50 rounded-xl p-6 hover:translate-y-[-2px] hover:shadow-card-hover transition-all duration-200 group cursor-pointer texture-parchment"
             >
               <div className="flex items-center justify-between mb-4">
-                <stat.icon className="text-zinc-500 group-hover:text-zinc-300 transition-colors" size={24} />
-                <span className="text-3xl font-light text-zinc-100">{stat.value}</span>
+                <stat.icon className="text-brass-600 group-hover:text-brass-500 transition-colors" size={24} />
+                <span className="text-3xl font-light text-sepia-900">{stat.value}</span>
               </div>
-              <h3 className="text-sm font-medium text-zinc-400 uppercase tracking-wider">{stat.name}</h3>
+              <h3 className="text-sm font-medium text-sepia-600 uppercase tracking-wider">{stat.name}</h3>
             </motion.div>
           </Link>
         ))}
@@ -84,23 +84,23 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-6">
-          <h2 className="text-xl font-serif font-semibold text-zinc-100 flex items-center gap-2">
-            <BookOpen size={20} className="text-zinc-500" />
+          <h2 className="text-xl font-serif font-semibold text-sepia-900 flex items-center gap-2">
+            <BookOpen size={20} className="text-brass-600" />
             Recent Chapters
           </h2>
           {state.chapters.length === 0 ? (
-            <div className="bg-zinc-900/50 border border-zinc-800 border-dashed rounded-2xl p-8 text-center">
-              <p className="text-zinc-400 text-sm">No chapters added yet.</p>
-              <Link href="/manuscript" className="text-indigo-400 hover:text-indigo-300 text-sm font-medium mt-2 inline-block">
+            <div className="bg-parchment-100/50 border border-sepia-300/30 border-dashed rounded-xl p-8 text-center">
+              <p className="text-sepia-500 text-sm">No chapters added yet.</p>
+              <Link href="/manuscript" className="text-forest-700 hover:text-forest-600 text-sm font-medium mt-2 inline-block">
                 Start writing &rarr;
               </Link>
             </div>
           ) : (
             <div className="space-y-3">
               {state.chapters.slice(-3).reverse().map((chapter) => (
-                <div key={chapter.id} className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
-                  <h3 className="font-medium text-zinc-200">{chapter.title}</h3>
-                  <p className="text-sm text-zinc-500 mt-1 line-clamp-2">{chapter.summary}</p>
+                <div key={chapter.id} className="bg-parchment-100 border border-sepia-300/50 rounded-xl p-5 texture-parchment">
+                  <h3 className="font-medium text-sepia-800">{chapter.title}</h3>
+                  <p className="text-sm text-sepia-500 mt-1 line-clamp-2">{chapter.summary}</p>
                 </div>
               ))}
             </div>
@@ -108,20 +108,20 @@ export default function Dashboard() {
         </div>
 
         <div className="space-y-6">
-          <h2 className="text-xl font-serif font-semibold text-zinc-100 flex items-center gap-2">
-            <AlertCircle size={20} className="text-zinc-500" />
+          <h2 className="text-xl font-serif font-semibold text-sepia-900 flex items-center gap-2">
+            <AlertCircle size={20} className="text-brass-600" />
             Open Loops
           </h2>
           {state.open_loops.length === 0 ? (
-            <div className="bg-zinc-900/50 border border-zinc-800 border-dashed rounded-2xl p-8 text-center">
-              <p className="text-zinc-400 text-sm">No open loops tracked.</p>
+            <div className="bg-parchment-100/50 border border-sepia-300/30 border-dashed rounded-xl p-8 text-center">
+              <p className="text-sepia-500 text-sm">No open loops tracked.</p>
             </div>
           ) : (
             <div className="space-y-3">
               {state.open_loops.filter(l => l.status === 'open').slice(0, 5).map((loop) => (
-                <div key={loop.id} className="flex items-start gap-3 bg-zinc-900 border border-zinc-800 rounded-xl p-4">
+                <div key={loop.id} className="flex items-start gap-3 bg-parchment-100 border border-sepia-300/50 rounded-xl p-4 texture-parchment">
                   <div className="w-2 h-2 rounded-full bg-amber-500 mt-1.5 shrink-0" />
-                  <p className="text-sm text-zinc-300 leading-relaxed">{loop.description}</p>
+                  <p className="text-sm text-sepia-700 leading-relaxed">{loop.description}</p>
                 </div>
               ))}
             </div>

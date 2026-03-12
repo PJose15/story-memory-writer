@@ -315,13 +315,14 @@ export default function ImportPage() {
 
   return (
     <div className="p-8 max-w-5xl mx-auto space-y-8">
-      <header className="flex items-center justify-between border-b border-zinc-800 pb-6">
+      <header className="flex items-center justify-between border-b border-sepia-300/50 pb-6">
         <div>
-          <h1 className="text-3xl font-serif font-bold text-zinc-100 tracking-tight flex items-center gap-3">
-            <UploadCloud className="text-indigo-400" />
+          <h1 className="letterpress text-3xl font-serif font-bold text-sepia-900 tracking-tight flex items-center gap-3">
+            <UploadCloud className="text-brass-500" />
             Document Ingestion
           </h1>
-          <p className="text-zinc-400 mt-2 text-sm">Upload your manuscript, notes, or outlines to auto-extract story intelligence.</p>
+          <p className="text-sepia-600 mt-2 text-sm">Upload your manuscript, notes, or outlines to auto-extract story intelligence.</p>
+          <div className="h-0.5 w-16 bg-brass-500 mt-3 rounded-full" />
         </div>
       </header>
 
@@ -330,7 +331,7 @@ export default function ImportPage() {
           <div
             onDragOver={(e) => e.preventDefault()}
             onDrop={handleDrop}
-            className="border-2 border-dashed border-zinc-700 hover:border-indigo-500 bg-zinc-900/50 rounded-2xl p-12 text-center transition-colors cursor-pointer"
+            className="border-2 border-dashed border-sepia-300/60 hover:border-brass-500 bg-parchment-100/50 rounded-xl p-12 text-center transition-colors cursor-pointer"
             onClick={() => fileInputRef.current?.click()}
           >
             <input
@@ -342,33 +343,33 @@ export default function ImportPage() {
               onChange={handleFileChange}
             />
             <div className="flex justify-center mb-4">
-              <div className="bg-zinc-800 p-4 rounded-full text-zinc-400">
+              <div className="bg-parchment-200 p-4 rounded-full text-sepia-600">
                 <UploadCloud size={32} />
               </div>
             </div>
-            <h3 className="text-lg font-medium text-zinc-200 mb-2">Drag & Drop Files Here</h3>
-            <p className="text-sm text-zinc-500 mb-6">Supports PDF, DOCX, TXT, and Markdown files.</p>
-            <button className="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 px-6 py-2 rounded-lg font-medium transition-colors">
+            <h3 className="text-lg font-medium text-sepia-800 mb-2">Drag & Drop Files Here</h3>
+            <p className="text-sm text-sepia-500 mb-6">Supports PDF, DOCX, TXT, and Markdown files.</p>
+            <button className="bg-parchment-200 hover:bg-sepia-300/30 text-sepia-800 px-6 py-2 rounded-lg font-medium transition-colors">
               Browse Files
             </button>
           </div>
 
           {files.length > 0 && (
-            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
-              <h4 className="text-sm font-medium text-zinc-400 uppercase tracking-wider mb-4">Selected Files (Order matters for parsing)</h4>
+            <div className="bg-parchment-100 border border-sepia-300/50 rounded-xl p-6 texture-parchment shadow-parchment">
+              <h4 className="text-sm font-medium text-sepia-600 uppercase tracking-wider mb-4">Selected Files (Order matters for parsing)</h4>
               <ul className="space-y-3 mb-6">
                 {files.map((file, idx) => (
-                  <li key={idx} className="flex items-center justify-between bg-zinc-950 p-3 rounded-lg border border-zinc-800/50">
+                  <li key={idx} className="flex items-center justify-between bg-parchment-200 p-3 rounded-lg border border-sepia-300/30">
                     <div className="flex items-center gap-3">
-                      <FileText size={18} className="text-indigo-400" />
-                      <span className="text-sm text-zinc-200 font-medium">{file.name}</span>
+                      <FileText size={18} className="text-brass-500" />
+                      <span className="text-sm text-sepia-800 font-medium">{file.name}</span>
                     </div>
                     <div className="flex items-center gap-4">
-                      <span className="text-xs text-zinc-500">{(file.size / 1024 / 1024).toFixed(2)} MB</span>
+                      <span className="text-xs text-sepia-500">{(file.size / 1024 / 1024).toFixed(2)} MB</span>
                       <div className="flex items-center gap-1">
-                        <button onClick={() => moveFile(idx, 'up')} disabled={idx === 0} className="p-1 text-zinc-500 hover:text-zinc-300 disabled:opacity-30" aria-label={`Move ${file.name} up`}><ChevronUp size={16} /></button>
-                        <button onClick={() => moveFile(idx, 'down')} disabled={idx === files.length - 1} className="p-1 text-zinc-500 hover:text-zinc-300 disabled:opacity-30" aria-label={`Move ${file.name} down`}><ChevronDown size={16} /></button>
-                        <button onClick={() => setFiles(files.filter((_, i) => i !== idx))} className="p-1 text-red-500 hover:text-red-400 ml-2" aria-label={`Remove ${file.name}`}><X size={16} /></button>
+                        <button onClick={() => moveFile(idx, 'up')} disabled={idx === 0} className="p-1 text-sepia-500 hover:text-sepia-700 disabled:opacity-30" aria-label={`Move ${file.name} up`}><ChevronUp size={16} /></button>
+                        <button onClick={() => moveFile(idx, 'down')} disabled={idx === files.length - 1} className="p-1 text-sepia-500 hover:text-sepia-700 disabled:opacity-30" aria-label={`Move ${file.name} down`}><ChevronDown size={16} /></button>
+                        <button onClick={() => setFiles(files.filter((_, i) => i !== idx))} className="p-1 text-wax-600 hover:text-wax-500 ml-2" aria-label={`Remove ${file.name}`}><X size={16} /></button>
                       </div>
                     </div>
                   </li>
@@ -377,7 +378,7 @@ export default function ImportPage() {
               <div className="flex justify-end">
                 <button
                   onClick={handleUpload}
-                  className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors"
+                  className="bg-forest-700 hover:bg-forest-600 text-cream-50 px-6 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors"
                 >
                   Start Ingestion <ArrowRight size={18} />
                 </button>
@@ -389,13 +390,13 @@ export default function ImportPage() {
 
       {(uploadStatus === 'uploading' || uploadStatus === 'analyzing') && (
         <div className="flex flex-col items-center justify-center py-24 space-y-6 animate-in fade-in">
-          <Loader2 size={48} className="text-indigo-500 animate-spin" />
+          <Loader2 size={48} className="text-brass-500 animate-spin" />
           <div className="text-center">
-            <h3 className="text-xl font-medium text-zinc-200 mb-2">
+            <h3 className="text-xl font-medium text-sepia-800 mb-2">
               {uploadStatus === 'uploading' ? 'Uploading Files...' : 'Analyzing Manuscript...'}
             </h3>
-            <p className="text-zinc-500 text-sm max-w-md mx-auto">
-              {uploadStatus === 'uploading' 
+            <p className="text-sepia-500 text-sm max-w-md mx-auto">
+              {uploadStatus === 'uploading'
                 ? 'Transferring your documents securely.'
                 : 'Our AI is reading your text, extracting chapters, characters, conflicts, and worldbuilding details. This may take a minute for large files.'}
             </p>
@@ -405,62 +406,62 @@ export default function ImportPage() {
 
       {uploadStatus === 'review' && extractedData && (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
-          <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-6 flex items-start gap-4">
-            <CheckCircle2 className="text-indigo-400 shrink-0 mt-1" />
+          <div className="bg-forest-700/10 border border-forest-700/20 rounded-xl p-6 flex items-start gap-4">
+            <CheckCircle2 className="text-forest-600 shrink-0 mt-1" />
             <div>
-              <h3 className="text-lg font-medium text-indigo-100 mb-1">Analysis Complete</h3>
-              <p className="text-sm text-indigo-200/70">Review the extracted intelligence below before merging it into your project memory. All imported items will be marked as &quot;Draft Idea&quot; by default to prevent overwriting confirmed canon.</p>
+              <h3 className="text-lg font-medium text-sepia-900 mb-1">Analysis Complete</h3>
+              <p className="text-sm text-sepia-600">Review the extracted intelligence below before merging it into your project memory. All imported items will be marked as &quot;Draft Idea&quot; by default to prevent overwriting confirmed canon.</p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Project Metadata */}
-            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 md:col-span-2">
-              <h4 className="text-sm font-medium text-zinc-400 uppercase tracking-wider mb-4 flex items-center justify-between">
+            <div className="bg-parchment-100 border border-sepia-300/50 rounded-xl p-6 texture-parchment shadow-parchment md:col-span-2">
+              <h4 className="text-sm font-medium text-sepia-600 uppercase tracking-wider mb-4 flex items-center justify-between">
                 <span>Project Metadata</span>
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs text-zinc-500 block mb-1">Title</label>
-                  <input 
-                    type="text" 
-                    value={extractedData.project?.title || ''} 
+                  <label className="text-xs text-sepia-500 block mb-1">Title</label>
+                  <input
+                    type="text"
+                    value={extractedData.project?.title || ''}
                     onChange={(e) => setExtractedData({ ...extractedData, project: { ...extractedData.project, title: e.target.value } })}
-                    className="w-full bg-zinc-950 border border-zinc-800 focus:border-indigo-500 rounded-lg text-sm text-zinc-200 font-medium outline-none px-3 py-2"
+                    className="w-full bg-parchment-200 border border-sepia-300/50 focus:border-brass-500/60 rounded-lg text-sm text-sepia-800 font-medium outline-none px-3 py-2"
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-zinc-500 block mb-1">Genre</label>
-                  <input 
-                    type="text" 
-                    value={(extractedData.project?.genre || []).join(', ')} 
+                  <label className="text-xs text-sepia-500 block mb-1">Genre</label>
+                  <input
+                    type="text"
+                    value={(extractedData.project?.genre || []).join(', ')}
                     onChange={(e) => setExtractedData({ ...extractedData, project: { ...extractedData.project, genre: e.target.value.split(',').map(s => s.trim()) } })}
-                    className="w-full bg-zinc-950 border border-zinc-800 focus:border-indigo-500 rounded-lg text-sm text-zinc-200 font-medium outline-none px-3 py-2"
+                    className="w-full bg-parchment-200 border border-sepia-300/50 focus:border-brass-500/60 rounded-lg text-sm text-sepia-800 font-medium outline-none px-3 py-2"
                   />
                 </div>
                 <div className="md:col-span-2">
-                  <label className="text-xs text-zinc-500 block mb-1">Global Summary</label>
-                  <textarea 
-                    value={extractedData.project?.summary_global || ''} 
+                  <label className="text-xs text-sepia-500 block mb-1">Global Summary</label>
+                  <textarea
+                    value={extractedData.project?.summary_global || ''}
                     onChange={(e) => setExtractedData({ ...extractedData, project: { ...extractedData.project, summary_global: e.target.value } })}
-                    className="w-full bg-zinc-950 border border-zinc-800 focus:border-indigo-500 rounded-lg text-sm text-zinc-200 outline-none px-3 py-2 h-20 resize-none"
+                    className="w-full bg-parchment-200 border border-sepia-300/50 focus:border-brass-500/60 rounded-lg text-sm text-sepia-800 outline-none px-3 py-2 h-20 resize-none"
                   />
                 </div>
               </div>
             </div>
 
             {/* Chapters */}
-            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
-              <h4 className="text-sm font-medium text-zinc-400 uppercase tracking-wider mb-4 flex items-center justify-between">
+            <div className="bg-parchment-100 border border-sepia-300/50 rounded-xl p-6 texture-parchment shadow-parchment">
+              <h4 className="text-sm font-medium text-sepia-600 uppercase tracking-wider mb-4 flex items-center justify-between">
                 <span>Chapters Detected</span>
-                <span className="bg-zinc-800 text-zinc-300 px-2 py-0.5 rounded text-xs">{extractedData.chapters?.length || 0}</span>
+                <span className="bg-parchment-200 text-sepia-700 px-2 py-0.5 rounded text-xs">{extractedData.chapters?.length || 0}</span>
               </h4>
               <ul className="space-y-3 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
                 {(extractedData.chapters || []).map((c: ExtractedChapter, i: number) => (
-                  <li key={i} className="bg-zinc-950 p-3 rounded-lg border border-zinc-800/50 relative group">
+                  <li key={i} className="bg-parchment-200 p-3 rounded-lg border border-sepia-300/30 relative group">
                     <button
                       onClick={() => setExtractedData({ ...extractedData, chapters: (extractedData.chapters || []).filter((_: ExtractedChapter, idx: number) => idx !== i) })}
-                      className="absolute top-2 right-2 p-1 text-zinc-500 hover:text-red-400 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                      className="absolute top-2 right-2 p-1 text-sepia-500 hover:text-wax-500 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                     >
                       <X size={14} />
                     </button>
@@ -473,26 +474,26 @@ export default function ImportPage() {
                         );
                         setExtractedData({ ...extractedData, chapters: newChapters });
                       }}
-                      className="w-[calc(100%-24px)] bg-transparent border-b border-zinc-800 focus:border-indigo-500 text-sm text-zinc-200 font-medium mb-1 outline-none px-1"
+                      className="w-[calc(100%-24px)] bg-transparent border-b border-sepia-300/50 focus:border-brass-500/60 text-sm text-sepia-800 font-medium mb-1 outline-none px-1"
                     />
-                    <p className="text-xs text-zinc-500 line-clamp-2 px-1">{c.summary}</p>
+                    <p className="text-xs text-sepia-500 line-clamp-2 px-1">{c.summary}</p>
                   </li>
                 ))}
               </ul>
             </div>
 
             {/* Characters */}
-            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
-              <h4 className="text-sm font-medium text-zinc-400 uppercase tracking-wider mb-4 flex items-center justify-between">
+            <div className="bg-parchment-100 border border-sepia-300/50 rounded-xl p-6 texture-parchment shadow-parchment">
+              <h4 className="text-sm font-medium text-sepia-600 uppercase tracking-wider mb-4 flex items-center justify-between">
                 <span>Characters Extracted</span>
-                <span className="bg-zinc-800 text-zinc-300 px-2 py-0.5 rounded text-xs">{extractedData.characters?.length || 0}</span>
+                <span className="bg-parchment-200 text-sepia-700 px-2 py-0.5 rounded text-xs">{extractedData.characters?.length || 0}</span>
               </h4>
               <ul className="space-y-3 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
                 {(extractedData.characters || []).map((c: ExtractedCharacter, i: number) => (
-                  <li key={i} className="bg-zinc-950 p-3 rounded-lg border border-zinc-800/50 relative group">
+                  <li key={i} className="bg-parchment-200 p-3 rounded-lg border border-sepia-300/30 relative group">
                     <button
                       onClick={() => setExtractedData({ ...extractedData, characters: (extractedData.characters || []).filter((_: ExtractedCharacter, idx: number) => idx !== i) })}
-                      className="absolute top-2 right-2 p-1 text-zinc-500 hover:text-red-400 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                      className="absolute top-2 right-2 p-1 text-sepia-500 hover:text-wax-500 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                     >
                       <X size={14} />
                     </button>
@@ -506,7 +507,7 @@ export default function ImportPage() {
                           );
                           setExtractedData({ ...extractedData, characters: newChars });
                         }}
-                        className="flex-1 bg-transparent border-b border-zinc-800 focus:border-indigo-500 text-sm text-zinc-200 font-medium outline-none px-1"
+                        className="flex-1 bg-transparent border-b border-sepia-300/50 focus:border-brass-500/60 text-sm text-sepia-800 font-medium outline-none px-1"
                       />
                       <input
                         type="text"
@@ -517,27 +518,27 @@ export default function ImportPage() {
                           );
                           setExtractedData({ ...extractedData, characters: newChars });
                         }}
-                        className="w-1/3 bg-transparent border-b border-zinc-800 focus:border-indigo-500 text-xs text-zinc-500 outline-none px-1"
+                        className="w-1/3 bg-transparent border-b border-sepia-300/50 focus:border-brass-500/60 text-xs text-sepia-500 outline-none px-1"
                       />
                     </div>
-                    <p className="text-xs text-zinc-500 line-clamp-2 px-1 mb-2">{c.description}</p>
-                    
+                    <p className="text-xs text-sepia-500 line-clamp-2 px-1 mb-2">{c.description}</p>
+
                     {/* Character State (if available) */}
                     {extractedData.character_states?.find((s: ExtractedCharacterState) => s.character_id === c.character_id || s.name === c.name) && (
-                      <div className="mt-2 pt-2 border-t border-zinc-800/50">
-                        <span className="text-[10px] text-zinc-500 uppercase tracking-wider mb-1 block">Current State</span>
+                      <div className="mt-2 pt-2 border-t border-sepia-300/30">
+                        <span className="text-[10px] text-sepia-500 uppercase tracking-wider mb-1 block">Current State</span>
                         <div className="grid grid-cols-2 gap-2 text-xs">
                           <div>
-                            <span className="text-zinc-600">Goal:</span> <span className="text-zinc-400">{extractedData.character_states?.find((s: ExtractedCharacterState) => s.character_id === c.character_id || s.name === c.name)?.visible_goal}</span>
+                            <span className="text-sepia-400">Goal:</span> <span className="text-sepia-600">{extractedData.character_states?.find((s: ExtractedCharacterState) => s.character_id === c.character_id || s.name === c.name)?.visible_goal}</span>
                           </div>
                           <div>
-                            <span className="text-zinc-600">Need:</span> <span className="text-zinc-400">{extractedData.character_states?.find((s: ExtractedCharacterState) => s.character_id === c.character_id || s.name === c.name)?.hidden_need}</span>
+                            <span className="text-sepia-400">Need:</span> <span className="text-sepia-600">{extractedData.character_states?.find((s: ExtractedCharacterState) => s.character_id === c.character_id || s.name === c.name)?.hidden_need}</span>
                           </div>
                           <div>
-                            <span className="text-zinc-600">Emotion:</span> <span className="text-zinc-400">{extractedData.character_states?.find((s: ExtractedCharacterState) => s.character_id === c.character_id || s.name === c.name)?.current_emotional_state}</span>
+                            <span className="text-sepia-400">Emotion:</span> <span className="text-sepia-600">{extractedData.character_states?.find((s: ExtractedCharacterState) => s.character_id === c.character_id || s.name === c.name)?.current_emotional_state}</span>
                           </div>
                           <div>
-                            <span className="text-zinc-600">Pressure:</span> <span className="text-zinc-400">{extractedData.character_states?.find((s: ExtractedCharacterState) => s.character_id === c.character_id || s.name === c.name)?.current_pressure_level}</span>
+                            <span className="text-sepia-400">Pressure:</span> <span className="text-sepia-600">{extractedData.character_states?.find((s: ExtractedCharacterState) => s.character_id === c.character_id || s.name === c.name)?.current_pressure_level}</span>
                           </div>
                         </div>
                       </div>
@@ -548,196 +549,196 @@ export default function ImportPage() {
             </div>
 
             {/* Conflicts */}
-            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
-              <h4 className="text-sm font-medium text-zinc-400 uppercase tracking-wider mb-4 flex items-center justify-between">
+            <div className="bg-parchment-100 border border-sepia-300/50 rounded-xl p-6 texture-parchment shadow-parchment">
+              <h4 className="text-sm font-medium text-sepia-600 uppercase tracking-wider mb-4 flex items-center justify-between">
                 <span>Conflicts & Plot Points</span>
-                <span className="bg-zinc-800 text-zinc-300 px-2 py-0.5 rounded text-xs">{extractedData.active_conflicts?.length || 0}</span>
+                <span className="bg-parchment-200 text-sepia-700 px-2 py-0.5 rounded text-xs">{extractedData.active_conflicts?.length || 0}</span>
               </h4>
               <ul className="space-y-3 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
                 {(extractedData.active_conflicts || []).map((c: ExtractedConflict, i: number) => (
-                  <li key={i} className="bg-zinc-950 p-3 rounded-lg border border-zinc-800/50 relative group">
+                  <li key={i} className="bg-parchment-200 p-3 rounded-lg border border-sepia-300/30 relative group">
                     <button
                       onClick={() => setExtractedData({ ...extractedData, active_conflicts: (extractedData.active_conflicts || []).filter((_: ExtractedConflict, idx: number) => idx !== i) })}
-                      className="absolute top-2 right-2 p-1 text-zinc-500 hover:text-red-400 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                      className="absolute top-2 right-2 p-1 text-sepia-500 hover:text-wax-500 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                     >
                       <X size={14} />
                     </button>
-                    <strong className="text-sm text-zinc-200 block mb-1 pr-6">{c.conflict_type || c.title}</strong>
-                    <p className="text-xs text-zinc-500 line-clamp-2">{c.description}</p>
+                    <strong className="text-sm text-sepia-800 block mb-1 pr-6">{c.conflict_type || c.title}</strong>
+                    <p className="text-xs text-sepia-500 line-clamp-2">{c.description}</p>
                   </li>
                 ))}
               </ul>
             </div>
 
             {/* Worldbuilding & Timeline */}
-            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
-              <h4 className="text-sm font-medium text-zinc-400 uppercase tracking-wider mb-4 flex items-center justify-between">
+            <div className="bg-parchment-100 border border-sepia-300/50 rounded-xl p-6 texture-parchment shadow-parchment">
+              <h4 className="text-sm font-medium text-sepia-600 uppercase tracking-wider mb-4 flex items-center justify-between">
                 <span>World & Timeline</span>
-                <span className="bg-zinc-800 text-zinc-300 px-2 py-0.5 rounded text-xs">{(extractedData.world_rules?.length || 0) + (extractedData.timeline_events?.length || 0)}</span>
+                <span className="bg-parchment-200 text-sepia-700 px-2 py-0.5 rounded text-xs">{(extractedData.world_rules?.length || 0) + (extractedData.timeline_events?.length || 0)}</span>
               </h4>
               <ul className="space-y-3 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
                 {(extractedData.world_rules || []).map((w: ExtractedWorldRule, i: number) => (
-                  <li key={`w-${i}`} className="bg-zinc-950 p-3 rounded-lg border border-zinc-800/50 relative group">
+                  <li key={`w-${i}`} className="bg-parchment-200 p-3 rounded-lg border border-sepia-300/30 relative group">
                     <button
                       onClick={() => setExtractedData({ ...extractedData, world_rules: (extractedData.world_rules || []).filter((_: ExtractedWorldRule, idx: number) => idx !== i) })}
-                      className="absolute top-2 right-2 p-1 text-zinc-500 hover:text-red-400 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                      className="absolute top-2 right-2 p-1 text-sepia-500 hover:text-wax-500 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                     >
                       <X size={14} />
                     </button>
-                    <span className="text-[10px] text-indigo-400 uppercase tracking-wider mb-1 block">Lore</span>
-                    <strong className="text-sm text-zinc-200 block mb-1 pr-6">{w.scope || w.title}</strong>
-                    <p className="text-xs text-zinc-500 line-clamp-2">{w.rule || w.description}</p>
+                    <span className="text-[10px] text-brass-500 uppercase tracking-wider mb-1 block">Lore</span>
+                    <strong className="text-sm text-sepia-800 block mb-1 pr-6">{w.scope || w.title}</strong>
+                    <p className="text-xs text-sepia-500 line-clamp-2">{w.rule || w.description}</p>
                   </li>
                 ))}
                 {(extractedData.timeline_events || []).map((t: ExtractedTimelineEvent, i: number) => (
-                  <li key={`t-${i}`} className="bg-zinc-950 p-3 rounded-lg border border-zinc-800/50 relative group">
+                  <li key={`t-${i}`} className="bg-parchment-200 p-3 rounded-lg border border-sepia-300/30 relative group">
                     <button
                       onClick={() => setExtractedData({ ...extractedData, timeline_events: (extractedData.timeline_events || []).filter((_: ExtractedTimelineEvent, idx: number) => idx !== i) })}
-                      className="absolute top-2 right-2 p-1 text-zinc-500 hover:text-red-400 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                      className="absolute top-2 right-2 p-1 text-sepia-500 hover:text-wax-500 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                     >
                       <X size={14} />
                     </button>
-                    <span className="text-[10px] text-emerald-400 uppercase tracking-wider mb-1 block">Timeline: {t.event || t.date}</span>
-                    <p className="text-xs text-zinc-300 line-clamp-2 pr-6">{t.immediate_effect || t.cause || t.description}</p>
+                    <span className="text-[10px] text-forest-600 uppercase tracking-wider mb-1 block">Timeline: {t.event || t.date}</span>
+                    <p className="text-xs text-sepia-700 line-clamp-2 pr-6">{t.immediate_effect || t.cause || t.description}</p>
                   </li>
                 ))}
               </ul>
             </div>
 
             {/* Story Elements (Themes, Locations, Loops, Foreshadowing) */}
-            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 md:col-span-2">
-              <h4 className="text-sm font-medium text-zinc-400 uppercase tracking-wider mb-4 flex items-center justify-between">
+            <div className="bg-parchment-100 border border-sepia-300/50 rounded-xl p-6 texture-parchment shadow-parchment md:col-span-2">
+              <h4 className="text-sm font-medium text-sepia-600 uppercase tracking-wider mb-4 flex items-center justify-between">
                 <span>Story Elements</span>
-                <span className="bg-zinc-800 text-zinc-300 px-2 py-0.5 rounded text-xs">
+                <span className="bg-parchment-200 text-sepia-700 px-2 py-0.5 rounded text-xs">
                   {(extractedData.themes?.length || 0) + (extractedData.locations?.length || 0) + (extractedData.open_loops?.length || 0) + (extractedData.foreshadowing_elements?.length || 0)}
                 </span>
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                
+
                 {/* Themes & Locations */}
                 <ul className="space-y-3 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
                   {(extractedData.themes || []).map((t: ExtractedTheme, i: number) => (
-                    <li key={`th-${i}`} className="bg-zinc-950 p-3 rounded-lg border border-zinc-800/50 relative group">
+                    <li key={`th-${i}`} className="bg-parchment-200 p-3 rounded-lg border border-sepia-300/30 relative group">
                       <button
                         onClick={() => setExtractedData({ ...extractedData, themes: (extractedData.themes || []).filter((_: ExtractedTheme, idx: number) => idx !== i) })}
-                        className="absolute top-2 right-2 p-1 text-zinc-500 hover:text-red-400 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                        className="absolute top-2 right-2 p-1 text-sepia-500 hover:text-wax-500 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                       >
                         <X size={14} />
                       </button>
-                      <span className="text-[10px] text-purple-400 uppercase tracking-wider mb-1 block">Theme</span>
-                      <strong className="text-sm text-zinc-200 block mb-1 pr-6">{t.theme}</strong>
-                      <p className="text-xs text-zinc-500 line-clamp-2">{t.evidence?.join(', ')}</p>
+                      <span className="text-[10px] text-brass-700 uppercase tracking-wider mb-1 block">Theme</span>
+                      <strong className="text-sm text-sepia-800 block mb-1 pr-6">{t.theme}</strong>
+                      <p className="text-xs text-sepia-500 line-clamp-2">{t.evidence?.join(', ')}</p>
                     </li>
                   ))}
                   {(extractedData.locations || []).map((l: ExtractedLocation, i: number) => (
-                    <li key={`loc-${i}`} className="bg-zinc-950 p-3 rounded-lg border border-zinc-800/50 relative group">
+                    <li key={`loc-${i}`} className="bg-parchment-200 p-3 rounded-lg border border-sepia-300/30 relative group">
                       <button
                         onClick={() => setExtractedData({ ...extractedData, locations: (extractedData.locations || []).filter((_: ExtractedLocation, idx: number) => idx !== i) })}
-                        className="absolute top-2 right-2 p-1 text-zinc-500 hover:text-red-400 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                        className="absolute top-2 right-2 p-1 text-sepia-500 hover:text-wax-500 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                       >
                         <X size={14} />
                       </button>
-                      <span className="text-[10px] text-blue-400 uppercase tracking-wider mb-1 block">Location</span>
-                      <strong className="text-sm text-zinc-200 block mb-1 pr-6">{l.name}</strong>
-                      <p className="text-xs text-zinc-500 line-clamp-2">{l.description}</p>
+                      <span className="text-[10px] text-sepia-600 uppercase tracking-wider mb-1 block">Location</span>
+                      <strong className="text-sm text-sepia-800 block mb-1 pr-6">{l.name}</strong>
+                      <p className="text-xs text-sepia-500 line-clamp-2">{l.description}</p>
                     </li>
                   ))}
                   {(!extractedData.themes?.length && !extractedData.locations?.length) && (
-                    <li className="text-xs text-zinc-500 p-3">No themes or locations detected.</li>
+                    <li className="text-xs text-sepia-500 p-3">No themes or locations detected.</li>
                   )}
                 </ul>
 
                 {/* Open Loops & Foreshadowing */}
                 <ul className="space-y-3 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
                   {(extractedData.open_loops || []).map((l: ExtractedOpenLoop, i: number) => (
-                    <li key={`ol-${i}`} className="bg-zinc-950 p-3 rounded-lg border border-zinc-800/50 relative group">
+                    <li key={`ol-${i}`} className="bg-parchment-200 p-3 rounded-lg border border-sepia-300/30 relative group">
                       <button
                         onClick={() => setExtractedData({ ...extractedData, open_loops: (extractedData.open_loops || []).filter((_: ExtractedOpenLoop, idx: number) => idx !== i) })}
-                        className="absolute top-2 right-2 p-1 text-zinc-500 hover:text-red-400 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                        className="absolute top-2 right-2 p-1 text-sepia-500 hover:text-wax-500 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                       >
                         <X size={14} />
                       </button>
-                      <span className="text-[10px] text-orange-400 uppercase tracking-wider mb-1 block">Open Loop</span>
-                      <p className="text-xs text-zinc-300 line-clamp-2 pr-6">{l.description}</p>
+                      <span className="text-[10px] text-brass-600 uppercase tracking-wider mb-1 block">Open Loop</span>
+                      <p className="text-xs text-sepia-700 line-clamp-2 pr-6">{l.description}</p>
                     </li>
                   ))}
                   {(extractedData.foreshadowing_elements || []).map((f: ExtractedForeshadowing, i: number) => (
-                    <li key={`fs-${i}`} className="bg-zinc-950 p-3 rounded-lg border border-zinc-800/50 relative group">
+                    <li key={`fs-${i}`} className="bg-parchment-200 p-3 rounded-lg border border-sepia-300/30 relative group">
                       <button
                         onClick={() => setExtractedData({ ...extractedData, foreshadowing_elements: (extractedData.foreshadowing_elements || []).filter((_: ExtractedForeshadowing, idx: number) => idx !== i) })}
-                        className="absolute top-2 right-2 p-1 text-zinc-500 hover:text-red-400 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                        className="absolute top-2 right-2 p-1 text-sepia-500 hover:text-wax-500 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                       >
                         <X size={14} />
                       </button>
-                      <span className="text-[10px] text-teal-400 uppercase tracking-wider mb-1 block">Foreshadowing</span>
-                      <p className="text-xs text-zinc-300 line-clamp-2 pr-6">{f.description || f.clue}</p>
+                      <span className="text-[10px] text-forest-700 uppercase tracking-wider mb-1 block">Foreshadowing</span>
+                      <p className="text-xs text-sepia-700 line-clamp-2 pr-6">{f.description || f.clue}</p>
                     </li>
                   ))}
                   {(!extractedData.open_loops?.length && !extractedData.foreshadowing_elements?.length) && (
-                    <li className="text-xs text-zinc-500 p-3">No open loops or foreshadowing detected.</li>
+                    <li className="text-xs text-sepia-500 p-3">No open loops or foreshadowing detected.</li>
                   )}
                 </ul>
               </div>
             </div>
 
             {/* Canon & Ambiguities */}
-            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 md:col-span-2">
-              <h4 className="text-sm font-medium text-zinc-400 uppercase tracking-wider mb-4 flex items-center justify-between">
+            <div className="bg-parchment-100 border border-sepia-300/50 rounded-xl p-6 texture-parchment shadow-parchment md:col-span-2">
+              <h4 className="text-sm font-medium text-sepia-600 uppercase tracking-wider mb-4 flex items-center justify-between">
                 <span>Canon & Ambiguities</span>
-                <span className="bg-zinc-800 text-zinc-300 px-2 py-0.5 rounded text-xs">{(extractedData.canon_items?.length || 0) + (extractedData.ambiguities?.length || 0)}</span>
+                <span className="bg-parchment-200 text-sepia-700 px-2 py-0.5 rounded text-xs">{(extractedData.canon_items?.length || 0) + (extractedData.ambiguities?.length || 0)}</span>
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <ul className="space-y-3 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
                   {(extractedData.canon_items || []).map((c: ExtractedCanonItem, i: number) => (
-                    <li key={`c-${i}`} className="bg-zinc-950 p-3 rounded-lg border border-zinc-800/50 relative group">
+                    <li key={`c-${i}`} className="bg-parchment-200 p-3 rounded-lg border border-sepia-300/30 relative group">
                       <button
                         onClick={() => setExtractedData({ ...extractedData, canon_items: (extractedData.canon_items || []).filter((_: ExtractedCanonItem, idx: number) => idx !== i) })}
-                        className="absolute top-2 right-2 p-1 text-zinc-500 hover:text-red-400 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                        className="absolute top-2 right-2 p-1 text-sepia-500 hover:text-wax-500 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                       >
                         <X size={14} />
                       </button>
-                      <span className="text-[10px] text-indigo-400 uppercase tracking-wider mb-1 block">Canon: {c.category}</span>
-                      <p className="text-xs text-zinc-300 line-clamp-2 pr-6">{c.description}</p>
+                      <span className="text-[10px] text-brass-500 uppercase tracking-wider mb-1 block">Canon: {c.category}</span>
+                      <p className="text-xs text-sepia-700 line-clamp-2 pr-6">{c.description}</p>
                     </li>
                   ))}
                   {(!extractedData.canon_items || extractedData.canon_items.length === 0) && (
-                    <li className="text-xs text-zinc-500 p-3">No canon items detected.</li>
+                    <li className="text-xs text-sepia-500 p-3">No canon items detected.</li>
                   )}
                 </ul>
                 <ul className="space-y-3 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
                   {(extractedData.ambiguities || []).map((a: ExtractedAmbiguity, i: number) => (
-                    <li key={`a-${i}`} className="bg-amber-950/30 p-3 rounded-lg border border-amber-900/50 relative group">
+                    <li key={`a-${i}`} className="bg-brass-400/10 p-3 rounded-lg border border-brass-400/30 relative group">
                       <button
                         onClick={() => setExtractedData({ ...extractedData, ambiguities: (extractedData.ambiguities || []).filter((_: ExtractedAmbiguity, idx: number) => idx !== i) })}
-                        className="absolute top-2 right-2 p-1 text-zinc-500 hover:text-red-400 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                        className="absolute top-2 right-2 p-1 text-sepia-500 hover:text-wax-500 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                       >
                         <X size={14} />
                       </button>
-                      <span className="text-[10px] text-amber-500 uppercase tracking-wider mb-1 block flex items-center gap-1">
+                      <span className="text-[10px] text-brass-700 uppercase tracking-wider mb-1 block flex items-center gap-1">
                         <AlertCircle size={12} /> Ambiguity ({a.confidence} confidence)
                       </span>
-                      <strong className="text-sm text-zinc-200 block mb-1 pr-6">{a.issue}</strong>
-                      <p className="text-xs text-zinc-400 line-clamp-2">{a.recommended_review}</p>
+                      <strong className="text-sm text-sepia-800 block mb-1 pr-6">{a.issue}</strong>
+                      <p className="text-xs text-sepia-600 line-clamp-2">{a.recommended_review}</p>
                     </li>
                   ))}
                   {(!extractedData.ambiguities || extractedData.ambiguities.length === 0) && (
-                    <li className="text-xs text-zinc-500 p-3">No ambiguities detected.</li>
+                    <li className="text-xs text-sepia-500 p-3">No ambiguities detected.</li>
                   )}
                 </ul>
               </div>
             </div>
           </div>
 
-          <div className="flex justify-end gap-4 pt-6 border-t border-zinc-800">
+          <div className="flex justify-end gap-4 pt-6 border-t border-sepia-300/50">
             <button
               onClick={reset}
-              className="px-6 py-2 rounded-lg font-medium text-zinc-400 hover:text-zinc-200 transition-colors"
+              className="px-6 py-2 rounded-lg font-medium text-sepia-600 hover:text-sepia-800 transition-colors"
             >
               Cancel
             </button>
             <button
               onClick={handleConfirmImport}
-              className="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors"
+              className="bg-forest-700 hover:bg-forest-600 text-cream-50 px-6 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors"
             >
               <Save size={18} /> Merge into Project Memory
             </button>
@@ -747,17 +748,17 @@ export default function ImportPage() {
 
       {uploadStatus === 'success' && (
         <div className="flex flex-col items-center justify-center py-24 space-y-6 animate-in fade-in zoom-in-95">
-          <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center">
-            <CheckCircle2 size={40} className="text-emerald-400" />
+          <div className="w-20 h-20 bg-forest-600/10 rounded-full flex items-center justify-center">
+            <CheckCircle2 size={40} className="text-forest-600" />
           </div>
           <div className="text-center">
-            <h3 className="text-2xl font-serif font-bold text-zinc-100 mb-2">Ingestion Complete</h3>
-            <p className="text-zinc-400 text-sm max-w-md mx-auto mb-8">
+            <h3 className="text-2xl font-serif font-bold text-sepia-900 mb-2">Ingestion Complete</h3>
+            <p className="text-sepia-600 text-sm max-w-md mx-auto mb-8">
               Your manuscript has been successfully parsed, structured, and merged into your project memory. You can now continue writing with full context.
             </p>
             <button
               onClick={reset}
-              className="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 px-6 py-2 rounded-lg font-medium transition-colors"
+              className="bg-parchment-200 hover:bg-sepia-300/30 text-sepia-800 px-6 py-2 rounded-lg font-medium transition-colors"
             >
               Import More Files
             </button>

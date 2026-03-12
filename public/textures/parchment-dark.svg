@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300">
+  <defs>
+    <filter id="aged-paper">
+      <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="5" seed="12" result="noise"/>
+      <feColorMatrix type="matrix" values="0.06 0 0 0 0.90
+                                            0.05 0 0 0 0.84
+                                            0.03 0 0 0 0.75
+                                            0 0 0 0.6 0" in="noise" result="colored"/>
+      <feBlend in="SourceGraphic" in2="colored" mode="multiply"/>
+    </filter>
+  </defs>
+  <rect width="100%" height="100%" fill="#e4cfa0"/>
+  <rect width="100%" height="100%" filter="url(#aged-paper)"/>
+</svg>

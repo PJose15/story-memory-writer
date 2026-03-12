@@ -12,11 +12,11 @@ const MONTH_LABEL_HEIGHT = 16;
 const DAY_LABEL_WIDTH = 28;
 
 const COLORS = [
-  'fill-zinc-800',       // 0 words
-  'fill-emerald-900',    // low
-  'fill-emerald-700',    // medium
-  'fill-emerald-500',    // high
-  'fill-emerald-300',    // very high
+  'fill-sepia-300/50',       // 0 words
+  'fill-forest-900',    // low
+  'fill-forest-700',    // medium
+  'fill-forest-500',    // high
+  'fill-forest-400',    // very high
 ];
 
 function getColorClass(words: number): string {
@@ -138,7 +138,7 @@ export function CalendarHeatmap({ sessions }: CalendarHeatmapProps) {
                 key={i}
                 x={DAY_LABEL_WIDTH - 4}
                 y={MONTH_LABEL_HEIGHT + i * TOTAL_CELL + CELL_SIZE - 2}
-                className="fill-zinc-500 text-[10px]"
+                className="fill-sepia-500 text-[10px]"
                 textAnchor="end"
               >
                 {label}
@@ -152,7 +152,7 @@ export function CalendarHeatmap({ sessions }: CalendarHeatmapProps) {
               key={i}
               x={DAY_LABEL_WIDTH + m.col * TOTAL_CELL}
               y={MONTH_LABEL_HEIGHT - 4}
-              className="fill-zinc-500 text-[10px]"
+              className="fill-sepia-500 text-[10px]"
             >
               {m.month}
             </text>
@@ -207,18 +207,18 @@ export function CalendarHeatmap({ sessions }: CalendarHeatmapProps) {
       {/* Tooltip */}
       {tooltip && (
         <div
-          className="fixed z-50 px-3 py-2 text-xs bg-zinc-800 text-zinc-200 rounded shadow-lg pointer-events-none -translate-x-1/2 -translate-y-full"
+          className="fixed z-50 px-3 py-2 text-xs bg-parchment-200 text-sepia-800 rounded shadow-lg pointer-events-none -translate-x-1/2 -translate-y-full"
           style={{ left: tooltip.x, top: tooltip.y }}
           data-testid="heatmap-tooltip"
         >
           {tooltip.lines.map((line, i) => (
-            <div key={i} className={i === 0 ? 'font-medium' : 'text-zinc-400'}>{line}</div>
+            <div key={i} className={i === 0 ? 'font-medium' : 'text-sepia-600'}>{line}</div>
           ))}
         </div>
       )}
 
       {/* Legend */}
-      <div className="flex items-center gap-1 mt-2 text-[10px] text-zinc-500 justify-end">
+      <div className="flex items-center gap-1 mt-2 text-[10px] text-sepia-500 justify-end">
         <span>Less</span>
         {COLORS.map((color, i) => (
           <svg key={i} width={CELL_SIZE} height={CELL_SIZE}>

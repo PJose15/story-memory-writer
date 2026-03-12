@@ -82,12 +82,12 @@ export function InsightCard({ sessions }: InsightCardProps) {
   }, [sessions]);
 
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6" data-testid="insight-card">
+    <div className="bg-parchment-100 border border-sepia-300/50 rounded-xl p-6 texture-parchment shadow-parchment" data-testid="insight-card">
       <div className="flex items-start gap-3">
         <Lightbulb size={20} className="text-amber-400 shrink-0 mt-0.5" />
         <div>
-          <h3 className="text-base font-medium text-zinc-100">{insight.headline}</h3>
-          {insight.detail && <p className="text-sm text-zinc-400 mt-1 leading-relaxed">{insight.detail}</p>}
+          <h3 className="text-base font-medium text-sepia-900">{insight.headline}</h3>
+          {insight.detail && <p className="text-sm text-sepia-600 mt-1 leading-relaxed">{insight.detail}</p>}
         </div>
       </div>
     </div>

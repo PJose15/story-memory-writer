@@ -65,16 +65,16 @@ export function FlowScoreModal({ sessionId, onSubmit, onDismiss }: FlowScoreModa
         exit={{ opacity: 0, y: 10, scale: 0.95 }}
         transition={{ type: 'spring', stiffness: 300, damping: 25 }}
         onKeyDown={handleKeyDown}
-        className="fixed bottom-20 right-4 z-[90] bg-zinc-900 border border-zinc-700 rounded-2xl p-4 shadow-2xl w-72 relative"
+        className="fixed bottom-20 right-4 z-[90] bg-parchment-100 border border-sepia-300/40 rounded-xl p-4 shadow-2xl w-72 relative texture-parchment"
       >
         <button
           onClick={onDismiss}
           aria-label="Close"
-          className="absolute top-2 right-2 text-zinc-500 hover:text-zinc-300 transition-colors rounded p-0.5"
+          className="absolute top-2 right-2 text-sepia-500 hover:text-sepia-700 transition-colors rounded p-0.5"
         >
           <X size={16} />
         </button>
-        <p className="text-sm font-medium text-zinc-200 mb-3">
+        <p className="text-sm font-medium text-sepia-800 mb-3">
           How did this session flow?
         </p>
         <div className="flex gap-2 justify-between" role="radiogroup" aria-label="Flow score">
@@ -83,12 +83,12 @@ export function FlowScoreModal({ sessionId, onSubmit, onDismiss }: FlowScoreModa
               key={score}
               onClick={() => onSubmit(sessionId, score)}
               aria-label={`${label} — ${score} out of 5`}
-              className="flex flex-col items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-zinc-800 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 focus:ring-offset-zinc-900"
+              className="flex flex-col items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-parchment-200 transition-colors focus:outline-none focus:ring-2 focus:ring-brass-400 focus:ring-offset-1 focus:ring-offset-parchment-100"
             >
               <span className="text-2xl" role="img" aria-hidden="true">
                 {emoji}
               </span>
-              <span className="text-[10px] text-zinc-500">{label}</span>
+              <span className="text-[10px] text-sepia-500">{label}</span>
             </button>
           ))}
         </div>

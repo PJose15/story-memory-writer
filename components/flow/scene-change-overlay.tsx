@@ -32,14 +32,14 @@ export function SceneChangeOverlay({ message, subtitle, onComplete }: SceneChang
 
   return (
     <div
-      className={`fixed inset-0 z-[9999] bg-zinc-950 flex flex-col items-center justify-center transition-opacity duration-200 ${opacity}`}
+      className={`fixed inset-0 z-[9999] bg-parchment-200 flex flex-col items-center justify-center transition-opacity duration-200 ${opacity}`}
       role="status"
       aria-live="assertive"
     >
       <span className="text-4xl mb-4" aria-hidden="true">&#x1F500;</span>
-      <p className="text-xl font-serif text-zinc-100">{message}</p>
+      <p className="text-xl font-serif text-sepia-900">{message}</p>
       {subtitle && (
-        <p className="text-sm text-zinc-400 mt-2">{subtitle}</p>
+        <p className="text-sm text-sepia-600 mt-2">{subtitle}</p>
       )}
     </div>
   );

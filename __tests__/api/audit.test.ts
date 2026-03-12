@@ -31,6 +31,12 @@ vi.mock('@google/genai', () => {
 vi.mock('@/lib/ai-config', () => ({
   AI_MODEL: 'test-model',
   SAFETY_SETTINGS: [],
+  AI_CONFIG: {
+    chat: { temperature: 0.3, maxOutputTokens: 4096 },
+    chatBlocked: { temperature: 0.5, maxOutputTokens: 4096 },
+    audit: { temperature: 0.1, maxOutputTokens: 2048 },
+    microPrompt: { temperature: 0.7, maxOutputTokens: 1024 },
+  },
 }));
 
 vi.mock('@/lib/prompts/writing-assistant', () => ({

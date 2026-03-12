@@ -16,6 +16,7 @@ vi.mock('motion/react', () => {
 
 vi.mock('lucide-react', () => ({
   AlertTriangle: () => <span data-testid="icon-alert" />,
+  X: () => <span data-testid="icon-x" />,
 }));
 
 import { ConfirmProvider, useConfirm } from '@/components/confirm-dialog';

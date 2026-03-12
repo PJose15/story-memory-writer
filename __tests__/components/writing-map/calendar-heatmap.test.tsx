@@ -45,16 +45,16 @@ describe('CalendarHeatmap', () => {
   it('renders mostly empty cells when no sessions', () => {
     render(<CalendarHeatmap sessions={[]} />);
     const cells = screen.getAllByRole('gridcell');
-    const zincCells = cells.filter(c => c.getAttribute('class')?.includes('fill-zinc-800'));
-    // All cells should be zinc (empty) — allow small rounding variance
-    expect(zincCells.length).toBe(cells.length);
+    const sepiaCells = cells.filter(c => c.getAttribute('class')?.includes('fill-sepia-300/50'));
+    // All cells should be sepia (empty) — allow small rounding variance
+    expect(sepiaCells.length).toBe(cells.length);
   });
 
   it('colors cells for days with sessions', () => {
     const sessions = [makeSession({ startedAt: '2026-03-10T10:00:00Z', wordsAdded: 500 })];
     render(<CalendarHeatmap sessions={sessions} />);
     const matchingCell = screen.getByLabelText('2026-03-10: 500 words');
-    expect(matchingCell.getAttribute('class')).not.toContain('fill-zinc-800');
+    expect(matchingCell.getAttribute('class')).not.toContain('fill-sepia-300/50');
   });
 
   it('shows rich tooltip on hover with all data', () => {
@@ -78,25 +78,25 @@ describe('CalendarHeatmap', () => {
   });
 
   it('uses fixed color thresholds (not relative to max)', () => {
-    // 150 words should be emerald-900 (1-200 range)
+    // 150 words should be forest-900 (1-200 range)
     const sessions = [makeSession({ startedAt: '2026-03-10T10:00:00Z', wordsAdded: 150 })];
     render(<CalendarHeatmap sessions={sessions} />);
     const cell = screen.getByLabelText('2026-03-10: 150 words');
-    expect(cell.getAttribute('class')).toContain('fill-emerald-900');
+    expect(cell.getAttribute('class')).toContain('fill-forest-900');
   });
 
   it('applies correct color for 501-1000 word range', () => {
     const sessions = [makeSession({ startedAt: '2026-03-10T10:00:00Z', wordsAdded: 750 })];
     render(<CalendarHeatmap sessions={sessions} />);
     const cell = screen.getByLabelText('2026-03-10: 750 words');
-    expect(cell.getAttribute('class')).toContain('fill-emerald-500');
+    expect(cell.getAttribute('class')).toContain('fill-forest-500');
   });
 
   it('applies highest color for 1000+ words', () => {
     const sessions = [makeSession({ startedAt: '2026-03-10T10:00:00Z', wordsAdded: 1500 })];
     render(<CalendarHeatmap sessions={sessions} />);
     const cell = screen.getByLabelText('2026-03-10: 1500 words');
-    expect(cell.getAttribute('class')).toContain('fill-emerald-300');
+    expect(cell.getAttribute('class')).toContain('fill-forest-400');
   });
 
   it('aggregates multiple sessions on the same day', () => {

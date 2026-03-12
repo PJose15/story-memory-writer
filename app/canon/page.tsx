@@ -16,10 +16,10 @@ interface CanonItem {
 }
 
 const statusConfig = {
-  confirmed: { icon: ShieldCheck, color: 'text-emerald-400', bg: 'bg-emerald-400/10', border: 'border-emerald-400/20', label: 'Confirmed Canon' },
-  flexible: { icon: Shield, color: 'text-blue-400', bg: 'bg-blue-400/10', border: 'border-blue-400/20', label: 'Flexible Canon' },
-  draft: { icon: ShieldAlert, color: 'text-amber-400', bg: 'bg-amber-400/10', border: 'border-amber-400/20', label: 'Draft Idea' },
-  discarded: { icon: ShieldOff, color: 'text-red-400', bg: 'bg-red-400/10', border: 'border-red-400/20', label: 'Discarded' },
+  confirmed: { icon: ShieldCheck, color: 'text-forest-700', bg: 'bg-forest-700/10', border: 'border-forest-600/30', label: 'Confirmed Canon' },
+  flexible: { icon: Shield, color: 'text-brass-600', bg: 'bg-brass-500/10', border: 'border-brass-500/30', label: 'Flexible Canon' },
+  draft: { icon: ShieldAlert, color: 'text-brass-800', bg: 'bg-brass-400/10', border: 'border-brass-400/30', label: 'Draft Idea' },
+  discarded: { icon: ShieldOff, color: 'text-wax-600', bg: 'bg-wax-500/10', border: 'border-wax-500/30', label: 'Discarded' },
 };
 
 export default function CanonLockPage() {
@@ -27,7 +27,6 @@ export default function CanonLockPage() {
   const [filterStatus, setFilterStatus] = useState<CanonStatus | 'all'>('all');
   const [filterType, setFilterType] = useState<ItemType | 'all'>('all');
 
-  // Aggregate all items with canonStatus (memoized to avoid rebuilding on every render)
   const allItems = useMemo<CanonItem[]>(() => [
     ...state.characters.map(c => ({ id: c.id, type: 'character' as ItemType, title: c.name, description: c.description, status: c.canonStatus || 'draft' })),
     ...state.timeline_events.map(t => ({ id: t.id, type: 'timeline' as ItemType, title: t.date, description: t.description, status: t.canonStatus || 'draft' })),
@@ -65,24 +64,27 @@ export default function CanonLockPage() {
     updateField(field, items.map(item => item.id === id ? { ...item, canonStatus: newStatus } : item) as StoryState[typeof field]);
   }, [state, updateField]);
 
+  const selectClasses = "bg-parchment-200 border border-sepia-300/60 rounded-lg px-3 py-2 text-sm text-sepia-800 focus:outline-none focus:ring-2 focus:ring-brass-400/40";
+
   return (
     <div className="p-8 max-w-5xl mx-auto space-y-8">
-      <header className="flex flex-col md:flex-row md:items-end justify-between border-b border-zinc-800 pb-6 gap-4">
+      <header className="flex flex-col md:flex-row md:items-end justify-between border-b border-sepia-300/30 pb-6 gap-4">
         <div>
-          <h1 className="text-3xl font-serif font-bold text-zinc-100 tracking-tight flex items-center gap-3">
-            <Lock className="text-indigo-400" />
+          <h1 className="text-3xl font-serif font-bold text-sepia-900 tracking-tight flex items-center gap-3 letterpress">
+            <Lock className="text-brass-500" />
             Canon Lock
           </h1>
-          <p className="text-zinc-400 mt-2 text-sm max-w-xl">
+          <p className="text-sepia-600 mt-2 text-sm max-w-xl">
             Classify story information by certainty level. The AI Assistant will strictly respect Confirmed Canon and ignore Discarded items.
           </p>
+          <div className="mt-3 h-0.5 w-16 bg-gradient-to-r from-brass-500 to-brass-300/0 rounded-full" />
         </div>
-        
+
         <div className="flex flex-wrap gap-2">
           <select
             value={filterType}
             onChange={(e) => setFilterType(e.target.value as ItemType | 'all')}
-            className="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+            className={selectClasses}
           >
             <option value="all">All Types</option>
             <option value="character">Characters</option>
@@ -96,11 +98,11 @@ export default function CanonLockPage() {
             <option value="open_loop">Open Loops</option>
             <option value="foreshadowing">Foreshadowing</option>
           </select>
-          
+
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value as CanonStatus | 'all')}
-            className="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+            className={selectClasses}
           >
             <option value="all">All Statuses</option>
             <option value="confirmed">Confirmed Canon</option>
@@ -116,7 +118,7 @@ export default function CanonLockPage() {
           {filteredItems.map((item) => {
             const config = statusConfig[item.status];
             const Icon = config.icon;
-            
+
             return (
               <motion.div
                 key={`${item.type}-${item.id}`}
@@ -124,12 +126,12 @@ export default function CanonLockPage() {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
                 layout
-                className={`bg-zinc-900 border ${config.border} rounded-2xl p-5 shadow-sm flex flex-col`}
+                className={`bg-parchment-100 border ${config.border} rounded-xl p-5 shadow-parchment flex flex-col texture-parchment`}
               >
                 <div className="flex items-start justify-between mb-3">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs font-medium text-zinc-500 uppercase tracking-wider bg-zinc-800 px-2 py-0.5 rounded">
+                      <span className="text-xs font-medium text-sepia-600 uppercase tracking-wider bg-parchment-200 px-2 py-0.5 rounded">
                         {item.type}
                       </span>
                       <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium ${config.bg} ${config.color}`}>
@@ -137,30 +139,30 @@ export default function CanonLockPage() {
                         {config.label}
                       </div>
                     </div>
-                    <h3 className="text-lg font-serif font-semibold text-zinc-100">{item.title}</h3>
+                    <h3 className="text-lg font-serif font-semibold text-sepia-900">{item.title}</h3>
                   </div>
                 </div>
-                
-                <p className="text-sm text-zinc-400 line-clamp-3 mb-4 flex-1">
+
+                <p className="text-sm text-sepia-600 line-clamp-3 mb-4 flex-1">
                   {item.description || <span className="italic opacity-50">No description...</span>}
                 </p>
-                
-                <div className="flex items-center gap-2 pt-4 border-t border-zinc-800/50 mt-auto">
-                  <span className="text-xs text-zinc-500 mr-auto">Change status:</span>
+
+                <div className="flex items-center gap-2 pt-4 border-t border-sepia-300/30 mt-auto">
+                  <span className="text-xs text-sepia-500 mr-auto">Change status:</span>
                   {(Object.keys(statusConfig) as CanonStatus[]).map((status) => {
                     const btnConfig = statusConfig[status];
                     const BtnIcon = btnConfig.icon;
                     const isActive = item.status === status;
-                    
+
                     return (
                       <button
                         key={status}
                         onClick={() => updateItemStatus(item.id, item.type, status)}
                         title={btnConfig.label}
                         className={`p-1.5 rounded-md transition-colors ${
-                          isActive 
-                            ? `${btnConfig.bg} ${btnConfig.color}` 
-                            : 'text-zinc-600 hover:bg-zinc-800 hover:text-zinc-300'
+                          isActive
+                            ? `${btnConfig.bg} ${btnConfig.color}`
+                            : 'text-sepia-400 hover:bg-parchment-200 hover:text-sepia-700'
                         }`}
                       >
                         <BtnIcon size={16} />
@@ -172,12 +174,12 @@ export default function CanonLockPage() {
             );
           })}
         </AnimatePresence>
-        
+
         {filteredItems.length === 0 && (
           <div className="col-span-full text-center py-20">
-            <Filter size={48} className="mx-auto text-zinc-800 mb-4" />
-            <p className="text-zinc-400 text-lg">No items match your filters.</p>
-            <p className="text-zinc-500 text-sm mt-2">Try changing the type or status filter.</p>
+            <Filter size={48} className="mx-auto text-sepia-300 mb-4" />
+            <p className="text-sepia-600 text-lg">No items match your filters.</p>
+            <p className="text-sepia-500 text-sm mt-2">Try changing the type or status filter.</p>
           </div>
         )}
       </div>

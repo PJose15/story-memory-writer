@@ -97,7 +97,7 @@ export function SessionsTable({ sessions }: SessionsTableProps) {
 
   if (sessions.length === 0) {
     return (
-      <div className="text-center py-8 text-zinc-500 text-sm" data-testid="sessions-table-empty">
+      <div className="text-center py-8 text-sepia-500 text-sm" data-testid="sessions-table-empty">
         No writing sessions recorded yet.
       </div>
     );
@@ -107,19 +107,19 @@ export function SessionsTable({ sessions }: SessionsTableProps) {
     <div className="overflow-x-auto" data-testid="sessions-table">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-zinc-800 text-zinc-400">
+          <tr className="border-b border-sepia-300/50 text-sepia-600">
             <th className="text-left py-2 px-3 font-medium">Project</th>
-            <th className="text-left py-2 px-3 font-medium cursor-pointer hover:text-zinc-200" onClick={() => handleSort('date')}>
+            <th className="text-left py-2 px-3 font-medium cursor-pointer hover:text-sepia-800" onClick={() => handleSort('date')}>
               Date <SortIcon field="date" />
             </th>
             <th className="text-left py-2 px-3 font-medium">Time</th>
-            <th className="text-right py-2 px-3 font-medium cursor-pointer hover:text-zinc-200" onClick={() => handleSort('words')}>
+            <th className="text-right py-2 px-3 font-medium cursor-pointer hover:text-sepia-800" onClick={() => handleSort('words')}>
               Words <SortIcon field="words" />
             </th>
-            <th className="text-right py-2 px-3 font-medium cursor-pointer hover:text-zinc-200" onClick={() => handleSort('duration')}>
+            <th className="text-right py-2 px-3 font-medium cursor-pointer hover:text-sepia-800" onClick={() => handleSort('duration')}>
               Duration <SortIcon field="duration" />
             </th>
-            <th className="text-center py-2 px-3 font-medium cursor-pointer hover:text-zinc-200" onClick={() => handleSort('flow')}>
+            <th className="text-center py-2 px-3 font-medium cursor-pointer hover:text-sepia-800" onClick={() => handleSort('flow')}>
               Flow <SortIcon field="flow" />
             </th>
           </tr>
@@ -128,22 +128,22 @@ export function SessionsTable({ sessions }: SessionsTableProps) {
           {sorted.map((session) => (
             <tr
               key={session.id}
-              className="border-b border-zinc-800/50 hover:bg-zinc-800/30 transition-colors cursor-pointer"
+              className="border-b border-sepia-300/30 hover:bg-parchment-200/30 transition-colors cursor-pointer"
               onClick={() => router.push('/flow')}
               data-clickable="true"
             >
-              <td className="py-2 px-3 text-zinc-300" title={session.projectName}>
+              <td className="py-2 px-3 text-sepia-700" title={session.projectName}>
                 {truncate(session.projectName, 20)}
               </td>
-              <td className="py-2 px-3 text-zinc-200">{formatDate(session.startedAt)}</td>
-              <td className="py-2 px-3 text-zinc-400">{formatTime(session.startedAt)}</td>
-              <td className="py-2 px-3 text-right text-zinc-200">+{session.wordsAdded.toLocaleString()}</td>
-              <td className="py-2 px-3 text-right text-zinc-400">{formatDuration(session.startedAt, session.endedAt)}</td>
+              <td className="py-2 px-3 text-sepia-800">{formatDate(session.startedAt)}</td>
+              <td className="py-2 px-3 text-sepia-600">{formatTime(session.startedAt)}</td>
+              <td className="py-2 px-3 text-right text-sepia-800">+{session.wordsAdded.toLocaleString()}</td>
+              <td className="py-2 px-3 text-right text-sepia-600">{formatDuration(session.startedAt, session.endedAt)}</td>
               <td className="py-2 px-3 text-center">
                 {session.flowScore ? (
                   <span title={`Flow: ${session.flowScore}/5`}>{FLOW_EMOJIS[session.flowScore]}</span>
                 ) : (
-                  <span className="text-zinc-600">—</span>
+                  <span className="text-sepia-400">—</span>
                 )}
               </td>
             </tr>

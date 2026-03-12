@@ -14,7 +14,7 @@ export function QuoteDisplay({ quote }: QuoteDisplayProps) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
-        className="text-xl md:text-2xl font-serif text-zinc-100 leading-relaxed italic"
+        className="text-xl md:text-2xl font-serif text-sepia-900 leading-relaxed italic"
       >
         &ldquo;{quote.text}&rdquo;
       </motion.blockquote>
@@ -23,7 +23,7 @@ export function QuoteDisplay({ quote }: QuoteDisplayProps) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.4, duration: 0.6 }}
-        className="text-sm text-zinc-400"
+        className="text-sm text-sepia-600"
       >
         &mdash; {quote.author}, <span className="italic">{quote.source}</span>
       </motion.p>
@@ -32,7 +32,7 @@ export function QuoteDisplay({ quote }: QuoteDisplayProps) {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.8, duration: 0.6 }}
-        className="text-base text-indigo-300 font-serif"
+        className="text-base text-brass-400 font-serif"
       >
         {quote.zagafyPhrase}
       </motion.p>

@@ -6,12 +6,13 @@ import { useUnsavedChanges } from '@/hooks/use-unsaved-changes';
 import { Plus, Trash2, Edit3, Save, X, Swords, CheckCircle2, ShieldCheck, Shield, ShieldAlert, ShieldOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useConfirm } from '@/components/confirm-dialog';
+import { BrassButton } from '@/components/antiquarian';
 
 const statusConfig = {
-  confirmed: { icon: ShieldCheck, color: 'text-emerald-400', bg: 'bg-emerald-400/10', label: 'Confirmed Canon' },
-  flexible: { icon: Shield, color: 'text-blue-400', bg: 'bg-blue-400/10', label: 'Flexible Canon' },
-  draft: { icon: ShieldAlert, color: 'text-amber-400', bg: 'bg-amber-400/10', label: 'Draft Idea' },
-  discarded: { icon: ShieldOff, color: 'text-red-400', bg: 'bg-red-400/10', label: 'Discarded' },
+  confirmed: { icon: ShieldCheck, color: 'text-forest-700', bg: 'bg-forest-700/10', label: 'Confirmed Canon' },
+  flexible: { icon: Shield, color: 'text-brass-600', bg: 'bg-brass-500/10', label: 'Flexible Canon' },
+  draft: { icon: ShieldAlert, color: 'text-brass-800', bg: 'bg-brass-400/10', label: 'Draft Idea' },
+  discarded: { icon: ShieldOff, color: 'text-wax-600', bg: 'bg-wax-500/10', label: 'Discarded' },
 };
 
 export default function ConflictsPage() {
@@ -76,21 +77,19 @@ export default function ConflictsPage() {
 
   return (
     <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-8">
-      <header className="flex items-center justify-between border-b border-zinc-800 pb-6">
+      <header className="flex items-center justify-between border-b border-sepia-300/50 pb-6">
         <div>
-          <h1 className="text-3xl font-serif font-bold text-zinc-100 tracking-tight flex items-center gap-3">
-            <Swords className="text-indigo-400" />
+          <h1 className="letterpress text-3xl font-serif font-bold text-sepia-900 tracking-tight flex items-center gap-3">
+            <Swords className="text-brass-500" />
             Conflicts
           </h1>
-          <p className="text-zinc-400 mt-2 text-sm">Track active tensions, subplots, and resolutions.</p>
+          <p className="text-sepia-600 mt-2 text-sm">Track active tensions, subplots, and resolutions.</p>
+          <div className="mt-3 h-0.5 w-16 bg-gradient-to-r from-brass-500 to-brass-300/0 rounded-full" />
         </div>
-        <button
-          onClick={handleAddConflict}
-          className="flex items-center gap-2 bg-zinc-100 text-zinc-950 px-4 py-2 rounded-lg font-medium hover:bg-zinc-200 transition-colors"
-        >
+        <BrassButton onClick={handleAddConflict}>
           <Plus size={18} />
           Add Conflict
-        </button>
+        </BrassButton>
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -101,7 +100,7 @@ export default function ConflictsPage() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
-              className={`bg-zinc-900 border ${conflict.status === 'resolved' ? 'border-emerald-900/50 opacity-75' : 'border-zinc-800'} rounded-2xl overflow-hidden shadow-sm transition-all`}
+              className={`bg-parchment-100 border ${conflict.status === 'resolved' ? 'border-forest-500/30 opacity-75' : 'border-sepia-300/50'} rounded-xl overflow-hidden transition-all texture-parchment shadow-parchment`}
             >
               {editingId === conflict.id ? (
                 <div className="p-6 space-y-4">
@@ -109,46 +108,46 @@ export default function ConflictsPage() {
                     type="text"
                     value={editForm.title || ''}
                     onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-3 text-xl font-serif font-semibold text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                    className="w-full bg-parchment-200 border border-sepia-300/50 rounded-lg px-4 py-3 text-xl font-serif font-semibold text-sepia-900 focus:outline-none focus:ring-2 focus:ring-brass-400/40"
                     placeholder="Conflict Title"
                   />
                   <textarea
                     value={editForm.description || ''}
                     onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-                    className="w-full h-32 bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-3 text-sm text-zinc-300 font-sans resize-y focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                    className="w-full h-32 bg-parchment-200 border border-sepia-300/50 rounded-lg px-4 py-3 text-sm text-sepia-700 font-sans resize-y focus:outline-none focus:ring-2 focus:ring-brass-400/40"
                     placeholder="Describe the tension, stakes, and involved parties..."
                   />
                   <div className="flex items-center gap-3 pt-2">
                     <select
                       value={editForm.canonStatus || 'draft'}
                       onChange={(e) => setEditForm({ ...editForm, canonStatus: e.target.value as CanonStatus })}
-                      className="bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                      className="bg-parchment-200 border border-sepia-300/50 rounded-lg px-3 py-2 text-sm text-sepia-700 focus:outline-none focus:ring-2 focus:ring-brass-400/40"
                     >
                       <option value="confirmed">Confirmed Canon</option>
                       <option value="flexible">Flexible Canon</option>
                       <option value="draft">Draft Idea</option>
                       <option value="discarded">Discarded</option>
                     </select>
-                    <label className="flex items-center gap-2 text-sm text-zinc-400 cursor-pointer">
+                    <label className="flex items-center gap-2 text-sm text-sepia-600 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={editForm.status === 'resolved'}
                         onChange={(e) => setEditForm({ ...editForm, status: e.target.checked ? 'resolved' : 'active' })}
-                        className="rounded border-zinc-700 bg-zinc-900 text-indigo-600 focus:ring-indigo-500/50"
+                        className="rounded border-sepia-300/60 bg-parchment-200 text-forest-700 focus:ring-brass-400/40"
                       />
                       Mark as Resolved
                     </label>
                     <div className="flex-1" />
                     <button
                       onClick={handleCancel}
-                      className="flex items-center gap-2 px-4 py-2 rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
+                      className="flex items-center gap-2 px-4 py-2 rounded-lg text-sepia-600 hover:text-sepia-800 hover:bg-sepia-300/20 transition-colors"
                     >
                       <X size={18} />
                       Cancel
                     </button>
                     <button
                       onClick={handleSave}
-                      className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-indigo-500 transition-colors"
+                      className="flex items-center gap-2 bg-forest-700 text-cream-50 px-4 py-2 rounded-lg font-medium hover:bg-forest-600 transition-colors"
                     >
                       <Save size={18} />
                       Save
@@ -162,13 +161,13 @@ export default function ConflictsPage() {
                       <button
                         onClick={() => toggleStatus(conflict.id)}
                         className={`p-1 rounded-full transition-colors ${
-                          conflict.status === 'resolved' ? 'text-emerald-500 bg-emerald-500/10' : 'text-zinc-600 hover:text-amber-500 hover:bg-amber-500/10'
+                          conflict.status === 'resolved' ? 'text-forest-700 bg-forest-700/10' : 'text-sepia-400 hover:text-brass-600 hover:bg-brass-500/10'
                         }`}
                         aria-label={conflict.status === 'resolved' ? `Mark "${conflict.title}" active` : `Mark "${conflict.title}" resolved`}
                       >
                         <CheckCircle2 size={20} />
                       </button>
-                      <h2 className={`text-xl font-serif font-semibold ${conflict.status === 'resolved' ? 'text-zinc-400 line-through decoration-zinc-600' : 'text-zinc-100'}`}>
+                      <h2 className={`text-xl font-serif font-semibold ${conflict.status === 'resolved' ? 'text-sepia-500 line-through decoration-sepia-400' : 'text-sepia-900'}`}>
                         {conflict.title}
                       </h2>
                       {conflict.canonStatus && (
@@ -187,14 +186,14 @@ export default function ConflictsPage() {
                           setEditingId(conflict.id);
                           setEditForm(conflict);
                         }}
-                        className="p-2 text-zinc-500 hover:text-indigo-400 hover:bg-zinc-800 rounded-lg transition-colors"
+                        className="p-2 text-sepia-500 hover:text-brass-500 hover:bg-sepia-300/20 rounded-lg transition-colors"
                         aria-label={`Edit ${conflict.title}`}
                       >
                         <Edit3 size={18} />
                       </button>
                       <button
                         onClick={() => handleDelete(conflict.id)}
-                        className="p-2 text-zinc-500 hover:text-red-400 hover:bg-zinc-800 rounded-lg transition-colors"
+                        className="p-2 text-sepia-500 hover:text-wax-500 hover:bg-sepia-300/20 rounded-lg transition-colors"
                         aria-label={`Delete ${conflict.title}`}
                       >
                         <Trash2 size={18} />
@@ -202,8 +201,8 @@ export default function ConflictsPage() {
                     </div>
                   </div>
                   <div className="pl-10">
-                    <p className={`text-sm leading-relaxed whitespace-pre-wrap ${conflict.status === 'resolved' ? 'text-zinc-500' : 'text-zinc-300'}`}>
-                      {conflict.description || <span className="italic text-zinc-600">No description provided.</span>}
+                    <p className={`text-sm leading-relaxed whitespace-pre-wrap ${conflict.status === 'resolved' ? 'text-sepia-500' : 'text-sepia-700'}`}>
+                      {conflict.description || <span className="italic text-sepia-400">No description provided.</span>}
                     </p>
                   </div>
                 </div>
@@ -214,9 +213,9 @@ export default function ConflictsPage() {
 
         {state.active_conflicts.length === 0 && (
           <div className="col-span-full text-center py-20">
-            <Swords size={48} className="mx-auto text-zinc-800 mb-4" />
-            <p className="text-zinc-400 text-lg">No active conflicts.</p>
-            <p className="text-zinc-500 text-sm mt-2">Add a conflict to track tension in your story.</p>
+            <Swords size={48} className="mx-auto text-sepia-300 mb-4" />
+            <p className="text-sepia-600 text-lg">No active conflicts.</p>
+            <p className="text-sepia-500 text-sm mt-2">Add a conflict to track tension in your story.</p>
           </div>
         )}
       </div>

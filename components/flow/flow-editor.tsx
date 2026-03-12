@@ -360,7 +360,7 @@ export function FlowEditor({ chapterId, onExit }: FlowEditorProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-[150] bg-zinc-950 flex flex-col">
+    <div className="fixed inset-0 z-[150] bg-parchment-200 flex flex-col">
       <MomentumGlow momentum={momentum} />
 
       {/* Voice banner */}
@@ -371,7 +371,7 @@ export function FlowEditor({ chapterId, onExit }: FlowEditorProps) {
       )}
 
       {/* Header */}
-      <div className="relative z-10 flex items-center justify-between px-6 py-3 border-b border-zinc-800/50">
+      <div className="relative z-10 flex items-center justify-between px-6 py-3 border-b border-sepia-300/30">
         <div className="flex items-center gap-4">
           {heteronyms.length > 0 && (
             <HeteronymSelector
@@ -380,16 +380,16 @@ export function FlowEditor({ chapterId, onExit }: FlowEditorProps) {
               onSelect={handleSelectActive}
             />
           )}
-          <h2 className="text-sm font-medium text-zinc-400 truncate max-w-xs">
+          <h2 className="text-sm font-medium text-sepia-600 truncate max-w-xs">
             {chapter?.title || 'Flow Mode'}
           </h2>
-          <span className="text-xs text-zinc-600">{wordCount} words</span>
+          <span className="text-xs text-sepia-400">{wordCount} words</span>
         </div>
         <div className="flex items-center gap-2">
           {heteronyms.length > 1 && (
             <button
               onClick={() => setVoiceSwitchOpen(true)}
-              className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors p-1.5 rounded-lg hover:bg-zinc-800"
+              className="text-sm text-sepia-500 hover:text-sepia-700 transition-colors p-1.5 rounded-lg hover:bg-parchment-200"
               aria-label="Switch writing voice"
             >
               <Theater size={16} />
@@ -398,7 +398,7 @@ export function FlowEditor({ chapterId, onExit }: FlowEditorProps) {
           {sceneChange.canActivate && (
             <button
               onClick={handleSceneChangeDepart}
-              className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors p-1.5 rounded-lg hover:bg-zinc-800"
+              className="text-sm text-sepia-500 hover:text-sepia-700 transition-colors p-1.5 rounded-lg hover:bg-parchment-200"
               aria-label="Scene change"
             >
               <Shuffle size={16} />
@@ -417,8 +417,8 @@ export function FlowEditor({ chapterId, onExit }: FlowEditorProps) {
               setToolbarMessage(null);
               braindump.openPanel();
             }}
-            className={`text-sm transition-colors p-1.5 rounded-lg hover:bg-zinc-800 ${
-              braindump.panelOpen ? 'text-red-400' : 'text-zinc-500 hover:text-zinc-300'
+            className={`text-sm transition-colors p-1.5 rounded-lg hover:bg-parchment-200 ${
+              braindump.panelOpen ? 'text-red-400' : 'text-sepia-500 hover:text-sepia-700'
             }`}
             aria-label="Voice braindump"
           >
@@ -426,14 +426,14 @@ export function FlowEditor({ chapterId, onExit }: FlowEditorProps) {
           </button>
           <button
             onClick={braindump.openHistory}
-            className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors p-1.5 rounded-lg hover:bg-zinc-800"
+            className="text-sm text-sepia-500 hover:text-sepia-700 transition-colors p-1.5 rounded-lg hover:bg-parchment-200"
             aria-label="Braindump history"
           >
             <ClipboardList size={16} />
           </button>
           <button
             onClick={handleExitWithGuard}
-            className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors px-3 py-1 rounded-lg hover:bg-zinc-800"
+            className="text-sm text-sepia-500 hover:text-sepia-700 transition-colors px-3 py-1 rounded-lg hover:bg-parchment-200"
           >
             Exit Flow
           </button>
@@ -470,7 +470,7 @@ export function FlowEditor({ chapterId, onExit }: FlowEditorProps) {
           onKeyDown={handleKeyDown}
           autoFocus
           placeholder="Start writing... no backspace, no delete, just forward."
-          className="w-full max-w-3xl flex-1 bg-transparent text-zinc-100 text-lg leading-relaxed font-serif placeholder-zinc-700 focus:outline-none resize-none"
+          className="w-full max-w-3xl flex-1 bg-transparent text-sepia-900 text-lg leading-relaxed font-serif placeholder-sepia-400 focus:outline-none resize-none"
           spellCheck={false}
         />
 

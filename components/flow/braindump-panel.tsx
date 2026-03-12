@@ -33,13 +33,13 @@ export function BraindumpPanel({ braindump }: BraindumpPanelProps) {
 
   return (
     <div
-      className="absolute bottom-0 left-0 right-0 z-[160] bg-zinc-950/90 backdrop-blur-lg border-t border-zinc-700/50"
+      className="absolute bottom-0 left-0 right-0 z-[160] bg-parchment-200/90 backdrop-blur-lg border-t border-sepia-300/30"
       style={{ height: '38%' }}
       role="region"
       aria-label="Voice braindump panel"
     >
       {/* Top bar */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-zinc-800/50">
+      <div className="flex items-center justify-between px-4 py-2 border-b border-sepia-300/30">
         <div className="flex items-center gap-3">
           {/* Recording indicator */}
           {speech.isRecording && !speech.isPaused && (
@@ -55,11 +55,11 @@ export function BraindumpPanel({ braindump }: BraindumpPanelProps) {
             <span className="text-xs text-amber-400 font-medium">Paused</span>
           )}
           {isStopped && (
-            <span className="text-xs text-zinc-400 font-medium">Stopped</span>
+            <span className="text-xs text-sepia-600 font-medium">Stopped</span>
           )}
 
           {/* Timer */}
-          <span className="text-xs text-zinc-500 tabular-nums">
+          <span className="text-xs text-sepia-500 tabular-nums">
             {formatTime(speech.elapsedSeconds)}
           </span>
 
@@ -67,7 +67,7 @@ export function BraindumpPanel({ braindump }: BraindumpPanelProps) {
           <select
             value={speech.language}
             onChange={(e) => speech.setLanguage(e.target.value)}
-            className="text-xs bg-zinc-800/50 border border-zinc-700/50 rounded px-1.5 py-0.5 text-zinc-400 focus:outline-none focus:border-zinc-600"
+            className="text-xs bg-parchment-200/50 border border-sepia-300/30 rounded px-1.5 py-0.5 text-sepia-600 focus:outline-none focus:border-sepia-300/50"
             aria-label="Recognition language"
           >
             {LANGUAGES.map(l => (
@@ -82,14 +82,14 @@ export function BraindumpPanel({ braindump }: BraindumpPanelProps) {
             <>
               <button
                 onClick={speech.pause}
-                className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
+                className="p-1.5 rounded-lg text-sepia-600 hover:text-sepia-800 hover:bg-parchment-200 transition-colors"
                 aria-label="Pause recording"
               >
                 <Pause size={14} />
               </button>
               <button
                 onClick={speech.stop}
-                className="p-1.5 rounded-lg text-zinc-400 hover:text-red-400 hover:bg-zinc-800 transition-colors"
+                className="p-1.5 rounded-lg text-sepia-600 hover:text-wax-500 hover:bg-parchment-200 transition-colors"
                 aria-label="Stop recording"
               >
                 <MicOff size={14} />
@@ -101,14 +101,14 @@ export function BraindumpPanel({ braindump }: BraindumpPanelProps) {
             <>
               <button
                 onClick={speech.resume}
-                className="p-1.5 rounded-lg text-zinc-400 hover:text-emerald-400 hover:bg-zinc-800 transition-colors"
+                className="p-1.5 rounded-lg text-sepia-600 hover:text-forest-400 hover:bg-parchment-200 transition-colors"
                 aria-label="Resume recording"
               >
                 <Play size={14} />
               </button>
               <button
                 onClick={speech.stop}
-                className="p-1.5 rounded-lg text-zinc-400 hover:text-red-400 hover:bg-zinc-800 transition-colors"
+                className="p-1.5 rounded-lg text-sepia-600 hover:text-wax-500 hover:bg-parchment-200 transition-colors"
                 aria-label="Stop recording"
               >
                 <MicOff size={14} />
@@ -119,7 +119,7 @@ export function BraindumpPanel({ braindump }: BraindumpPanelProps) {
           {/* Close */}
           <button
             onClick={braindump.closePanel}
-            className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
+            className="p-1.5 rounded-lg text-sepia-500 hover:text-sepia-700 hover:bg-parchment-200 transition-colors"
             aria-label="Close braindump panel"
           >
             <X size={14} />
@@ -130,17 +130,17 @@ export function BraindumpPanel({ braindump }: BraindumpPanelProps) {
       {/* Transcript area */}
       <div className="flex-1 overflow-y-auto px-6 py-4" style={{ height: 'calc(100% - 84px)' }}>
         {isEmpty && speech.isRecording && (
-          <p className="text-zinc-600 text-sm italic">Listening... start speaking.</p>
+          <p className="text-sepia-400 text-sm italic">Listening... start speaking.</p>
         )}
 
         {speech.error && !isStopped && (
           <p className="text-amber-400/80 text-xs mb-2">{speech.error}</p>
         )}
 
-        <div className="text-zinc-200 text-base leading-relaxed font-serif whitespace-pre-wrap" aria-live="polite">
+        <div className="text-sepia-800 text-base leading-relaxed font-serif whitespace-pre-wrap" aria-live="polite">
           {speech.finalTranscript}
           {speech.interimTranscript && (
-            <span className="text-zinc-500">
+            <span className="text-sepia-500">
               {speech.finalTranscript ? ' ' : ''}{speech.interimTranscript}
               <span style={{ animation: 'braindump-cursor-blink 1s step-end infinite' }}>|</span>
             </span>
@@ -148,19 +148,19 @@ export function BraindumpPanel({ braindump }: BraindumpPanelProps) {
         </div>
 
         {isStopped && !hasTranscript && (
-          <p className="text-zinc-500 text-sm mt-2">No words captured. Try recording again.</p>
+          <p className="text-sepia-500 text-sm mt-2">No words captured. Try recording again.</p>
         )}
       </div>
 
       {/* Action buttons — shown when stopped with transcript */}
       {isStopped && (
-        <div className="flex items-center justify-center gap-3 px-4 py-2 border-t border-zinc-800/50">
+        <div className="flex items-center justify-center gap-3 px-4 py-2 border-t border-sepia-300/30">
           {polishError && (
             <span className="text-red-400 text-xs mr-2">{polishError}</span>
           )}
 
           {isPolishing ? (
-            <div className="flex items-center gap-2 text-zinc-400 text-sm">
+            <div className="flex items-center gap-2 text-sepia-600 text-sm">
               <Loader2 size={14} className="animate-spin" />
               <span>{polishProgress}</span>
             </div>
@@ -169,7 +169,7 @@ export function BraindumpPanel({ braindump }: BraindumpPanelProps) {
               <button
                 onClick={braindump.insertAsIs}
                 disabled={!hasTranscript}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-zinc-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-parchment-200 text-sepia-700 hover:bg-parchment-300 hover:text-sepia-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Type size={14} />
                 Insert as-is
@@ -177,14 +177,14 @@ export function BraindumpPanel({ braindump }: BraindumpPanelProps) {
               <button
                 onClick={braindump.polishAndInsert}
                 disabled={!hasTranscript}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-forest-700 text-cream-50 hover:bg-forest-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Sparkles size={14} />
                 Polish & insert
               </button>
               <button
                 onClick={braindump.reRecord}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-sepia-500 hover:text-sepia-700 hover:bg-parchment-200 transition-colors"
               >
                 <RotateCcw size={14} />
                 Re-record

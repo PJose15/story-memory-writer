@@ -31,7 +31,7 @@ export default function FlowPage() {
 
   if (showSelect || !session.flowChapterId) {
     return (
-      <div className="fixed inset-0 z-[100] bg-zinc-950">
+      <div className="fixed inset-0 z-[100] bg-mahogany-950">
         <ChapterSelectModal
           onSelect={handleSelectChapter}
           onClose={handleCloseSelect}

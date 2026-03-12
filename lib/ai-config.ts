@@ -11,3 +11,23 @@ export const SAFETY_SETTINGS = [
   { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
   { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
 ];
+
+// Per-endpoint temperature and token configuration
+export const AI_CONFIG = {
+  chat: {
+    temperature: 0.3,       // Grounded, precise responses
+    maxOutputTokens: 4096,
+  },
+  chatBlocked: {
+    temperature: 0.5,       // Slightly more creative for unblocking
+    maxOutputTokens: 4096,
+  },
+  audit: {
+    temperature: 0.1,       // Analytical precision
+    maxOutputTokens: 2048,
+  },
+  microPrompt: {
+    temperature: 0.7,       // Creative nudges
+    maxOutputTokens: 1024,
+  },
+} as const;

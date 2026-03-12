@@ -19,9 +19,9 @@ export function MicroPromptDisplay({ prompt, isLoading }: MicroPromptDisplayProp
             exit={{ opacity: 0 }}
             className="flex items-center gap-2"
           >
-            <div className="w-1.5 h-1.5 rounded-full bg-indigo-400/40 animate-pulse" />
-            <div className="w-1.5 h-1.5 rounded-full bg-indigo-400/40 animate-pulse" style={{ animationDelay: '150ms' }} />
-            <div className="w-1.5 h-1.5 rounded-full bg-indigo-400/40 animate-pulse" style={{ animationDelay: '300ms' }} />
+            <div className="w-1.5 h-1.5 rounded-full bg-forest-500/40 animate-pulse" />
+            <div className="w-1.5 h-1.5 rounded-full bg-forest-500/40 animate-pulse" style={{ animationDelay: '150ms' }} />
+            <div className="w-1.5 h-1.5 rounded-full bg-forest-500/40 animate-pulse" style={{ animationDelay: '300ms' }} />
           </motion.div>
         )}
         {prompt && !isLoading && (
@@ -30,7 +30,7 @@ export function MicroPromptDisplay({ prompt, isLoading }: MicroPromptDisplayProp
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -5 }}
-            className="text-base font-serif italic text-indigo-300/80 text-center px-4"
+            className="text-base font-serif italic text-brass-400/80 text-center px-4"
           >
             {prompt}
           </motion.p>

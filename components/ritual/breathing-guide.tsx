@@ -63,9 +63,9 @@ export function BreathingGuide({ onComplete }: BreathingGuideProps) {
       <motion.div
         animate={{ scale }}
         transition={{ duration: phase.duration / 1000, ease: 'easeInOut' }}
-        className="w-32 h-32 rounded-full border-2 border-indigo-400/40 bg-indigo-500/10 flex items-center justify-center"
+        className="w-32 h-32 rounded-full border-2 border-brass-400/40 bg-forest-500/10 flex items-center justify-center"
       >
-        <div className="w-4 h-4 rounded-full bg-indigo-400/60" />
+        <div className="w-4 h-4 rounded-full bg-forest-500/60" />
       </motion.div>
 
       <AnimatePresence mode="wait">
@@ -74,13 +74,13 @@ export function BreathingGuide({ onComplete }: BreathingGuideProps) {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
-          className="text-lg text-zinc-300 font-serif"
+          className="text-lg text-sepia-700 font-serif"
         >
           {phase.label}
         </motion.p>
       </AnimatePresence>
 
-      <p className="text-xs text-zinc-500">
+      <p className="text-xs text-sepia-500">
         Cycle {Math.min(cycle + 1, TOTAL_CYCLES)} of {TOTAL_CYCLES}
       </p>
     </div>

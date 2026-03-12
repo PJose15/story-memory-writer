@@ -53,16 +53,16 @@ export function BraindumpHistoryDrawer({ braindump }: BraindumpHistoryDrawerProp
   return (
     <div
       ref={drawerRef}
-      className="absolute top-0 right-0 bottom-0 w-[360px] z-[170] bg-zinc-950/95 backdrop-blur-lg border-l border-zinc-700/50 flex flex-col"
+      className="absolute top-0 right-0 bottom-0 w-[360px] z-[170] bg-parchment-200/95 backdrop-blur-lg border-l border-sepia-300/30 flex flex-col"
       role="dialog"
       aria-label="Braindump history"
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800/50">
-        <h3 className="text-sm font-medium text-zinc-300">Voice History</h3>
+      <div className="flex items-center justify-between px-4 py-3 border-b border-sepia-300/30">
+        <h3 className="text-sm font-medium text-sepia-700">Voice History</h3>
         <button
           onClick={braindump.closeHistory}
-          className="p-1 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
+          className="p-1 rounded-lg text-sepia-500 hover:text-sepia-700 hover:bg-parchment-200 transition-colors"
           aria-label="Close history"
         >
           <X size={14} />
@@ -72,7 +72,7 @@ export function BraindumpHistoryDrawer({ braindump }: BraindumpHistoryDrawerProp
       {/* Entries */}
       <div className="flex-1 overflow-y-auto">
         {braindump.history.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-zinc-600 px-6">
+          <div className="flex flex-col items-center justify-center h-full text-sepia-400 px-6">
             <FileText size={32} className="mb-3 opacity-50" />
             <p className="text-sm text-center">No voice recordings yet.</p>
             <p className="text-xs text-center mt-1">Your braindump sessions will appear here.</p>
@@ -82,38 +82,38 @@ export function BraindumpHistoryDrawer({ braindump }: BraindumpHistoryDrawerProp
             {[...braindump.history].reverse().map(entry => (
               <div
                 key={entry.id}
-                className="bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-3 group"
+                className="bg-parchment-100/50 border border-sepia-300/30 rounded-xl p-3 group"
               >
                 {/* Meta row */}
-                <div className="flex items-center gap-2 text-xs text-zinc-500 mb-2">
+                <div className="flex items-center gap-2 text-xs text-sepia-500 mb-2">
                   <Clock size={10} />
                   <span>{formatDate(entry.timestamp)}</span>
-                  <span className="text-zinc-700">|</span>
+                  <span className="text-sepia-400">|</span>
                   <span>{formatDuration(entry.durationSeconds)}</span>
-                  <span className="text-zinc-700">|</span>
+                  <span className="text-sepia-400">|</span>
                   <Languages size={10} />
                   <span>{entry.language}</span>
-                  <span className="text-zinc-700">|</span>
+                  <span className="text-sepia-400">|</span>
                   <span>{entry.wordCount} words</span>
                 </div>
 
                 {/* Preview */}
-                <p className="text-sm text-zinc-300 leading-relaxed line-clamp-3 font-serif">
+                <p className="text-sm text-sepia-700 leading-relaxed line-clamp-3 font-serif">
                   {entry.polishedText || entry.rawTranscript}
                 </p>
 
                 {entry.wasPolished && (
-                  <div className="flex items-center gap-1 mt-1.5 text-xs text-indigo-400/60">
+                  <div className="flex items-center gap-1 mt-1.5 text-xs text-brass-500/60">
                     <Sparkles size={10} />
                     <span>Polished</span>
                   </div>
                 )}
 
                 {/* Actions */}
-                <div className="flex items-center gap-1 mt-2 pt-2 border-t border-zinc-800/30">
+                <div className="flex items-center gap-1 mt-2 pt-2 border-t border-sepia-300/50/30">
                   <button
                     onClick={() => braindump.reInsertFromHistory(entry.id)}
-                    className="flex items-center gap-1 px-2 py-1 rounded text-xs text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
+                    className="flex items-center gap-1 px-2 py-1 rounded text-xs text-sepia-600 hover:text-sepia-800 hover:bg-parchment-200 transition-colors"
                     aria-label="Re-insert text"
                   >
                     <Type size={12} />
@@ -123,7 +123,7 @@ export function BraindumpHistoryDrawer({ braindump }: BraindumpHistoryDrawerProp
                     <button
                       onClick={() => braindump.rePolishFromHistory(entry.id)}
                       disabled={braindump.isPolishing}
-                      className="flex items-center gap-1 px-2 py-1 rounded text-xs text-indigo-400 hover:text-indigo-300 hover:bg-zinc-800 transition-colors disabled:opacity-50"
+                      className="flex items-center gap-1 px-2 py-1 rounded text-xs text-brass-500 hover:text-brass-400 hover:bg-parchment-200 transition-colors disabled:opacity-50"
                       aria-label="Polish this entry"
                     >
                       <Sparkles size={12} />
@@ -132,7 +132,7 @@ export function BraindumpHistoryDrawer({ braindump }: BraindumpHistoryDrawerProp
                   )}
                   <button
                     onClick={() => braindump.deleteHistoryEntry(entry.id)}
-                    className="flex items-center gap-1 px-2 py-1 rounded text-xs text-zinc-600 hover:text-red-400 hover:bg-zinc-800 transition-colors ml-auto"
+                    className="flex items-center gap-1 px-2 py-1 rounded text-xs text-sepia-400 hover:text-wax-500 hover:bg-parchment-200 transition-colors ml-auto"
                     aria-label="Delete entry"
                   >
                     <Trash2 size={12} />

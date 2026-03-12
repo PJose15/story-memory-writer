@@ -6,6 +6,7 @@ import { Settings, Download, Upload, Trash2, AlertTriangle, Globe } from 'lucide
 import { useToast } from '@/components/toast';
 import { useConfirm } from '@/components/confirm-dialog';
 import { HeteronymSettings } from '@/components/heteronyms/heteronym-settings';
+import { BrassButton, InkStampButton } from '@/components/antiquarian';
 
 // Only these keys from StoryState are allowed during import
 const ALLOWED_KEYS = new Set<keyof StoryState>([
@@ -47,7 +48,7 @@ export default function SettingsPage() {
 
         // Auto-backup current state before overwriting
         try {
-          localStorage.setItem('story_memory_state_backup', JSON.stringify(state));
+          localStorage.setItem('zagafy_state_backup', JSON.stringify(state));
         } catch {
           // Quota exceeded — proceed anyway
         }
@@ -91,34 +92,35 @@ export default function SettingsPage() {
       variant: 'danger',
     });
     if (confirmed) {
-      localStorage.removeItem('story_memory_state');
+      localStorage.removeItem('zagafy_state');
       window.location.reload();
     }
   };
 
   return (
     <div className="p-4 md:p-8 max-w-4xl mx-auto space-y-10">
-      <header className="flex items-center gap-3 border-b border-zinc-800 pb-6">
-        <Settings className="text-zinc-400" size={28} />
+      <header className="flex items-center gap-3 border-b border-sepia-300/30 pb-6">
+        <Settings className="text-brass-500" size={28} />
         <div>
-          <h1 className="text-3xl font-serif font-bold text-zinc-100 tracking-tight">Settings</h1>
-          <p className="text-zinc-400 mt-2 text-sm">Manage your project data and preferences.</p>
+          <h1 className="text-3xl font-serif font-bold text-sepia-900 tracking-tight letterpress">Settings</h1>
+          <p className="text-sepia-600 mt-2 text-sm">Manage your project data and preferences.</p>
+          <div className="mt-3 h-0.5 w-16 bg-gradient-to-r from-brass-500 to-brass-300/0 rounded-full" />
         </div>
       </header>
 
       <div className="space-y-8">
-        <section className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 space-y-4">
-          <h2 className="text-xl font-serif font-semibold text-zinc-100 flex items-center gap-2">
-            <Globe size={20} className="text-indigo-400" />
+        <section className="bg-parchment-100 border border-sepia-300/50 rounded-xl p-6 space-y-4 texture-parchment shadow-parchment">
+          <h2 className="text-xl font-serif font-semibold text-sepia-900 flex items-center gap-2">
+            <Globe size={20} className="text-brass-500" />
             Project Language
           </h2>
-          <p className="text-zinc-400 text-sm leading-relaxed">
+          <p className="text-sepia-600 text-sm leading-relaxed">
             Set the language for your project. All AI analysis, ingestion, and assistant responses will use this language. Content will never be translated.
           </p>
           <select
             value={state.language || 'English'}
             onChange={(e) => updateField('language', e.target.value)}
-            className="bg-zinc-800 border border-zinc-700 text-zinc-100 px-4 py-2 rounded-lg font-medium focus:border-indigo-500 outline-none"
+            className="bg-parchment-200 border border-sepia-300/60 text-sepia-900 px-4 py-2 rounded-lg font-medium focus:border-brass-500/60 focus:ring-2 focus:ring-brass-400/40 outline-none"
             aria-label="Project language"
           >
             <option value="English">English</option>
@@ -137,29 +139,25 @@ export default function SettingsPage() {
 
         <HeteronymSettings />
 
-        <section className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 space-y-4">
-          <h2 className="text-xl font-serif font-semibold text-zinc-100 flex items-center gap-2">
-            <Download size={20} className="text-indigo-400" />
+        <section className="bg-parchment-100 border border-sepia-300/50 rounded-xl p-6 space-y-4 texture-parchment shadow-parchment">
+          <h2 className="text-xl font-serif font-semibold text-sepia-900 flex items-center gap-2">
+            <Download size={20} className="text-brass-500" />
             Export Project
           </h2>
-          <p className="text-zinc-400 text-sm leading-relaxed">
+          <p className="text-sepia-600 text-sm leading-relaxed">
             Download your entire Story Bible, manuscript, characters, and timeline as a JSON file. You can use this for backup or to process with other tools.
           </p>
-          <button
-            onClick={handleExport}
-            className="flex items-center gap-2 bg-zinc-800 text-zinc-100 px-4 py-2 rounded-lg font-medium hover:bg-zinc-700 transition-colors"
-          >
-            <Download size={18} />
+          <BrassButton onClick={handleExport} icon={<Download size={18} />}>
             Export JSON
-          </button>
+          </BrassButton>
         </section>
 
-        <section className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 space-y-4">
-          <h2 className="text-xl font-serif font-semibold text-zinc-100 flex items-center gap-2">
-            <Upload size={20} className="text-indigo-400" />
+        <section className="bg-parchment-100 border border-sepia-300/50 rounded-xl p-6 space-y-4 texture-parchment shadow-parchment">
+          <h2 className="text-xl font-serif font-semibold text-sepia-900 flex items-center gap-2">
+            <Upload size={20} className="text-brass-500" />
             Restore Project
           </h2>
-          <p className="text-zinc-400 text-sm leading-relaxed">
+          <p className="text-sepia-600 text-sm leading-relaxed">
             Import a previously exported JSON file to restore your Story Bible. This will replace all current data.
           </p>
           <input
@@ -169,30 +167,26 @@ export default function SettingsPage() {
             onChange={handleImport}
             className="hidden"
           />
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className="flex items-center gap-2 bg-zinc-800 text-zinc-100 px-4 py-2 rounded-lg font-medium hover:bg-zinc-700 transition-colors"
-          >
-            <Upload size={18} />
+          <BrassButton onClick={() => fileInputRef.current?.click()} icon={<Upload size={18} />}>
             Import JSON
-          </button>
+          </BrassButton>
         </section>
 
-        <section className="bg-red-950/20 border border-red-900/50 rounded-2xl p-6 space-y-4">
-          <h2 className="text-xl font-serif font-semibold text-red-400 flex items-center gap-2">
+        <section className="bg-wax-900/10 border border-wax-700/30 rounded-xl p-6 space-y-4">
+          <h2 className="text-xl font-serif font-semibold text-wax-700 flex items-center gap-2">
             <AlertTriangle size={20} />
             Danger Zone
           </h2>
-          <p className="text-zinc-400 text-sm leading-relaxed">
+          <p className="text-sepia-600 text-sm leading-relaxed">
             Permanently delete all project data from your browser&apos;s local storage. Make sure you have exported your data first if you want to keep it.
           </p>
-          <button
+          <InkStampButton
             onClick={handleClear}
-            className="flex items-center gap-2 bg-red-900/50 text-red-200 px-4 py-2 rounded-lg font-medium hover:bg-red-900 transition-colors border border-red-800"
+            variant="danger"
+            icon={<Trash2 size={18} />}
           >
-            <Trash2 size={18} />
             Clear All Data
-          </button>
+          </InkStampButton>
         </section>
       </div>
     </div>

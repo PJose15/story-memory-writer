@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenAI, Type, FinishReason } from '@google/genai';
 import { buildWritingAssistantPrompt } from '@/lib/prompts/writing-assistant';
 import { rateLimit } from '@/lib/rate-limit';
-import { AI_MODEL, SAFETY_SETTINGS } from '@/lib/ai-config';
+import { AI_MODEL, SAFETY_SETTINGS, AI_CONFIG } from '@/lib/ai-config';
 import { getErrorStatus } from '@/lib/api-error';
 
 export const maxDuration = 60;
@@ -53,6 +53,8 @@ Analyze it against the established canon. Detect contradictions, broken characte
       config: {
         systemInstruction: systemPrompt,
         safetySettings: SAFETY_SETTINGS,
+        temperature: AI_CONFIG.audit.temperature,
+        maxOutputTokens: AI_CONFIG.audit.maxOutputTokens,
         responseMimeType: 'application/json',
         responseSchema: {
           type: Type.OBJECT,

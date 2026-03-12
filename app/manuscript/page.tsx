@@ -6,12 +6,13 @@ import { useUnsavedChanges } from '@/hooks/use-unsaved-changes';
 import { Plus, Trash2, Edit3, Save, X, BookOpen, ShieldCheck, Shield, ShieldAlert, ShieldOff, ChevronUp, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useConfirm } from '@/components/confirm-dialog';
+import { BrassButton } from '@/components/antiquarian';
 
 const statusConfig = {
-  confirmed: { icon: ShieldCheck, color: 'text-emerald-400', bg: 'bg-emerald-400/10', label: 'Confirmed Canon' },
-  flexible: { icon: Shield, color: 'text-blue-400', bg: 'bg-blue-400/10', label: 'Flexible Canon' },
-  draft: { icon: ShieldAlert, color: 'text-amber-400', bg: 'bg-amber-400/10', label: 'Draft Idea' },
-  discarded: { icon: ShieldOff, color: 'text-red-400', bg: 'bg-red-400/10', label: 'Discarded' },
+  confirmed: { icon: ShieldCheck, color: 'text-forest-700', bg: 'bg-forest-700/10', label: 'Confirmed Canon' },
+  flexible: { icon: Shield, color: 'text-brass-600', bg: 'bg-brass-500/10', label: 'Flexible Canon' },
+  draft: { icon: ShieldAlert, color: 'text-brass-800', bg: 'bg-brass-400/10', label: 'Draft Idea' },
+  discarded: { icon: ShieldOff, color: 'text-wax-600', bg: 'bg-wax-500/10', label: 'Discarded' },
 };
 
 export default function ManuscriptPage() {
@@ -89,25 +90,22 @@ export default function ManuscriptPage() {
 
   return (
     <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-8">
-      <header className="flex items-center justify-between border-b border-zinc-800 pb-6">
+      <header className="flex items-center justify-between border-b border-sepia-300/50 pb-6">
         <div>
-          <h1 className="text-3xl font-serif font-bold text-zinc-100 tracking-tight">Manuscript</h1>
-          <p className="text-zinc-400 mt-2 text-sm">
+          <h1 className="text-3xl font-serif font-bold text-sepia-900 tracking-tight letterpress">Manuscript</h1>
+          <p className="text-sepia-600 mt-2 text-sm">
             Write and organize your chapters.
             {state.chapters.length > 0 && (
-              <span className="ml-2 text-zinc-500 font-mono">
+              <span className="ml-2 text-sepia-500 font-mono">
                 {state.chapters.reduce((sum, c) => sum + wordCount(c.content), 0).toLocaleString()} total words
               </span>
             )}
           </p>
+          <div className="mt-3 h-0.5 w-16 bg-gradient-to-r from-brass-500 to-brass-300/0 rounded-full" />
         </div>
-        <button
-          onClick={handleAddChapter}
-          className="flex items-center gap-2 bg-zinc-100 text-zinc-950 px-4 py-2 rounded-lg font-medium hover:bg-zinc-200 transition-colors"
-        >
-          <Plus size={18} />
+        <BrassButton onClick={handleAddChapter} icon={<Plus size={18} />}>
           New Chapter
-        </button>
+        </BrassButton>
       </header>
 
       <div className="space-y-6">
@@ -118,7 +116,7 @@ export default function ManuscriptPage() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden shadow-sm"
+              className="bg-parchment-100 border border-sepia-300/50 rounded-xl overflow-hidden texture-parchment shadow-parchment"
             >
               {editingId === chapter.id ? (
                 <div className="p-6 space-y-4">
@@ -126,26 +124,26 @@ export default function ManuscriptPage() {
                     type="text"
                     value={editForm.title || ''}
                     onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-3 text-xl font-serif font-semibold text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                    className="w-full bg-parchment-200 border border-sepia-300/50 rounded-lg px-4 py-3 text-xl font-serif font-semibold text-sepia-900 focus:outline-none focus:ring-2 focus:ring-brass-400/40"
                     placeholder="Chapter Title"
                   />
                   <textarea
                     value={editForm.content || ''}
                     onChange={(e) => setEditForm({ ...editForm, content: e.target.value })}
-                    className="w-full h-64 bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-3 text-zinc-300 font-serif leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                    className="w-full h-64 bg-parchment-200 border border-sepia-300/50 rounded-lg px-4 py-3 text-sepia-700 font-serif leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-brass-400/40"
                     placeholder="Start writing your chapter here..."
                   />
                   <textarea
                     value={editForm.summary || ''}
                     onChange={(e) => setEditForm({ ...editForm, summary: e.target.value })}
-                    className="w-full h-24 bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-3 text-sm text-zinc-400 font-sans resize-y focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                    className="w-full h-24 bg-parchment-200 border border-sepia-300/50 rounded-lg px-4 py-3 text-sm text-sepia-600 font-sans resize-y focus:outline-none focus:ring-2 focus:ring-brass-400/40"
                     placeholder="Brief summary for the Story Bible..."
                   />
                   <div className="flex items-center gap-3 pt-2">
                     <select
                       value={editForm.canonStatus || 'draft'}
                       onChange={(e) => setEditForm({ ...editForm, canonStatus: e.target.value as CanonStatus })}
-                      className="bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                      className="bg-parchment-200 border border-sepia-300/50 rounded-lg px-3 py-2 text-sm text-sepia-700 focus:outline-none focus:ring-2 focus:ring-brass-400/40"
                     >
                       <option value="confirmed">Confirmed Canon</option>
                       <option value="flexible">Flexible Canon</option>
@@ -155,14 +153,14 @@ export default function ManuscriptPage() {
                     <div className="flex-1" />
                     <button
                       onClick={handleCancel}
-                      className="flex items-center gap-2 px-4 py-2 rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
+                      className="flex items-center gap-2 px-4 py-2 rounded-lg text-sepia-600 hover:text-sepia-800 hover:bg-sepia-300/20 transition-colors"
                     >
                       <X size={18} />
                       Cancel
                     </button>
                     <button
                       onClick={handleSave}
-                      className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-indigo-500 transition-colors"
+                      className="flex items-center gap-2 bg-forest-700 text-cream-50 px-4 py-2 rounded-lg font-medium hover:bg-forest-600 transition-colors"
                     >
                       <Save size={18} />
                       Save Chapter
@@ -173,7 +171,7 @@ export default function ManuscriptPage() {
                 <div className="p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
-                      <h2 className="text-2xl font-serif font-semibold text-zinc-100">{chapter.title}</h2>
+                      <h2 className="text-2xl font-serif font-semibold text-sepia-900">{chapter.title}</h2>
                       {chapter.canonStatus && (
                         <span className={`flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${statusConfig[chapter.canonStatus].bg} ${statusConfig[chapter.canonStatus].color}`}>
                           {(() => {
@@ -188,7 +186,7 @@ export default function ManuscriptPage() {
                       <button
                         onClick={() => handleMoveUp(index)}
                         disabled={index === 0}
-                        className="p-1.5 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded-lg transition-colors disabled:opacity-30 disabled:hover:text-zinc-500 disabled:hover:bg-transparent"
+                        className="p-1.5 text-sepia-500 hover:text-sepia-700 hover:bg-sepia-300/20 rounded-lg transition-colors disabled:opacity-30 disabled:hover:text-sepia-500 disabled:hover:bg-transparent"
                         aria-label={`Move ${chapter.title} up`}
                       >
                         <ChevronUp size={16} />
@@ -196,7 +194,7 @@ export default function ManuscriptPage() {
                       <button
                         onClick={() => handleMoveDown(index)}
                         disabled={index === state.chapters.length - 1}
-                        className="p-1.5 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded-lg transition-colors disabled:opacity-30 disabled:hover:text-zinc-500 disabled:hover:bg-transparent"
+                        className="p-1.5 text-sepia-500 hover:text-sepia-700 hover:bg-sepia-300/20 rounded-lg transition-colors disabled:opacity-30 disabled:hover:text-sepia-500 disabled:hover:bg-transparent"
                         aria-label={`Move ${chapter.title} down`}
                       >
                         <ChevronDown size={16} />
@@ -206,30 +204,30 @@ export default function ManuscriptPage() {
                           setEditingId(chapter.id);
                           setEditForm(chapter);
                         }}
-                        className="p-2 text-zinc-500 hover:text-indigo-400 hover:bg-zinc-800 rounded-lg transition-colors"
+                        className="p-2 text-sepia-500 hover:text-brass-500 hover:bg-sepia-300/20 rounded-lg transition-colors"
                         aria-label={`Edit ${chapter.title}`}
                       >
                         <Edit3 size={18} />
                       </button>
                       <button
                         onClick={() => handleDelete(chapter.id)}
-                        className="p-2 text-zinc-500 hover:text-red-400 hover:bg-zinc-800 rounded-lg transition-colors"
+                        className="p-2 text-sepia-500 hover:text-wax-500 hover:bg-sepia-300/20 rounded-lg transition-colors"
                         aria-label={`Delete ${chapter.title}`}
                       >
                         <Trash2 size={18} />
                       </button>
                     </div>
                   </div>
-                  <div className="prose prose-invert prose-zinc max-w-none font-serif text-zinc-300 leading-relaxed line-clamp-4">
-                    {chapter.content || <span className="text-zinc-600 italic">Empty chapter...</span>}
+                  <div className="prose prose-sepia max-w-none font-serif text-sepia-700 leading-relaxed line-clamp-4">
+                    {chapter.content || <span className="text-sepia-400 italic">Empty chapter...</span>}
                   </div>
-                  <div className="mt-2 text-xs text-zinc-600 font-mono">
+                  <div className="mt-2 text-xs text-sepia-400 font-mono">
                     {wordCount(chapter.content).toLocaleString()} words
                   </div>
                   {chapter.summary && (
-                    <div className="mt-6 pt-4 border-t border-zinc-800">
-                      <p className="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-2">Summary</p>
-                      <p className="text-sm text-zinc-400">{chapter.summary}</p>
+                    <div className="mt-6 pt-4 border-t border-sepia-300/50">
+                      <p className="text-sm font-medium text-sepia-500 uppercase tracking-wider mb-2">Summary</p>
+                      <p className="text-sm text-sepia-600">{chapter.summary}</p>
                     </div>
                   )}
                 </div>
@@ -237,12 +235,12 @@ export default function ManuscriptPage() {
             </motion.div>
           ))}
         </AnimatePresence>
-        
+
         {state.chapters.length === 0 && (
           <div className="text-center py-20">
-            <BookOpen size={48} className="mx-auto text-zinc-800 mb-4" />
-            <p className="text-zinc-400 text-lg">Your manuscript is empty.</p>
-            <p className="text-zinc-500 text-sm mt-2">Add your first chapter to begin.</p>
+            <BookOpen size={48} className="mx-auto text-sepia-300 mb-4" />
+            <p className="text-sepia-600 text-lg">Your manuscript is empty.</p>
+            <p className="text-sepia-500 text-sm mt-2">Add your first chapter to begin.</p>
           </div>
         )}
       </div>

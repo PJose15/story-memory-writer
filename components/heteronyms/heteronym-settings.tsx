@@ -91,28 +91,28 @@ export function HeteronymSettings() {
   const activeId = getActiveHeteronymId();
 
   return (
-    <section className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 space-y-4" aria-label="Alter egos settings">
+    <section className="bg-parchment-100 border border-sepia-300/50 rounded-xl p-6 space-y-4 texture-parchment shadow-parchment" aria-label="Alter egos settings">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-serif font-semibold text-zinc-100 flex items-center gap-2">
-          <Users size={20} className="text-indigo-400" />
+        <h2 className="text-xl font-serif font-semibold text-sepia-900 flex items-center gap-2">
+          <Users size={20} className="text-brass-500" />
           Alter Egos
         </h2>
         <button
           onClick={handleCreate}
           disabled={isAtLimit()}
-          className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg bg-forest-700 text-cream-50 hover:bg-forest-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Plus size={16} />
           New
         </button>
       </div>
 
-      <p className="text-zinc-400 text-sm leading-relaxed">
+      <p className="text-sepia-600 text-sm leading-relaxed">
         Create writing personas with unique voices and styles. Each alter ego can have its own style note that influences how you write.
       </p>
 
       {heteronyms.length === 0 ? (
-        <p className="text-zinc-500 text-sm italic py-4 text-center">No alter egos yet. Create one to get started.</p>
+        <p className="text-sepia-500 text-sm italic py-4 text-center">No alter egos yet. Create one to get started.</p>
       ) : (
         <div className="space-y-2" role="list" aria-label="Alter ego list">
           {heteronyms.map((h) => (
@@ -121,35 +121,35 @@ export function HeteronymSettings() {
               role="listitem"
               className={`flex items-center gap-3 p-3 rounded-xl border transition-colors ${
                 activeId === h.id
-                  ? 'border-indigo-500/50 bg-indigo-500/5'
-                  : 'border-zinc-800 hover:border-zinc-700'
+                  ? 'border-brass-500/50 bg-forest-600/5'
+                  : 'border-sepia-300/50 hover:border-sepia-300/40'
               }`}
             >
               <AvatarCircle color={h.avatarColor} emoji={h.avatarEmoji} size={40} />
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className="text-zinc-100 font-medium text-sm truncate">{h.name}</p>
+                  <p className="text-sepia-900 font-medium text-sm truncate">{h.name}</p>
                   {h.isDefault && (
-                    <span className="text-[10px] uppercase tracking-wider text-zinc-500 bg-zinc-800 px-1.5 py-0.5 rounded">
+                    <span className="text-[10px] uppercase tracking-wider text-sepia-500 bg-parchment-200 px-1.5 py-0.5 rounded">
                       Default
                     </span>
                   )}
                   {activeId === h.id && (
-                    <span className="text-[10px] uppercase tracking-wider text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded">
+                    <span className="text-[10px] uppercase tracking-wider text-brass-500 bg-forest-500/10 px-1.5 py-0.5 rounded">
                       Active
                     </span>
                   )}
                 </div>
                 {h.styleNote && (
-                  <p className="text-xs text-zinc-500 truncate mt-0.5">{h.styleNote}</p>
+                  <p className="text-xs text-sepia-500 truncate mt-0.5">{h.styleNote}</p>
                 )}
               </div>
 
               <div className="flex items-center gap-1 shrink-0">
                 <button
                   onClick={() => handleEdit(h)}
-                  className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
+                  className="p-1.5 rounded-lg text-sepia-600 hover:text-sepia-800 hover:bg-parchment-200 transition-colors"
                   aria-label={`Edit ${h.name}`}
                 >
                   <Pencil size={14} />
@@ -157,7 +157,7 @@ export function HeteronymSettings() {
                 {!h.isDefault && (
                   <button
                     onClick={() => handleDelete(h)}
-                    className="p-1.5 rounded-lg text-zinc-400 hover:text-red-400 hover:bg-zinc-800 transition-colors"
+                    className="p-1.5 rounded-lg text-sepia-600 hover:text-wax-500 hover:bg-parchment-200 transition-colors"
                     aria-label={`Delete ${h.name}`}
                   >
                     <Trash2 size={14} />
@@ -169,7 +169,7 @@ export function HeteronymSettings() {
         </div>
       )}
 
-      <p className="text-xs text-zinc-600 pt-2">{heteronyms.length}/10 alter egos</p>
+      <p className="text-xs text-sepia-400 pt-2">{heteronyms.length}/10 alter egos</p>
 
       {modalOpen && (
         <HeteronymModal

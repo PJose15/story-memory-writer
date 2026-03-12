@@ -44,14 +44,14 @@ export function VoiceSwitchModal({ heteronyms, activeId, guestId, onSelect, onCl
           initial={{ opacity: 0, scale: 0.95, y: 10 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 10 }}
-          className="relative bg-zinc-900 border border-zinc-700 rounded-2xl shadow-2xl max-w-sm w-full"
+          className="relative bg-parchment-100 border border-sepia-300/40 rounded-xl shadow-2xl max-w-sm w-full texture-parchment"
         >
-          <div className="flex items-center justify-between p-4 border-b border-zinc-800">
-            <h2 className="text-base font-serif font-semibold text-zinc-100 flex items-center gap-2">
-              <Theater size={18} className="text-indigo-400" />
+          <div className="flex items-center justify-between p-4 border-b border-sepia-300/50">
+            <h2 className="text-base font-serif font-semibold text-sepia-900 flex items-center gap-2">
+              <Theater size={18} className="text-brass-500" />
               Switch Voice
             </h2>
-            <button onClick={onClose} className="p-1 text-zinc-400 hover:text-zinc-200 rounded-lg hover:bg-zinc-800">
+            <button onClick={onClose} className="p-1 text-sepia-600 hover:text-sepia-800 rounded-lg hover:bg-parchment-200">
               <X size={18} />
             </button>
           </div>
@@ -63,18 +63,18 @@ export function VoiceSwitchModal({ heteronyms, activeId, guestId, onSelect, onCl
                   onClearGuest();
                   onClose();
                 }}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left hover:bg-zinc-800 transition-colors border border-dashed border-zinc-700"
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left hover:bg-parchment-200 transition-colors border border-dashed border-sepia-300/40"
               >
-                <div className="w-7 h-7 rounded-full bg-zinc-800 flex items-center justify-center text-xs text-zinc-500">↩</div>
+                <div className="w-7 h-7 rounded-full bg-parchment-200 flex items-center justify-center text-xs text-sepia-500">↩</div>
                 <div>
-                  <p className="text-sm text-zinc-300">Return to own voice</p>
-                  <p className="text-[11px] text-zinc-500">Stop writing as someone else</p>
+                  <p className="text-sm text-sepia-700">Return to own voice</p>
+                  <p className="text-[11px] text-sepia-500">Stop writing as someone else</p>
                 </div>
               </button>
             )}
 
             {otherVoices.length === 0 ? (
-              <p className="text-sm text-zinc-500 text-center py-6">No other voices available. Create alter egos in Settings.</p>
+              <p className="text-sm text-sepia-500 text-center py-6">No other voices available. Create alter egos in Settings.</p>
             ) : (
               otherVoices.map((h) => (
                 <button
@@ -83,13 +83,13 @@ export function VoiceSwitchModal({ heteronyms, activeId, guestId, onSelect, onCl
                     onSelect(h.id);
                     onClose();
                   }}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left hover:bg-zinc-800 transition-colors"
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left hover:bg-parchment-200 transition-colors"
                 >
                   <AvatarCircle color={h.avatarColor} emoji={h.avatarEmoji} size={28} />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-zinc-200 truncate">{h.name}</p>
+                    <p className="text-sm text-sepia-800 truncate">{h.name}</p>
                     {h.styleNote && (
-                      <p className="text-[11px] text-zinc-500 truncate">{h.styleNote}</p>
+                      <p className="text-[11px] text-sepia-500 truncate">{h.styleNote}</p>
                     )}
                   </div>
                 </button>

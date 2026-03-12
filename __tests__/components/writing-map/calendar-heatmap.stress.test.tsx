@@ -37,58 +37,58 @@ describe('CalendarHeatmap STRESS', () => {
   // COLOR THRESHOLD EXACT BOUNDARIES
   // ──────────────────────────────────────────────────────
   describe('color threshold exact boundaries', () => {
-    it('0 words → fill-zinc-800', () => {
+    it('0 words → fill-sepia-300/50', () => {
       render(<CalendarHeatmap sessions={[]} />);
       const cell = screen.getByLabelText('2026-03-10: 0 words');
-      expect(cell.getAttribute('class')).toContain('fill-zinc-800');
+      expect(cell.getAttribute('class')).toContain('fill-sepia-300/50');
     });
 
-    it('1 word → fill-emerald-900', () => {
+    it('1 word → fill-forest-900', () => {
       render(<CalendarHeatmap sessions={[makeSession({ startedAt: '2026-03-10T10:00:00Z', wordsAdded: 1 })]} />);
       const cell = screen.getByLabelText('2026-03-10: 1 words');
-      expect(cell.getAttribute('class')).toContain('fill-emerald-900');
+      expect(cell.getAttribute('class')).toContain('fill-forest-900');
     });
 
-    it('exactly 200 words → fill-emerald-900 (≤ 200)', () => {
+    it('exactly 200 words → fill-forest-900 (≤ 200)', () => {
       render(<CalendarHeatmap sessions={[makeSession({ startedAt: '2026-03-10T10:00:00Z', wordsAdded: 200 })]} />);
       const cell = screen.getByLabelText('2026-03-10: 200 words');
-      expect(cell.getAttribute('class')).toContain('fill-emerald-900');
+      expect(cell.getAttribute('class')).toContain('fill-forest-900');
     });
 
-    it('201 words → fill-emerald-700', () => {
+    it('201 words → fill-forest-700', () => {
       render(<CalendarHeatmap sessions={[makeSession({ startedAt: '2026-03-10T10:00:00Z', wordsAdded: 201 })]} />);
       const cell = screen.getByLabelText('2026-03-10: 201 words');
-      expect(cell.getAttribute('class')).toContain('fill-emerald-700');
+      expect(cell.getAttribute('class')).toContain('fill-forest-700');
     });
 
-    it('exactly 500 words → fill-emerald-700 (≤ 500)', () => {
+    it('exactly 500 words → fill-forest-700 (≤ 500)', () => {
       render(<CalendarHeatmap sessions={[makeSession({ startedAt: '2026-03-10T10:00:00Z', wordsAdded: 500 })]} />);
       const cell = screen.getByLabelText('2026-03-10: 500 words');
-      expect(cell.getAttribute('class')).toContain('fill-emerald-700');
+      expect(cell.getAttribute('class')).toContain('fill-forest-700');
     });
 
-    it('501 words → fill-emerald-500', () => {
+    it('501 words → fill-forest-500', () => {
       render(<CalendarHeatmap sessions={[makeSession({ startedAt: '2026-03-10T10:00:00Z', wordsAdded: 501 })]} />);
       const cell = screen.getByLabelText('2026-03-10: 501 words');
-      expect(cell.getAttribute('class')).toContain('fill-emerald-500');
+      expect(cell.getAttribute('class')).toContain('fill-forest-500');
     });
 
-    it('exactly 1000 words → fill-emerald-500 (≤ 1000)', () => {
+    it('exactly 1000 words → fill-forest-500 (≤ 1000)', () => {
       render(<CalendarHeatmap sessions={[makeSession({ startedAt: '2026-03-10T10:00:00Z', wordsAdded: 1000 })]} />);
       const cell = screen.getByLabelText('2026-03-10: 1000 words');
-      expect(cell.getAttribute('class')).toContain('fill-emerald-500');
+      expect(cell.getAttribute('class')).toContain('fill-forest-500');
     });
 
-    it('1001 words → fill-emerald-300', () => {
+    it('1001 words → fill-forest-400', () => {
       render(<CalendarHeatmap sessions={[makeSession({ startedAt: '2026-03-10T10:00:00Z', wordsAdded: 1001 })]} />);
       const cell = screen.getByLabelText('2026-03-10: 1001 words');
-      expect(cell.getAttribute('class')).toContain('fill-emerald-300');
+      expect(cell.getAttribute('class')).toContain('fill-forest-400');
     });
 
-    it('50000 words → fill-emerald-300', () => {
+    it('50000 words → fill-forest-400', () => {
       render(<CalendarHeatmap sessions={[makeSession({ startedAt: '2026-03-10T10:00:00Z', wordsAdded: 50000 })]} />);
       const cell = screen.getByLabelText('2026-03-10: 50000 words');
-      expect(cell.getAttribute('class')).toContain('fill-emerald-300');
+      expect(cell.getAttribute('class')).toContain('fill-forest-400');
     });
   });
 
@@ -122,9 +122,9 @@ describe('CalendarHeatmap STRESS', () => {
         })
       );
       render(<CalendarHeatmap sessions={sessions} />);
-      // 50 × 20 = 1000 words → fill-emerald-500
+      // 50 × 20 = 1000 words → fill-forest-500
       const cell = screen.getByLabelText('2026-03-10: 1000 words');
-      expect(cell.getAttribute('class')).toContain('fill-emerald-500');
+      expect(cell.getAttribute('class')).toContain('fill-forest-500');
     });
   });
 
@@ -252,7 +252,7 @@ describe('CalendarHeatmap STRESS', () => {
       render(<CalendarHeatmap sessions={sessions} />);
       // Session is outside the 365-day window, should not affect any cell
       const cells = screen.getAllByRole('gridcell');
-      const coloredCells = cells.filter(c => !c.getAttribute('class')?.includes('fill-zinc-800'));
+      const coloredCells = cells.filter(c => !c.getAttribute('class')?.includes('fill-sepia-300/50'));
       expect(coloredCells).toHaveLength(0);
     });
   });
