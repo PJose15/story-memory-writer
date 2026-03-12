@@ -18,6 +18,7 @@ describe('buildWritingAssistantPrompt', () => {
     const result = buildWritingAssistantPrompt('English');
     expect(result).toContain('Grounding Rule');
     expect(result).toContain('NEVER guess or invent');
+    expect(result).toContain('flagged as invalid by the validation system');
   });
 
   it('contains the Canon Hierarchy section', () => {
@@ -29,17 +30,53 @@ describe('buildWritingAssistantPrompt', () => {
     expect(result).toContain('Discarded');
   });
 
-  it('contains Character Logic section', () => {
+  it('contains data-aware Character Logic section', () => {
     const result = buildWritingAssistantPrompt('English');
     expect(result).toContain('Character Logic');
+    expect(result).toContain('Visible Goal');
+    expect(result).toContain('Hidden Need');
+    expect(result).toContain('Pressure Level');
+    expect(result).toContain('trust%');
+    expect(result).toContain('tension%');
+    expect(result).toContain('State History');
   });
 
-  it('contains few-shot example', () => {
+  it('contains Narrative Strategy Toolkit with 6 lenses', () => {
     const result = buildWritingAssistantPrompt('English');
-    expect(result).toContain('Few-Shot Example');
+    expect(result).toContain('Narrative Strategy Toolkit');
+    expect(result).toContain('Arc Pacing');
+    expect(result).toContain('Foreshadowing Payoff');
+    expect(result).toContain('Tension Ratchet');
+    expect(result).toContain('The Unasked Question');
+    expect(result).toContain('Character Collision Points');
+    expect(result).toContain('Thematic Echo');
+  });
+
+  it('contains Confidence Calibration section', () => {
+    const result = buildWritingAssistantPrompt('English');
+    expect(result).toContain('Confidence Calibration');
+    expect(result).toContain('HIGH confidence');
+    expect(result).toContain('MEDIUM confidence');
+    expect(result).toContain('LOW confidence');
+    expect(result).toContain('CONTEXT TRUNCATION MANIFEST');
+  });
+
+  it('contains normal-mode few-shot example', () => {
+    const result = buildWritingAssistantPrompt('English');
+    expect(result).toContain('Few-Shot Example (Good Response — Normal Mode)');
     expect(result).toContain('contextUsed');
     expect(result).toContain('[From context]');
     expect(result).toContain('[My suggestion]');
+    expect(result).toContain('Narrative lens');
+  });
+
+  it('contains blocked-mode few-shot example', () => {
+    const result = buildWritingAssistantPrompt('English');
+    expect(result).toContain('Few-Shot Example (Good Response — Blocked Mode)');
+    expect(result).toContain('diagnosis');
+    expect(result).toContain('nextPaths');
+    expect(result).toContain('bestRecommendation');
+    expect(result).toContain('Locked Drawer');
   });
 
   it('contains anti-pattern example', () => {
@@ -48,9 +85,16 @@ describe('buildWritingAssistantPrompt', () => {
     expect(result).toContain('TOO VAGUE');
   });
 
-  it('does not include writer state block when blockType is null', () => {
+  it('includes default NEUTRAL writer state when blockType is null', () => {
     const result = buildWritingAssistantPrompt('English', null);
-    expect(result).not.toContain('Writer Emotional State');
+    expect(result).toContain('Writer Emotional State');
+    expect(result).toContain('WRITER STATE: NEUTRAL');
+    expect(result).toContain('direct and collaborative');
+  });
+
+  it('includes default NEUTRAL writer state when blockType is undefined', () => {
+    const result = buildWritingAssistantPrompt('English');
+    expect(result).toContain('WRITER STATE: NEUTRAL');
   });
 
   it('includes FEAR writer state block', () => {
@@ -76,9 +120,10 @@ describe('buildWritingAssistantPrompt', () => {
     expect(result).toContain('concrete and specific');
   });
 
-  it('is significantly shorter than the old prompt (~100 lines vs 359)', () => {
+  it('stays within reasonable prompt size', () => {
     const result = buildWritingAssistantPrompt('English');
     const lineCount = result.split('\n').length;
-    expect(lineCount).toBeLessThan(150);
+    expect(lineCount).toBeLessThan(250);
+    expect(lineCount).toBeGreaterThan(50);
   });
 });

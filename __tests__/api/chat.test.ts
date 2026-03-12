@@ -284,6 +284,42 @@ describe('POST /api/chat', () => {
     expect(body.structured).toBeUndefined();
   });
 
+  it('includes truncation notice when chatHistory exceeds MAX_HISTORY_TURNS*2', async () => {
+    const structured = {
+      contextUsed: [],
+      informationGaps: [],
+      conflictsDetected: [],
+      recommendation: 'ok',
+      alternatives: [],
+      generatedText: '',
+      confidenceNotes: [],
+    };
+    mockSendMessage.mockResolvedValue({
+      candidates: [{ finishReason: 'STOP' }],
+      text: JSON.stringify(structured),
+    });
+
+    // Create 30 history items (exceeds MAX_HISTORY_TURNS * 2 = 20)
+    const longHistory = Array.from({ length: 30 }, (_, i) => ({
+      role: i % 2 === 0 ? 'user' : 'assistant',
+      content: `Message ${i}`,
+    }));
+
+    await POST(
+      makeRequest({
+        userInput: 'test',
+        language: 'English',
+        storyContext: '',
+        chatHistory: longHistory,
+      })
+    );
+
+    expect(mockSendMessage).toHaveBeenCalled();
+    const sentMessage = mockSendMessage.mock.calls[0][0].message;
+    expect(sentMessage).toContain('[Note: This conversation has 30 messages');
+    expect(sentMessage).toContain('older messages were trimmed');
+  });
+
   it('handles legacy string chat history format', async () => {
     const structured = {
       contextUsed: [],

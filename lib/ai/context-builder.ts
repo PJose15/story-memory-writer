@@ -108,7 +108,12 @@ export function buildContext(state: StoryState, options: BuildContextOptions): C
         const sceneLine = scenes.length ? `\n  Scenes: ${scenes.map(s => `${s.title}: ${s.summary}`).join(' | ')}` : '';
         return `[Chapter] ${c.title}: ${c.summary}${sceneLine}${sourceTag(c)}`;
       }),
-      ...getByStatus(activeTimeline, status).map(t => `[Timeline] ${t.date}: ${t.description}${t.impact ? ' -> ' + t.impact : ''}${sourceTag(t)}`),
+      ...getByStatus(activeTimeline, status)
+        .sort((a, b) => (a.date || '').localeCompare(b.date || ''))
+        .map((t, i, arr) => {
+          const prev = i > 0 ? ` [after: ${arr[i - 1].date}]` : ' [earliest]';
+          return `[Timeline] ${t.date}${prev}: ${t.description}${t.impact ? ' -> ' + t.impact : ''}${sourceTag(t)}`;
+        }),
       ...getByStatus(activeConflicts, status).map(c => `[Conflict] ${c.title} (${c.status}): ${c.description}${sourceTag(c)}`),
       ...getByStatus(activeRules, status).map(r => `[World Rule] ${r.category}: ${r.rule}${sourceTag(r)}`),
       ...getByStatus(activeForeshadowing, status).map(f => `[Foreshadowing] ${f.clue}${f.payoff ? ' -> ' + f.payoff : ' (unresolved)'}${sourceTag(f)}`),
@@ -154,14 +159,14 @@ export function buildContext(state: StoryState, options: BuildContextOptions): C
 
   // Context inventory
   const inventory = `${writerStateBlock}CONTEXT INVENTORY:
-- Characters: ${activeCharacters.length}
-- Chapters: ${activeChapters.length}
+- Characters (${activeCharacters.length}): ${activeCharacters.map(c => c.name).join(', ') || 'None'}
+- Chapters (${activeChapters.length}): ${activeChapters.map(c => c.title).join(', ') || 'None'}
 - Scenes: ${activeScenes.length}
 - Timeline Events: ${activeTimeline.length}
-- Active Conflicts: ${activeConflicts.length}
+- Active Conflicts (${activeConflicts.length}): ${activeConflicts.map(c => c.title).join(', ') || 'None'}
 - World Rules: ${activeRules.length}
-- Locations: ${activeLocations.length}
-- Themes: ${activeThemes.length}
+- Locations (${activeLocations.length}): ${activeLocations.map(l => l.name).join(', ') || 'None'}
+- Themes (${activeThemes.length}): ${activeThemes.map(t => t.theme).join(', ') || 'None'}
 - Foreshadowing Elements: ${activeForeshadowing.length}
 - Open Loops: ${activeOpenLoops.filter(l => l.status === 'open').length}
 - Canon Items: ${state.canon_items.length}
@@ -245,10 +250,12 @@ ${confirmedItems.length ? confirmedItems.join('\n') : 'None'}`;
     }).filter(Boolean).join('\n');
 
     if (manifest) {
-      context += `\n\nCONTEXT TRUNCATION MANIFEST:
+      const manifestBlock = `\n\nCONTEXT TRUNCATION MANIFEST (read this FIRST):
 The following sections were partially or fully omitted due to context size limits:
 ${manifest}
-IMPORTANT: If the user asks about something in the omitted sections, tell them you don't have that information loaded in your current context and suggest they ask about it specifically.`;
+IMPORTANT: If the user asks about something in the omitted sections, tell them you don't have that information loaded and suggest they ask specifically.`;
+      // Insert after header, before section content
+      context = header + manifestBlock + context.slice(header.length);
     }
   }
 

@@ -54,7 +54,13 @@ export async function POST(req: NextRequest) {
     const config = isBlocked ? AI_CONFIG.chatBlocked : AI_CONFIG.chat;
     const responseSchema = isBlocked ? BLOCKED_RESPONSE_SCHEMA : NORMAL_RESPONSE_SCHEMA;
 
-    const contextMessage = `<story_context>\n${storyContext}\n</story_context>\n\n<user_request>\n${userInput}\n</user_request>`;
+    const totalHistoryItems = Array.isArray(chatHistory) ? chatHistory.length : 0;
+    const truncated = totalHistoryItems > MAX_HISTORY_TURNS * 2;
+    const truncationNotice = truncated
+      ? `[Note: This conversation has ${totalHistoryItems} messages but only the most recent ${MAX_HISTORY_TURNS} exchanges are included. Earlier discussion may be missing. If the user references something you don't recall, explain that older messages were trimmed.]\n\n`
+      : '';
+
+    const contextMessage = `${truncationNotice}<story_context>\n${storyContext}\n</story_context>\n\n<user_request>\n${userInput}\n</user_request>`;
 
     // Use multi-turn chat with history
     const chat = ai.chats.create({

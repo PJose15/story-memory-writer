@@ -5,7 +5,7 @@ import { useSession } from '@/lib/session';
 import { motion } from 'motion/react';
 import { BookOpen, Users, Clock, Swords, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
-import { stagger } from '@/lib/animations';
+import { stagger, hoverLift, physicalDrop } from '@/lib/animations';
 
 const blockMessages: Record<string, { headline: string; nudge: string }> = {
   fear: {
@@ -70,7 +70,8 @@ export default function Dashboard() {
           <Link key={stat.name} href={stat.href}>
             <motion.div
               {...stagger.cards(i)}
-              className="bg-parchment-100 border border-sepia-300/50 rounded-xl p-6 hover:translate-y-[-2px] hover:shadow-card-hover transition-all duration-200 group cursor-pointer texture-parchment"
+              {...hoverLift}
+              className="bg-parchment-100 border border-sepia-300/50 rounded-xl p-6 hover:shadow-card-hover transition-all duration-200 group cursor-pointer texture-parchment"
             >
               <div className="flex items-center justify-between mb-4">
                 <stat.icon className="text-brass-600 group-hover:text-brass-500 transition-colors" size={24} />
@@ -98,10 +99,10 @@ export default function Dashboard() {
           ) : (
             <div className="space-y-3">
               {state.chapters.slice(-3).reverse().map((chapter) => (
-                <div key={chapter.id} className="bg-parchment-100 border border-sepia-300/50 rounded-xl p-5 texture-parchment">
+                <motion.div key={chapter.id} {...physicalDrop} className="bg-parchment-100 border border-sepia-300/50 rounded-xl p-5 texture-parchment">
                   <h3 className="font-medium text-sepia-800">{chapter.title}</h3>
                   <p className="text-sm text-sepia-500 mt-1 line-clamp-2">{chapter.summary}</p>
-                </div>
+                </motion.div>
               ))}
             </div>
           )}

@@ -4,6 +4,7 @@ import { useStory, CanonStatus, StoryState } from '@/lib/store';
 import { useState, useMemo, useCallback } from 'react';
 import { Lock, Trash2, ShieldCheck, ShieldAlert, Shield, ShieldOff, Filter } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { fadeUp } from '@/lib/animations';
 
 type ItemType = 'character' | 'timeline' | 'conflict' | 'chapter' | 'scene' | 'world_rule' | 'location' | 'theme' | 'open_loop' | 'foreshadowing';
 
@@ -68,7 +69,7 @@ export default function CanonLockPage() {
 
   return (
     <div className="p-8 max-w-5xl mx-auto space-y-8">
-      <header className="flex flex-col md:flex-row md:items-end justify-between border-b border-sepia-300/30 pb-6 gap-4">
+      <motion.header {...fadeUp} className="flex flex-col md:flex-row md:items-end justify-between border-b border-sepia-300/30 pb-6 gap-4">
         <div>
           <h1 className="text-3xl font-serif font-bold text-sepia-900 tracking-tight flex items-center gap-3 letterpress">
             <Lock className="text-brass-500" />
@@ -111,7 +112,7 @@ export default function CanonLockPage() {
             <option value="discarded">Discarded</option>
           </select>
         </div>
-      </header>
+      </motion.header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <AnimatePresence>

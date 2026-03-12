@@ -4,6 +4,22 @@
  * Designed for use with the Motion library (motion/react).
  */
 
+/**
+ * Zagafy Animation Presets
+ *
+ * Usage:
+ * - springs.gentle → parchment-modal entrance
+ * - stagger.cards → dashboard stat cards staggered entrance
+ * - stagger.navItems → sidebar navigation items slide-in
+ * - toastSlam → antiquarian toast entrance
+ * - fadeUp → page section headers (characters, conflicts, canon)
+ * - hoverLift → dashboard stat cards hover effect
+ * - physicalDrop → new content items (chapters, open loops)
+ * - stampSlam → reserved for canon status animations
+ * - cardFlip → reserved for card flip interactions
+ * - stagger.stampGrid → reserved for stamp grid layout
+ */
+
 // ─── Spring Physics Presets ───
 
 export const springs = {

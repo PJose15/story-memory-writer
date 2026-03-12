@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { motion } from 'motion/react';
+import { stagger } from '@/lib/animations';
 import {
   BookOpen,
   LayoutDashboard,
@@ -62,22 +64,23 @@ export function ParchmentSidebar() {
         </div>
 
         <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
-          {navItems.map((item) => {
+          {navItems.map((item, index) => {
             const isActive = pathname === item.href;
             return (
-              <Link
-                key={item.name}
-                href={item.href}
-                onClick={() => setIsOpen(false)}
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-sm font-medium ${
-                  isActive
-                    ? 'nav-brushstroke-active text-cream-50'
-                    : 'text-cream-300/70 hover:bg-mahogany-800/50 hover:text-cream-100'
-                }`}
-              >
-                <item.icon size={18} className={isActive ? 'text-cream-50' : 'text-cream-400/50'} />
-                {item.name}
-              </Link>
+              <motion.div key={item.name} {...stagger.navItems(index)}>
+                <Link
+                  href={item.href}
+                  onClick={() => setIsOpen(false)}
+                  className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-sm font-medium ${
+                    isActive
+                      ? 'nav-brushstroke-active text-cream-50'
+                      : 'text-cream-300/70 hover:bg-mahogany-800/50 hover:text-cream-100'
+                  }`}
+                >
+                  <item.icon size={18} className={isActive ? 'text-cream-50' : 'text-cream-400/50'} />
+                  {item.name}
+                </Link>
+              </motion.div>
             );
           })}
         </nav>

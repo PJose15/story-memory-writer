@@ -32,6 +32,13 @@ describe('buildMicroPromptSystemPrompt', () => {
     const result = buildMicroPromptSystemPrompt();
     expect(result).toContain('NEVER invent');
   });
+
+  it('contains strategic depth prompts', () => {
+    const result = buildMicroPromptSystemPrompt();
+    expect(result).toContain('denying to themselves');
+    expect(result).toContain('visceral');
+    expect(result).toContain('tension hiding');
+  });
 });
 
 describe('buildMicroPromptContent', () => {
@@ -139,6 +146,10 @@ describe('validateMicroPromptResponse', () => {
   it('rejects too-short responses like "What?"', () => {
     expect(validateMicroPromptResponse('What?')).toBeNull();
     expect(validateMicroPromptResponse('¿Qué?')).toBeNull();
+  });
+
+  it('rejects 5-word questions (below minimum 6 words)', () => {
+    expect(validateMicroPromptResponse('What happens to her now?')).toBeNull();
   });
 
   it('rejects responses without question mark (short)', () => {

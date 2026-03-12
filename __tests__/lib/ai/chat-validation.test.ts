@@ -81,6 +81,47 @@ describe('validateNormalResponse', () => {
     const result = validateNormalResponse(baseResponse, emptyEntities);
     expect(result).toBeDefined();
   });
+
+  it('does not match "Magdalena" when known character is "Elena" (word boundary)', () => {
+    const response: ChatResponseNormal = {
+      ...baseResponse,
+      recommendation: 'Magdalena walked through the garden alone.',
+    };
+    const result = validateNormalResponse(response, entities);
+    const nameWarnings = result.confidenceNotes.filter(n => n.includes('Magdalena') && n.includes('known character'));
+    expect(nameWarnings.length).toBeGreaterThan(0);
+  });
+
+  it('does not flag "But" and "Perhaps" at start of sentences', () => {
+    const response: ChatResponseNormal = {
+      ...baseResponse,
+      recommendation: 'But Elena hesitated. Perhaps Marco would understand.',
+    };
+    const result = validateNormalResponse(response, entities);
+    const butWarning = result.confidenceNotes.filter(n => n.includes('"But"') || n.includes('"Perhaps"'));
+    expect(butWarning).toHaveLength(0);
+  });
+
+  it('flags long recommendation with empty contextUsed as ungrounded', () => {
+    const response: ChatResponseNormal = {
+      ...baseResponse,
+      contextUsed: [],
+      recommendation: 'A'.repeat(301),
+    };
+    const result = validateNormalResponse(response, entities);
+    const groundingWarnings = result.confidenceNotes.filter(n => n.includes('Long recommendation') && n.includes('ungrounded'));
+    expect(groundingWarnings.length).toBeGreaterThan(0);
+  });
+
+  it('flags unknown names in alternatives', () => {
+    const response: ChatResponseNormal = {
+      ...baseResponse,
+      alternatives: ['Fernando could betray the group instead.'],
+    };
+    const result = validateNormalResponse(response, entities);
+    const altWarnings = result.confidenceNotes.filter(n => n.includes('Alternative') && n.includes('Fernando'));
+    expect(altWarnings.length).toBeGreaterThan(0);
+  });
 });
 
 describe('validateBlockedResponse', () => {

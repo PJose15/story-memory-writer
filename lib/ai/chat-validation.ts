@@ -43,6 +43,19 @@ export function validateNormalResponse(
     warnings.push('[Validation] Generated text was provided but no context was cited — may be ungrounded.');
   }
 
+  // Positive grounding check: long recommendation with no context = likely ungrounded
+  if (response.recommendation.length > 300 && response.contextUsed.length === 0) {
+    warnings.push('[Validation] Long recommendation provided without citing any context — may be ungrounded.');
+  }
+
+  // Scan alternatives for unknown character names
+  for (const alt of response.alternatives) {
+    const unknownInAlt = findUnknownNames(alt, entities);
+    for (const name of unknownInAlt) {
+      warnings.push(`[Validation] Alternative mentions "${name}" which is not a known character.`);
+    }
+  }
+
   return {
     ...response,
     confidenceNotes: [...response.confidenceNotes, ...warnings],
@@ -96,9 +109,15 @@ function findUnknownNames(text: string, entities: KnownEntities): string[] {
     // Skip markdown headings
     if (text[match.index - 1] === '#') continue;
     // Check if any part matches a known character
-    const isKnown = [...knownLower].some(
-      known => candidate.toLowerCase().includes(known) || known.includes(candidate.toLowerCase())
-    );
+    const isKnown = [...knownLower].some(known => {
+      const candidateLower = candidate.toLowerCase();
+      // Exact match
+      if (candidateLower === known) return true;
+      // Multi-word: check if all words of the known name appear as whole words in candidate
+      const candidateWords = candidateLower.split(/\s+/);
+      const knownWords = known.split(/\s+/);
+      return knownWords.every(kw => candidateWords.includes(kw));
+    });
     if (!isKnown) {
       found.add(candidate);
     }
@@ -117,4 +136,10 @@ const COMMON_CAPITALIZED = new Set([
   'additionally', 'currently', 'previously', 'specifically', 'essentially',
   'particularly', 'alternatively', 'recommendation', 'suggestion',
   'continuation', 'escalation', 'revelation', 'discovery',
+  'but', 'yet', 'also', 'just', 'still', 'only', 'never', 'always', 'perhaps', 'maybe',
+  'really', 'certainly', 'obviously', 'clearly', 'indeed', 'surely',
+  'god', 'death', 'love', 'time', 'fate', 'truth', 'nature',
+  'morning', 'evening', 'night', 'spring', 'summer', 'winter', 'autumn',
+  'first', 'last', 'next', 'final', 'new', 'old', 'great', 'little',
+  'everything', 'nothing', 'something', 'everyone', 'someone', 'anyone', 'nobody',
 ]);

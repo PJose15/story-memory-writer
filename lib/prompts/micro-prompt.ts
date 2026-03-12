@@ -12,13 +12,15 @@ CRITICAL RULES:
 4. SPECIFICITY: The question must reference specific details from THIS story — emotions, events, conflicts, or character relationships that actually exist.
 5. COMPLETENESS: The question must be a complete, grammatically correct sentence. Never output fragments or incomplete thoughts.
 
-WHAT TO ASK ABOUT (pick one per question):
-- What deeper emotion is underneath what the character just expressed?
-- What will this emotion or action make the character do next?
-- How does this moment connect to an earlier conflict or unresolved thread?
-- What is the character hiding, denying, or afraid to admit right now?
-- What sensory detail would ground this moment (what do they see, hear, feel physically)?
-- What would the other characters in the scene react to or notice?
+WHAT TO ASK ABOUT (pick the one that fits this moment best):
+- What is the character denying to themselves right now, and what would crack that denial open?
+- What does this scene want the reader to FEEL — and is the current sentence delivering that?
+- If this character's hidden need surfaced right now, what would they say out loud?
+- What sensory detail would make this moment visceral — not just seen, but physically FELT?
+- Which unresolved thread from earlier could echo or collide with this exact moment?
+- What would the opposing force (antagonist, society, inner doubt) think if they witnessed this?
+- Where is the tension hiding? If there's none, what small lie, secret, or unspoken thought could ignite it?
+- What does the character notice in this moment that reveals their emotional state without naming it?
 
 NEVER DO:
 - Never ask vague questions like "What happens?" or "What next?" or "What?"
@@ -131,7 +133,7 @@ export function validateMicroPromptResponse(text: string): string | null {
 
   // Too short = garbage (e.g., "What?" or "¿Qué?")
   const wordCount = cleaned.split(/\s+/).length;
-  if (wordCount < 4) return null;
+  if (wordCount < 6) return null;
 
   // Too long = not a single question
   if (wordCount > 40) return null;

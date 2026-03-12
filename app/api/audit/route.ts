@@ -45,7 +45,16 @@ Perform a Continuity Audit on the following requested idea/scene:
 ${userInput}
 </user_request>
 
-Analyze it against the established canon. Detect contradictions, broken character logic, timeline inconsistencies, tone mismatch, unresolved setup ignored, emotional continuity gaps, and lore/world rule conflicts.`;
+Analyze it against the established canon. Check for these specific dimensions:
+1. CHARACTER LOGIC: Does this action match the character's current emotional state, pressure level, knowledge, and hidden needs? Would they actually do/say this given their trust and tension levels with other characters?
+2. TIMELINE CONSISTENCY: Does this fit the chronological sequence? Are there impossible time jumps or events happening out of order?
+3. RELATIONSHIP INTEGRITY: Does character interaction match their established trust% and tension% levels? Would characters who distrust each other suddenly cooperate?
+4. CANON CONTRADICTIONS: Does this break any confirmed-canon facts, world rules, or established lore?
+5. FORESHADOWING COHERENCE: Does this ignore planted setups or contradict hinted payoffs? Are there setups that could be paid off here?
+6. TONE AND PACING: Does this fit the established style profile and current arc pacing? Is it too fast or too slow for this point in the story?
+7. WORLD RULES: Does this violate any established world rules, magic systems, or internal logic?
+
+For each risk found, explain which specific story element it contradicts and why.`;
 
     const response = await ai.models.generateContent({
       model: AI_MODEL,
@@ -67,12 +76,13 @@ Analyze it against the established canon. Detect contradictions, broken characte
                 properties: {
                   level: { type: Type.STRING, description: "'Low', 'Medium', or 'High'" },
                   description: { type: Type.STRING },
+                  rootCause: { type: Type.STRING, description: 'The specific canon element, character state, or story fact that this conflicts with' },
                   affectedElements: { type: Type.ARRAY, items: { type: Type.STRING } }
                 }
               }
             },
             suggestedCorrections: { type: Type.ARRAY, items: { type: Type.STRING } },
-            safeVersion: { type: Type.STRING, description: 'A safe version that respects canon' }
+            safeVersion: { type: Type.STRING, description: 'A version that respects canon while preserving the user\'s creative intent as closely as possible' }
           }
         }
       }

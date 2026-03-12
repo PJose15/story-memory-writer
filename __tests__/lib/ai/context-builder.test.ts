@@ -69,10 +69,24 @@ describe('buildContext', () => {
     const state = makeState();
     const { context } = buildContext(state, { userInput: 'test', isBlockedMode: false });
 
-    expect(context).toContain('Characters: 2');
-    expect(context).toContain('Chapters: 2');
-    expect(context).toContain('Locations: 1');
-    expect(context).toContain('Active Conflicts: 1');
+    expect(context).toContain('Characters (2)');
+    expect(context).toContain('Chapters (2)');
+    expect(context).toContain('Locations (1)');
+    expect(context).toContain('Active Conflicts (1)');
+  });
+
+  it('includes entity names in context inventory', () => {
+    const state = makeState();
+    const { context } = buildContext(state, { userInput: 'test', isBlockedMode: false });
+
+    // Character names
+    expect(context).toContain('Characters (2): Elena, Marco');
+    // Chapter titles
+    expect(context).toContain('Chapters (2): The Discovery, The Letter');
+    // Location names
+    expect(context).toContain('Locations (1): The Ruins');
+    // Conflict titles
+    expect(context).toContain('Active Conflicts (1): Family Secret');
   });
 
   it('includes confirmed canon items', () => {
@@ -127,7 +141,7 @@ describe('buildContext', () => {
     const { context, knownEntities } = buildContext(defaultState, { userInput: 'test', isBlockedMode: false });
 
     expect(context).toContain('CONTEXT INVENTORY');
-    expect(context).toContain('Characters: 0');
+    expect(context).toContain('Characters (0): None');
     expect(knownEntities.characters).toHaveLength(0);
   });
 
@@ -141,6 +155,44 @@ describe('buildContext', () => {
     expect(blockedCtx).toContain('Family Secret');
     // Both should include the conflict in confirmed canon at least
     expect(normalCtx).toContain('Family Secret');
+  });
+
+  it('places truncation manifest before story sections when truncation occurs', () => {
+    const state = makeState();
+    const { context } = buildContext(state, { userInput: 'test', isBlockedMode: false, maxLength: 2000 });
+
+    const manifestIdx = context.indexOf('CONTEXT TRUNCATION MANIFEST');
+    if (manifestIdx !== -1) {
+      // Manifest should appear before optional sections like OPEN LOOPS
+      const openLoopsIdx = context.indexOf('OPEN LOOPS');
+      if (openLoopsIdx !== -1) {
+        expect(manifestIdx).toBeLessThan(openLoopsIdx);
+      }
+      // Manifest should appear after the header (STORY BIBLE)
+      const storyBibleIdx = context.indexOf('STORY BIBLE');
+      expect(manifestIdx).toBeGreaterThan(storyBibleIdx);
+      // Should contain the "read this FIRST" marker
+      expect(context).toContain('read this FIRST');
+    }
+  });
+
+  it('includes timeline temporal ordering markers', () => {
+    const state = makeState({
+      timeline_events: [
+        { id: 't1', date: '2024-03-01', description: 'Event B happens', canonStatus: 'confirmed' },
+        { id: 't2', date: '2024-01-15', description: 'Event A happens', canonStatus: 'confirmed' },
+        { id: 't3', date: '2024-06-20', description: 'Event C happens', canonStatus: 'confirmed' },
+      ],
+    });
+    const { context } = buildContext(state, { userInput: 'test', isBlockedMode: false });
+
+    // Should contain ordering markers
+    expect(context).toContain('[earliest]');
+    expect(context).toContain('[after:');
+    // First event chronologically should be marked [earliest]
+    expect(context).toContain('2024-01-15 [earliest]');
+    // Later events should reference the previous date
+    expect(context).toContain('[after: 2024-01-15]');
   });
 
   it('detects orphaned scenes', () => {

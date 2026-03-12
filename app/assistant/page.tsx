@@ -149,23 +149,22 @@ export default function AssistantPage() {
     setIsLoading(true);
 
     const BLOCKED_PHRASES = [
-      "i'm blocked",
-      'im blocked',
-      "i'm stuck",
-      'im stuck',
-      'i feel blocked',
-      'i feel stuck',
-      'unblock me',
-      'help me continue',
-      "i don't know what happens next",
-      'i dont know what happens next',
-      "i don't know what to write",
-      'i dont know what to write',
-      "writer's block",
-      'writers block',
+      "i'm blocked", 'im blocked', "i'm stuck", 'im stuck',
+      'i feel blocked', 'i feel stuck',
+      'unblock me', 'help me continue',
+      "i don't know what happens next", 'i dont know what happens next',
+      "i don't know what to write", 'i dont know what to write',
+      "writer's block", 'writers block',
+      'help me get unstuck', 'what should i write',
+      'where do i go from here', "i have no idea",
+      "i'm lost", 'im lost', 'feeling stuck', 'feeling blocked',
+      "can't write", 'cant write', "can't continue", 'cant continue',
     ];
 
-    const isBlockedRequest = BLOCKED_PHRASES.some(phrase => textToSend.toLowerCase().includes(phrase));
+    const inputLower = textToSend.toLowerCase();
+    const BLOCKED_KEYWORDS = ['blocked', 'stuck', 'lost', 'help'];
+    const isBlockedRequest = BLOCKED_PHRASES.some(phrase => inputLower.includes(phrase))
+      || (session?.blockType && BLOCKED_KEYWORDS.some(kw => inputLower.includes(kw)));
 
     try {
       const { context, knownEntities } = buildContext(state, {

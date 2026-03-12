@@ -135,6 +135,26 @@ describe('POST /api/audit', () => {
     expect(res.status).toBe(502);
   });
 
+  it('sends prompt with CHARACTER LOGIC and FORESHADOWING COHERENCE dimensions', async () => {
+    mockGenerateContent.mockResolvedValue({
+      candidates: [{ finishReason: 'STOP' }],
+      text: JSON.stringify({ status: 'Clear', risks: [], suggestedCorrections: [], safeVersion: '' }),
+    });
+
+    await POST(
+      makeRequest({
+        userInput: 'Elena confronts Marco',
+        language: 'English',
+        storyContext: 'Some story context',
+      })
+    );
+
+    expect(mockGenerateContent).toHaveBeenCalled();
+    const callArgs = mockGenerateContent.mock.calls[0][0];
+    expect(callArgs.contents).toContain('CHARACTER LOGIC');
+    expect(callArgs.contents).toContain('FORESHADOWING COHERENCE');
+  });
+
   it('returns fallback when safety filter triggers', async () => {
     mockGenerateContent.mockResolvedValue({
       candidates: [{ finishReason: 'SAFETY' }],

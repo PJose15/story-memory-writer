@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useUnsavedChanges } from '@/hooks/use-unsaved-changes';
 import { Plus, Trash2, Edit3, Save, X, Users, ShieldCheck, Shield, ShieldAlert, ShieldOff, Activity, Heart, History, AlertCircle, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { fadeUp } from '@/lib/animations';
 import ReactMarkdown from 'react-markdown';
 import { useConfirm } from '@/components/confirm-dialog';
 
@@ -163,7 +164,7 @@ export default function CharactersPage() {
 
   return (
     <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-8">
-      <header className="flex items-center justify-between border-b border-sepia-300/50 pb-6">
+      <motion.header {...fadeUp} className="flex items-center justify-between border-b border-sepia-300/50 pb-6">
         <div>
           <h1 className="text-3xl font-serif font-bold text-sepia-900 tracking-tight flex items-center gap-3 letterpress">
             <Users className="text-brass-500" />
@@ -179,7 +180,7 @@ export default function CharactersPage() {
           <Plus size={18} />
           Add Character
         </button>
-      </header>
+      </motion.header>
 
       <div className="grid grid-cols-1 gap-6">
         <AnimatePresence>
