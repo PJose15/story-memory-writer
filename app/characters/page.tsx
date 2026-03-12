@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { fadeUp } from '@/lib/animations';
 import ReactMarkdown from 'react-markdown';
 import { useConfirm } from '@/components/confirm-dialog';
+import { CarvedHeader, BrassButton } from '@/components/antiquarian';
 
 const defaultCurrentState: CharacterState = {
   emotionalState: '',
@@ -164,23 +165,19 @@ export default function CharactersPage() {
 
   return (
     <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-8">
-      <motion.header {...fadeUp} className="flex items-center justify-between border-b border-sepia-300/50 pb-6">
-        <div>
-          <h1 className="text-3xl font-serif font-bold text-sepia-900 tracking-tight flex items-center gap-3 letterpress">
-            <Users className="text-brass-500" />
-            Characters
-          </h1>
-          <p className="text-sepia-600 mt-2 text-sm">Manage your cast, their roles, and relationships.</p>
-          <div className="mt-3 h-0.5 w-16 bg-gradient-to-r from-brass-500 to-brass-300/0 rounded-full" />
-        </div>
-        <button
-          onClick={handleAddCharacter}
-          className="flex items-center gap-2 bg-brass-500 text-sepia-900 px-4 py-2 rounded-lg font-medium hover:bg-brass-400 transition-colors"
-        >
-          <Plus size={18} />
-          Add Character
-        </button>
-      </motion.header>
+      <motion.div {...fadeUp}>
+        <CarvedHeader
+          title="Characters"
+          subtitle="Manage your cast, their roles, and relationships."
+          icon={<Users size={24} />}
+          actions={
+            <BrassButton onClick={handleAddCharacter}>
+              <Plus size={18} />
+              Add Character
+            </BrassButton>
+          }
+        />
+      </motion.div>
 
       <div className="grid grid-cols-1 gap-6">
         <AnimatePresence>

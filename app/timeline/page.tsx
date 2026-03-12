@@ -6,7 +6,7 @@ import { useUnsavedChanges } from '@/hooks/use-unsaved-changes';
 import { Plus, Trash2, Edit3, Save, X, Clock, ShieldCheck, Shield, ShieldAlert, ShieldOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useConfirm } from '@/components/confirm-dialog';
-import { BrassButton } from '@/components/antiquarian';
+import { BrassButton, CarvedHeader, ParchmentCard } from '@/components/antiquarian';
 
 const statusConfig = {
   confirmed: { icon: ShieldCheck, color: 'text-forest-700', bg: 'bg-forest-700/10', label: 'Confirmed Canon' },
@@ -70,22 +70,16 @@ export default function TimelinePage() {
 
   return (
     <div className="p-4 md:p-8 max-w-4xl mx-auto space-y-8">
-      <header className="flex items-center justify-between border-b border-sepia-300/50 pb-6">
-        <div>
-          <h1 className="letterpress text-3xl font-serif font-bold text-sepia-900 tracking-tight flex items-center gap-3">
-            <Clock className="text-brass-500" />
-            Timeline
-          </h1>
-          <p className="text-sepia-600 mt-2 text-sm">Track key events and their impact on the story.</p>
-          <div className="mt-3 h-0.5 w-16 bg-gradient-to-r from-brass-500 to-brass-300/0 rounded-full" />
-        </div>
-        <BrassButton
-          onClick={handleAddEvent}
-          icon={<Plus size={18} />}
-        >
-          Add Event
-        </BrassButton>
-      </header>
+      <CarvedHeader
+        title="Timeline"
+        subtitle="Track key events and their impact on the story."
+        icon={<Clock size={24} />}
+        actions={
+          <BrassButton onClick={handleAddEvent} icon={<Plus size={18} />}>
+            Add Event
+          </BrassButton>
+        }
+      />
 
       <div className="relative space-y-8 before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-sepia-300/50 before:to-transparent">
         <AnimatePresence>
@@ -101,7 +95,7 @@ export default function TimelinePage() {
                 <Clock size={16} />
               </div>
 
-              <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] bg-parchment-100 border border-sepia-300/50 p-6 rounded-xl shadow-parchment texture-parchment">
+              <ParchmentCard className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)]">
                 {editingId === event.id ? (
                   <div className="space-y-4">
                     <input
@@ -195,7 +189,7 @@ export default function TimelinePage() {
                     )}
                   </div>
                 )}
-              </div>
+              </ParchmentCard>
             </motion.div>
           ))}
         </AnimatePresence>

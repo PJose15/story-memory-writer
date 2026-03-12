@@ -6,7 +6,7 @@ import { Settings, Download, Upload, Trash2, AlertTriangle, Globe } from 'lucide
 import { useToast } from '@/components/toast';
 import { useConfirm } from '@/components/confirm-dialog';
 import { HeteronymSettings } from '@/components/heteronyms/heteronym-settings';
-import { BrassButton, InkStampButton } from '@/components/antiquarian';
+import { BrassButton, InkStampButton, CarvedHeader, ParchmentCard } from '@/components/antiquarian';
 
 // Only these keys from StoryState are allowed during import
 const ALLOWED_KEYS = new Set<keyof StoryState>([
@@ -99,17 +99,14 @@ export default function SettingsPage() {
 
   return (
     <div className="p-4 md:p-8 max-w-4xl mx-auto space-y-10">
-      <header className="flex items-center gap-3 border-b border-sepia-300/30 pb-6">
-        <Settings className="text-brass-500" size={28} />
-        <div>
-          <h1 className="text-3xl font-serif font-bold text-sepia-900 tracking-tight letterpress">Settings</h1>
-          <p className="text-sepia-600 mt-2 text-sm">Manage your project data and preferences.</p>
-          <div className="mt-3 h-0.5 w-16 bg-gradient-to-r from-brass-500 to-brass-300/0 rounded-full" />
-        </div>
-      </header>
+      <CarvedHeader
+        title="Settings"
+        subtitle="Manage your project data and preferences."
+        icon={<Settings size={24} />}
+      />
 
       <div className="space-y-8">
-        <section className="bg-parchment-100 border border-sepia-300/50 rounded-xl p-6 space-y-4 texture-parchment shadow-parchment">
+        <ParchmentCard className="space-y-4">
           <h2 className="text-xl font-serif font-semibold text-sepia-900 flex items-center gap-2">
             <Globe size={20} className="text-brass-500" />
             Project Language
@@ -135,11 +132,11 @@ export default function SettingsPage() {
             <option value="Russian">Русский (Russian)</option>
             <option value="Arabic">العربية (Arabic)</option>
           </select>
-        </section>
+        </ParchmentCard>
 
         <HeteronymSettings />
 
-        <section className="bg-parchment-100 border border-sepia-300/50 rounded-xl p-6 space-y-4 texture-parchment shadow-parchment">
+        <ParchmentCard className="space-y-4">
           <h2 className="text-xl font-serif font-semibold text-sepia-900 flex items-center gap-2">
             <Download size={20} className="text-brass-500" />
             Export Project
@@ -150,9 +147,9 @@ export default function SettingsPage() {
           <BrassButton onClick={handleExport} icon={<Download size={18} />}>
             Export JSON
           </BrassButton>
-        </section>
+        </ParchmentCard>
 
-        <section className="bg-parchment-100 border border-sepia-300/50 rounded-xl p-6 space-y-4 texture-parchment shadow-parchment">
+        <ParchmentCard className="space-y-4">
           <h2 className="text-xl font-serif font-semibold text-sepia-900 flex items-center gap-2">
             <Upload size={20} className="text-brass-500" />
             Restore Project
@@ -170,7 +167,7 @@ export default function SettingsPage() {
           <BrassButton onClick={() => fileInputRef.current?.click()} icon={<Upload size={18} />}>
             Import JSON
           </BrassButton>
-        </section>
+        </ParchmentCard>
 
         <section className="bg-wax-900/10 border border-wax-700/30 rounded-xl p-6 space-y-4">
           <h2 className="text-xl font-serif font-semibold text-wax-700 flex items-center gap-2">

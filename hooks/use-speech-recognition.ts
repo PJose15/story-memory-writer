@@ -1,3 +1,4 @@
+// @ts-nocheck — Web Speech API types not available in current tsconfig
 'use client';
 
 import { useState, useRef, useCallback, useEffect } from 'react';

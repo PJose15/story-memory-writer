@@ -7,7 +7,7 @@ import { Plus, Trash2, Edit3, Save, X, Swords, CheckCircle2, ShieldCheck, Shield
 import { motion, AnimatePresence } from 'motion/react';
 import { fadeUp } from '@/lib/animations';
 import { useConfirm } from '@/components/confirm-dialog';
-import { BrassButton } from '@/components/antiquarian';
+import { BrassButton, CarvedHeader } from '@/components/antiquarian';
 
 const statusConfig = {
   confirmed: { icon: ShieldCheck, color: 'text-forest-700', bg: 'bg-forest-700/10', label: 'Confirmed Canon' },
@@ -78,20 +78,19 @@ export default function ConflictsPage() {
 
   return (
     <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-8">
-      <motion.header {...fadeUp} className="flex items-center justify-between border-b border-sepia-300/50 pb-6">
-        <div>
-          <h1 className="letterpress text-3xl font-serif font-bold text-sepia-900 tracking-tight flex items-center gap-3">
-            <Swords className="text-brass-500" />
-            Conflicts
-          </h1>
-          <p className="text-sepia-600 mt-2 text-sm">Track active tensions, subplots, and resolutions.</p>
-          <div className="mt-3 h-0.5 w-16 bg-gradient-to-r from-brass-500 to-brass-300/0 rounded-full" />
-        </div>
-        <BrassButton onClick={handleAddConflict}>
-          <Plus size={18} />
-          Add Conflict
-        </BrassButton>
-      </motion.header>
+      <motion.div {...fadeUp}>
+        <CarvedHeader
+          title="Conflicts"
+          subtitle="Track active tensions, subplots, and resolutions."
+          icon={<Swords size={24} />}
+          actions={
+            <BrassButton onClick={handleAddConflict}>
+              <Plus size={18} />
+              Add Conflict
+            </BrassButton>
+          }
+        />
+      </motion.div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <AnimatePresence>

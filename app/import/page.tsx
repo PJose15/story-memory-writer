@@ -6,6 +6,7 @@ import type { ExtractedData, ExtractedChapter, ExtractedCharacter, ExtractedChar
 import { UploadCloud, FileText, CheckCircle2, AlertCircle, Loader2, ArrowRight, Save, X, ChevronUp, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useToast } from '@/components/toast';
+import { CarvedHeader, ParchmentCard } from '@/components/antiquarian';
 
 export default function ImportPage() {
   const { state, updateField } = useStory();
@@ -315,16 +316,11 @@ export default function ImportPage() {
 
   return (
     <div className="p-8 max-w-5xl mx-auto space-y-8">
-      <header className="flex items-center justify-between border-b border-sepia-300/50 pb-6">
-        <div>
-          <h1 className="letterpress text-3xl font-serif font-bold text-sepia-900 tracking-tight flex items-center gap-3">
-            <UploadCloud className="text-brass-500" />
-            Document Ingestion
-          </h1>
-          <p className="text-sepia-600 mt-2 text-sm">Upload your manuscript, notes, or outlines to auto-extract story intelligence.</p>
-          <div className="h-0.5 w-16 bg-brass-500 mt-3 rounded-full" />
-        </div>
-      </header>
+      <CarvedHeader
+        title="Document Ingestion"
+        subtitle="Upload your manuscript, notes, or outlines to auto-extract story intelligence."
+        icon={<UploadCloud size={24} />}
+      />
 
       {uploadStatus === 'idle' && (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
@@ -355,7 +351,7 @@ export default function ImportPage() {
           </div>
 
           {files.length > 0 && (
-            <div className="bg-parchment-100 border border-sepia-300/50 rounded-xl p-6 texture-parchment shadow-parchment">
+            <ParchmentCard>
               <h4 className="text-sm font-medium text-sepia-600 uppercase tracking-wider mb-4">Selected Files (Order matters for parsing)</h4>
               <ul className="space-y-3 mb-6">
                 {files.map((file, idx) => (
@@ -383,7 +379,7 @@ export default function ImportPage() {
                   Start Ingestion <ArrowRight size={18} />
                 </button>
               </div>
-            </div>
+            </ParchmentCard>
           )}
         </div>
       )}
@@ -416,7 +412,7 @@ export default function ImportPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Project Metadata */}
-            <div className="bg-parchment-100 border border-sepia-300/50 rounded-xl p-6 texture-parchment shadow-parchment md:col-span-2">
+            <ParchmentCard className="md:col-span-2">
               <h4 className="text-sm font-medium text-sepia-600 uppercase tracking-wider mb-4 flex items-center justify-between">
                 <span>Project Metadata</span>
               </h4>
@@ -448,10 +444,10 @@ export default function ImportPage() {
                   />
                 </div>
               </div>
-            </div>
+            </ParchmentCard>
 
             {/* Chapters */}
-            <div className="bg-parchment-100 border border-sepia-300/50 rounded-xl p-6 texture-parchment shadow-parchment">
+            <ParchmentCard>
               <h4 className="text-sm font-medium text-sepia-600 uppercase tracking-wider mb-4 flex items-center justify-between">
                 <span>Chapters Detected</span>
                 <span className="bg-parchment-200 text-sepia-700 px-2 py-0.5 rounded text-xs">{extractedData.chapters?.length || 0}</span>
@@ -480,10 +476,10 @@ export default function ImportPage() {
                   </li>
                 ))}
               </ul>
-            </div>
+            </ParchmentCard>
 
             {/* Characters */}
-            <div className="bg-parchment-100 border border-sepia-300/50 rounded-xl p-6 texture-parchment shadow-parchment">
+            <ParchmentCard>
               <h4 className="text-sm font-medium text-sepia-600 uppercase tracking-wider mb-4 flex items-center justify-between">
                 <span>Characters Extracted</span>
                 <span className="bg-parchment-200 text-sepia-700 px-2 py-0.5 rounded text-xs">{extractedData.characters?.length || 0}</span>
@@ -546,10 +542,10 @@ export default function ImportPage() {
                   </li>
                 ))}
               </ul>
-            </div>
+            </ParchmentCard>
 
             {/* Conflicts */}
-            <div className="bg-parchment-100 border border-sepia-300/50 rounded-xl p-6 texture-parchment shadow-parchment">
+            <ParchmentCard>
               <h4 className="text-sm font-medium text-sepia-600 uppercase tracking-wider mb-4 flex items-center justify-between">
                 <span>Conflicts & Plot Points</span>
                 <span className="bg-parchment-200 text-sepia-700 px-2 py-0.5 rounded text-xs">{extractedData.active_conflicts?.length || 0}</span>
@@ -568,10 +564,10 @@ export default function ImportPage() {
                   </li>
                 ))}
               </ul>
-            </div>
+            </ParchmentCard>
 
             {/* Worldbuilding & Timeline */}
-            <div className="bg-parchment-100 border border-sepia-300/50 rounded-xl p-6 texture-parchment shadow-parchment">
+            <ParchmentCard>
               <h4 className="text-sm font-medium text-sepia-600 uppercase tracking-wider mb-4 flex items-center justify-between">
                 <span>World & Timeline</span>
                 <span className="bg-parchment-200 text-sepia-700 px-2 py-0.5 rounded text-xs">{(extractedData.world_rules?.length || 0) + (extractedData.timeline_events?.length || 0)}</span>
@@ -603,10 +599,10 @@ export default function ImportPage() {
                   </li>
                 ))}
               </ul>
-            </div>
+            </ParchmentCard>
 
             {/* Story Elements (Themes, Locations, Loops, Foreshadowing) */}
-            <div className="bg-parchment-100 border border-sepia-300/50 rounded-xl p-6 texture-parchment shadow-parchment md:col-span-2">
+            <ParchmentCard className="md:col-span-2">
               <h4 className="text-sm font-medium text-sepia-600 uppercase tracking-wider mb-4 flex items-center justify-between">
                 <span>Story Elements</span>
                 <span className="bg-parchment-200 text-sepia-700 px-2 py-0.5 rounded text-xs">
@@ -679,10 +675,10 @@ export default function ImportPage() {
                   )}
                 </ul>
               </div>
-            </div>
+            </ParchmentCard>
 
             {/* Canon & Ambiguities */}
-            <div className="bg-parchment-100 border border-sepia-300/50 rounded-xl p-6 texture-parchment shadow-parchment md:col-span-2">
+            <ParchmentCard className="md:col-span-2">
               <h4 className="text-sm font-medium text-sepia-600 uppercase tracking-wider mb-4 flex items-center justify-between">
                 <span>Canon & Ambiguities</span>
                 <span className="bg-parchment-200 text-sepia-700 px-2 py-0.5 rounded text-xs">{(extractedData.canon_items?.length || 0) + (extractedData.ambiguities?.length || 0)}</span>
@@ -726,7 +722,7 @@ export default function ImportPage() {
                   )}
                 </ul>
               </div>
-            </div>
+            </ParchmentCard>
           </div>
 
           <div className="flex justify-end gap-4 pt-6 border-t border-sepia-300/50">

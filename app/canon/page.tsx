@@ -5,6 +5,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { Lock, Trash2, ShieldCheck, ShieldAlert, Shield, ShieldOff, Filter } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { fadeUp } from '@/lib/animations';
+import { CarvedHeader } from '@/components/antiquarian';
 
 type ItemType = 'character' | 'timeline' | 'conflict' | 'chapter' | 'scene' | 'world_rule' | 'location' | 'theme' | 'open_loop' | 'foreshadowing';
 
@@ -69,50 +70,46 @@ export default function CanonLockPage() {
 
   return (
     <div className="p-8 max-w-5xl mx-auto space-y-8">
-      <motion.header {...fadeUp} className="flex flex-col md:flex-row md:items-end justify-between border-b border-sepia-300/30 pb-6 gap-4">
-        <div>
-          <h1 className="text-3xl font-serif font-bold text-sepia-900 tracking-tight flex items-center gap-3 letterpress">
-            <Lock className="text-brass-500" />
-            Canon Lock
-          </h1>
-          <p className="text-sepia-600 mt-2 text-sm max-w-xl">
-            Classify story information by certainty level. The AI Assistant will strictly respect Confirmed Canon and ignore Discarded items.
-          </p>
-          <div className="mt-3 h-0.5 w-16 bg-gradient-to-r from-brass-500 to-brass-300/0 rounded-full" />
-        </div>
+      <motion.div {...fadeUp}>
+        <CarvedHeader
+          title="Canon Lock"
+          subtitle="Classify story information by certainty level. The AI Assistant will strictly respect Confirmed Canon and ignore Discarded items."
+          icon={<Lock size={24} />}
+          actions={
+            <div className="flex flex-wrap gap-2">
+              <select
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value as ItemType | 'all')}
+                className={selectClasses}
+              >
+                <option value="all">All Types</option>
+                <option value="character">Characters</option>
+                <option value="chapter">Chapters</option>
+                <option value="scene">Scenes</option>
+                <option value="timeline">Timeline</option>
+                <option value="conflict">Conflicts</option>
+                <option value="world_rule">World Rules</option>
+                <option value="location">Locations</option>
+                <option value="theme">Themes</option>
+                <option value="open_loop">Open Loops</option>
+                <option value="foreshadowing">Foreshadowing</option>
+              </select>
 
-        <div className="flex flex-wrap gap-2">
-          <select
-            value={filterType}
-            onChange={(e) => setFilterType(e.target.value as ItemType | 'all')}
-            className={selectClasses}
-          >
-            <option value="all">All Types</option>
-            <option value="character">Characters</option>
-            <option value="chapter">Chapters</option>
-            <option value="scene">Scenes</option>
-            <option value="timeline">Timeline</option>
-            <option value="conflict">Conflicts</option>
-            <option value="world_rule">World Rules</option>
-            <option value="location">Locations</option>
-            <option value="theme">Themes</option>
-            <option value="open_loop">Open Loops</option>
-            <option value="foreshadowing">Foreshadowing</option>
-          </select>
-
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value as CanonStatus | 'all')}
-            className={selectClasses}
-          >
-            <option value="all">All Statuses</option>
-            <option value="confirmed">Confirmed Canon</option>
-            <option value="flexible">Flexible Canon</option>
-            <option value="draft">Draft Idea</option>
-            <option value="discarded">Discarded</option>
-          </select>
-        </div>
-      </motion.header>
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value as CanonStatus | 'all')}
+                className={selectClasses}
+              >
+                <option value="all">All Statuses</option>
+                <option value="confirmed">Confirmed Canon</option>
+                <option value="flexible">Flexible Canon</option>
+                <option value="draft">Draft Idea</option>
+                <option value="discarded">Discarded</option>
+              </select>
+            </div>
+          }
+        />
+      </motion.div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <AnimatePresence>

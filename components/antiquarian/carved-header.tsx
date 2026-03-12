@@ -1,6 +1,6 @@
 interface CarvedHeaderProps {
   title: string;
-  subtitle?: string;
+  subtitle?: React.ReactNode;
   icon?: React.ReactNode;
   actions?: React.ReactNode;
 }

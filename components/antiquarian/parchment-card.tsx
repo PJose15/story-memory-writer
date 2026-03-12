@@ -1,7 +1,7 @@
 import { forwardRef } from 'react';
 
 type ParchmentVariant = 'default' | 'inset' | 'aged' | 'translucent';
-type ParchmentPadding = 'sm' | 'md' | 'lg';
+type ParchmentPadding = 'none' | 'sm' | 'md' | 'lg';
 
 interface ParchmentCardProps extends React.HTMLAttributes<HTMLDivElement> {
   variant?: ParchmentVariant;
@@ -18,6 +18,7 @@ const variantStyles: Record<ParchmentVariant, string> = {
 };
 
 const paddingStyles: Record<ParchmentPadding, string> = {
+  none: '',
   sm: 'p-3',
   md: 'p-5',
   lg: 'p-7',

@@ -86,14 +86,14 @@ export function SessionsTable({ sessions }: SessionsTableProps) {
     }
   }
 
-  const SortIcon = ({ field }: { field: SortField }) => {
+  function renderSortIcon(field: SortField) {
     if (sortField !== field) return null;
     return sortDir === 'asc' ? (
       <ChevronUp size={14} className="inline ml-1" />
     ) : (
       <ChevronDown size={14} className="inline ml-1" />
     );
-  };
+  }
 
   if (sessions.length === 0) {
     return (
@@ -110,17 +110,17 @@ export function SessionsTable({ sessions }: SessionsTableProps) {
           <tr className="border-b border-sepia-300/50 text-sepia-600">
             <th className="text-left py-2 px-3 font-medium">Project</th>
             <th className="text-left py-2 px-3 font-medium cursor-pointer hover:text-sepia-800" onClick={() => handleSort('date')}>
-              Date <SortIcon field="date" />
+              Date {renderSortIcon("date")}
             </th>
             <th className="text-left py-2 px-3 font-medium">Time</th>
             <th className="text-right py-2 px-3 font-medium cursor-pointer hover:text-sepia-800" onClick={() => handleSort('words')}>
-              Words <SortIcon field="words" />
+              Words {renderSortIcon("words")}
             </th>
             <th className="text-right py-2 px-3 font-medium cursor-pointer hover:text-sepia-800" onClick={() => handleSort('duration')}>
-              Duration <SortIcon field="duration" />
+              Duration {renderSortIcon("duration")}
             </th>
             <th className="text-center py-2 px-3 font-medium cursor-pointer hover:text-sepia-800" onClick={() => handleSort('flow')}>
-              Flow <SortIcon field="flow" />
+              Flow {renderSortIcon("flow")}
             </th>
           </tr>
         </thead>

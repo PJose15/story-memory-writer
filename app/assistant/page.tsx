@@ -11,6 +11,7 @@ import { useConfirm } from '@/components/confirm-dialog';
 import { buildContext } from '@/lib/ai/context-builder';
 import { isBlockedResponse, isNormalResponse, type ChatResponseNormal, type ChatResponseBlocked } from '@/lib/types/chat-response';
 import { StructuredNormalResponse, StructuredBlockedResponse } from '@/components/assistant/structured-response';
+import { CarvedHeader } from '@/components/antiquarian';
 
 interface Message {
   id: string;
@@ -169,7 +170,7 @@ export default function AssistantPage() {
     try {
       const { context, knownEntities } = buildContext(state, {
         userInput: textToSend,
-        isBlockedMode: isBlockedRequest,
+        isBlockedMode: !!isBlockedRequest,
         writerBlockType: session.blockType,
       });
 
@@ -244,25 +245,24 @@ export default function AssistantPage() {
 
   return (
     <div className="flex flex-col h-full max-w-5xl mx-auto p-4 md:p-8">
-      <header className="flex items-center justify-between border-b border-sepia-300/50 pb-4 mb-4 shrink-0">
-        <div>
-          <h1 className="letterpress text-2xl font-serif font-bold text-sepia-900 flex items-center gap-3">
-            <Bot className="text-brass-500" />
-            Narrative Assistant
-          </h1>
-          <div className="mt-2 h-0.5 w-16 bg-gradient-to-r from-brass-500 to-brass-300/0 rounded-full" />
-          <p className="text-sepia-600 text-sm mt-1">Chat with your story&apos;s memory.</p>
-        </div>
-        <button
-          onClick={handleClearChat}
-          disabled={messages.length <= 1 || isLoading || isAuditing}
-          className="flex items-center gap-2 text-sm text-sepia-500 hover:text-wax-500 hover:bg-sepia-300/20 px-3 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:hover:text-sepia-500 disabled:hover:bg-transparent"
-          aria-label="Clear chat history"
-        >
-          <Trash2 size={16} />
-          Clear
-        </button>
-      </header>
+      <div className="mb-4 shrink-0">
+        <CarvedHeader
+          title="Narrative Assistant"
+          subtitle="Chat with your story's memory."
+          icon={<Bot size={24} />}
+          actions={
+            <button
+              onClick={handleClearChat}
+              disabled={messages.length <= 1 || isLoading || isAuditing}
+              className="flex items-center gap-2 text-sm text-sepia-500 hover:text-wax-500 hover:bg-sepia-300/20 px-3 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:hover:text-sepia-500 disabled:hover:bg-transparent"
+              aria-label="Clear chat history"
+            >
+              <Trash2 size={16} />
+              Clear
+            </button>
+          }
+        />
+      </div>
 
       <div className="flex-1 overflow-y-auto space-y-6 pr-4 pb-4">
         <AnimatePresence initial={false}>

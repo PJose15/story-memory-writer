@@ -99,12 +99,13 @@ export function WordsByHour({ sessions }: WordsByHourProps) {
               fontSize: '12px',
               color: '#e4e4e7',
             }}
-            formatter={(value: number, _name: string, props: { payload?: HourData }) => {
-              const count = props.payload?.count ?? 0;
-              return [`${count} session${count === 1 ? '' : 's'}, avg ${value.toLocaleString()} words`, ''];
+            formatter={(value, _name, props) => {
+              const numValue = Number(value) || 0;
+              const count = (props as { payload?: HourData }).payload?.count ?? 0;
+              return [`${count} session${count === 1 ? '' : 's'}, avg ${numValue.toLocaleString()} words`, ''];
             }}
-            labelFormatter={(_label: string, payload: Array<{ payload?: HourData }>) => {
-              const hourLabel = payload?.[0]?.payload?.hourLabel ?? _label;
+            labelFormatter={(_label, payload) => {
+              const hourLabel = (payload as readonly { payload?: HourData }[])?.[0]?.payload?.hourLabel ?? _label;
               return `Sessions starting at ${hourLabel}`;
             }}
           />

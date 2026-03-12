@@ -6,7 +6,7 @@ import { useUnsavedChanges } from '@/hooks/use-unsaved-changes';
 import { Plus, Trash2, Edit3, Save, X, BookOpen, ShieldCheck, Shield, ShieldAlert, ShieldOff, ChevronUp, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useConfirm } from '@/components/confirm-dialog';
-import { BrassButton } from '@/components/antiquarian';
+import { BrassButton, CarvedHeader, ParchmentCard } from '@/components/antiquarian';
 
 const statusConfig = {
   confirmed: { icon: ShieldCheck, color: 'text-forest-700', bg: 'bg-forest-700/10', label: 'Confirmed Canon' },
@@ -90,23 +90,24 @@ export default function ManuscriptPage() {
 
   return (
     <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-8">
-      <header className="flex items-center justify-between border-b border-sepia-300/50 pb-6">
-        <div>
-          <h1 className="text-3xl font-serif font-bold text-sepia-900 tracking-tight letterpress">Manuscript</h1>
-          <p className="text-sepia-600 mt-2 text-sm">
+      <CarvedHeader
+        title="Manuscript"
+        subtitle={
+          <>
             Write and organize your chapters.
             {state.chapters.length > 0 && (
               <span className="ml-2 text-sepia-500 font-mono">
                 {state.chapters.reduce((sum, c) => sum + wordCount(c.content), 0).toLocaleString()} total words
               </span>
             )}
-          </p>
-          <div className="mt-3 h-0.5 w-16 bg-gradient-to-r from-brass-500 to-brass-300/0 rounded-full" />
-        </div>
-        <BrassButton onClick={handleAddChapter} icon={<Plus size={18} />}>
-          New Chapter
-        </BrassButton>
-      </header>
+          </>
+        }
+        actions={
+          <BrassButton onClick={handleAddChapter} icon={<Plus size={18} />}>
+            New Chapter
+          </BrassButton>
+        }
+      />
 
       <div className="space-y-6">
         <AnimatePresence>
@@ -116,8 +117,8 @@ export default function ManuscriptPage() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-parchment-100 border border-sepia-300/50 rounded-xl overflow-hidden texture-parchment shadow-parchment"
             >
+            <ParchmentCard padding="none" className="overflow-hidden">
               {editingId === chapter.id ? (
                 <div className="p-6 space-y-4">
                   <input
@@ -232,6 +233,7 @@ export default function ManuscriptPage() {
                   )}
                 </div>
               )}
+            </ParchmentCard>
             </motion.div>
           ))}
         </AnimatePresence>

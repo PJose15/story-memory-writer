@@ -6,6 +6,7 @@ import { motion } from 'motion/react';
 import { BookOpen, Users, Clock, Swords, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { stagger, hoverLift, physicalDrop } from '@/lib/animations';
+import { CarvedHeader, ParchmentCard } from '@/components/antiquarian';
 
 const blockMessages: Record<string, { headline: string; nudge: string }> = {
   fear: {
@@ -41,27 +42,21 @@ export default function Dashboard() {
 
   return (
     <div className="p-8 max-w-6xl mx-auto space-y-8">
-      <header className="flex items-end justify-between border-b border-sepia-300/30 pb-6">
-        <div>
-          <h1 className="text-4xl font-serif font-bold text-sepia-900 tracking-tight letterpress">
-            {state.title || 'Untitled Project'}
-          </h1>
-          <p className="text-sepia-600 mt-2 max-w-2xl text-sm leading-relaxed">
-            {state.synopsis || 'No synopsis added yet. Head to the Story Bible to define your core narrative.'}
-          </p>
-          <div className="mt-3 h-0.5 w-16 bg-gradient-to-r from-brass-500 to-brass-300/0 rounded-full" />
-        </div>
-      </header>
+      <CarvedHeader
+        title={state.title || 'Untitled Project'}
+        subtitle={state.synopsis || 'No synopsis added yet. Head to the Story Bible to define your core narrative.'}
+      />
 
       {blockMsg && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-parchment-200/80 border border-sepia-300/50 rounded-xl p-6 texture-parchment"
           data-testid="block-message"
         >
+        <ParchmentCard variant="inset" padding="lg">
           <p className="text-lg font-serif text-sepia-900">{blockMsg.headline}</p>
           <p className="text-sm text-sepia-600 mt-2 italic">{blockMsg.nudge}</p>
+        </ParchmentCard>
         </motion.div>
       )}
 
@@ -71,13 +66,14 @@ export default function Dashboard() {
             <motion.div
               {...stagger.cards(i)}
               {...hoverLift}
-              className="bg-parchment-100 border border-sepia-300/50 rounded-xl p-6 hover:shadow-card-hover transition-all duration-200 group cursor-pointer texture-parchment"
             >
+            <ParchmentCard padding="lg" hover className="group cursor-pointer">
               <div className="flex items-center justify-between mb-4">
                 <stat.icon className="text-brass-600 group-hover:text-brass-500 transition-colors" size={24} />
                 <span className="text-3xl font-light text-sepia-900">{stat.value}</span>
               </div>
               <h3 className="text-sm font-medium text-sepia-600 uppercase tracking-wider">{stat.name}</h3>
+            </ParchmentCard>
             </motion.div>
           </Link>
         ))}
@@ -99,9 +95,11 @@ export default function Dashboard() {
           ) : (
             <div className="space-y-3">
               {state.chapters.slice(-3).reverse().map((chapter) => (
-                <motion.div key={chapter.id} {...physicalDrop} className="bg-parchment-100 border border-sepia-300/50 rounded-xl p-5 texture-parchment">
+                <motion.div key={chapter.id} {...physicalDrop}>
+                <ParchmentCard>
                   <h3 className="font-medium text-sepia-800">{chapter.title}</h3>
                   <p className="text-sm text-sepia-500 mt-1 line-clamp-2">{chapter.summary}</p>
+                </ParchmentCard>
                 </motion.div>
               ))}
             </div>
@@ -120,10 +118,10 @@ export default function Dashboard() {
           ) : (
             <div className="space-y-3">
               {state.open_loops.filter(l => l.status === 'open').slice(0, 5).map((loop) => (
-                <div key={loop.id} className="flex items-start gap-3 bg-parchment-100 border border-sepia-300/50 rounded-xl p-4 texture-parchment">
+                <ParchmentCard key={loop.id} padding="sm" className="flex items-start gap-3">
                   <div className="w-2 h-2 rounded-full bg-amber-500 mt-1.5 shrink-0" />
                   <p className="text-sm text-sepia-700 leading-relaxed">{loop.description}</p>
-                </div>
+                </ParchmentCard>
               ))}
             </div>
           )}

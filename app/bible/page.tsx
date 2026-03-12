@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useUnsavedChanges } from '@/hooks/use-unsaved-changes';
 import { Save, Book, Settings2 } from 'lucide-react';
 import { motion } from 'motion/react';
-import { InkStampButton } from '@/components/antiquarian';
+import { InkStampButton, CarvedHeader } from '@/components/antiquarian';
 
 export default function BiblePage() {
   const { state, updateField } = useStory();
@@ -29,23 +29,16 @@ export default function BiblePage() {
 
   return (
     <div className="p-8 max-w-4xl mx-auto space-y-10">
-      <header className="flex items-center justify-between border-b border-sepia-300/30 pb-6">
-        <div>
-          <h1 className="text-3xl font-serif font-bold text-sepia-900 tracking-tight flex items-center gap-3 letterpress">
-            <Book className="text-brass-500" />
-            Story Bible
-          </h1>
-          <p className="text-sepia-600 mt-2 text-sm">The core foundation of your narrative universe.</p>
-          <div className="mt-3 h-0.5 w-16 bg-gradient-to-r from-brass-500 to-brass-300/0 rounded-full" />
-        </div>
-        <InkStampButton
-          onClick={handleSave}
-          disabled={isSaving}
-          icon={<Save size={18} />}
-        >
-          {isSaving ? 'Saved!' : 'Save Changes'}
-        </InkStampButton>
-      </header>
+      <CarvedHeader
+        title="Story Bible"
+        subtitle="The core foundation of your narrative universe."
+        icon={<Book size={24} />}
+        actions={
+          <InkStampButton onClick={handleSave} disabled={isSaving} icon={<Save size={18} />}>
+            {isSaving ? 'Saved!' : 'Save Changes'}
+          </InkStampButton>
+        }
+      />
 
       <motion.div
         initial={{ opacity: 0, y: 10 }}
