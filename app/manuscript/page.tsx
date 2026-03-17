@@ -6,7 +6,7 @@ import { useUnsavedChanges } from '@/hooks/use-unsaved-changes';
 import { Plus, Trash2, Edit3, Save, X, BookOpen, ShieldCheck, Shield, ShieldAlert, ShieldOff, ChevronUp, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useConfirm } from '@/components/confirm-dialog';
-import { BrassButton, CarvedHeader, ParchmentCard } from '@/components/antiquarian';
+import { BrassButton, CarvedHeader, EmptyState, ParchmentCard } from '@/components/antiquarian';
 
 const statusConfig = {
   confirmed: { icon: ShieldCheck, color: 'text-forest-700', bg: 'bg-forest-700/10', label: 'Confirmed Canon' },
@@ -239,11 +239,7 @@ export default function ManuscriptPage() {
         </AnimatePresence>
 
         {state.chapters.length === 0 && (
-          <div className="text-center py-20">
-            <BookOpen size={48} className="mx-auto text-sepia-300 mb-4" />
-            <p className="text-sepia-600 text-lg">Your manuscript is empty.</p>
-            <p className="text-sepia-500 text-sm mt-2">Add your first chapter to begin.</p>
-          </div>
+          <EmptyState variant="manuscript" title="Your manuscript is empty" subtitle="Every great story begins with a single chapter." action={{ label: 'Add your first chapter', onClick: handleAddChapter }} />
         )}
       </div>
     </div>

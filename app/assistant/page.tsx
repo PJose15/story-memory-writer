@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useStory, ChatMessage } from '@/lib/store';
 import { useSession } from '@/lib/session';
-import { Send, Bot, User, Loader2, ShieldAlert, X, AlertTriangle, CheckCircle2, LockKeyhole, Trash2 } from 'lucide-react';
+import { Send, Bot, User, Loader2, ShieldAlert, X, AlertTriangle, CheckCircle2, LockKeyhole, Trash2, Feather, BookOpen } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import Markdown from 'react-markdown';
 import { useToast } from '@/components/toast';
@@ -11,7 +11,8 @@ import { useConfirm } from '@/components/confirm-dialog';
 import { buildContext } from '@/lib/ai/context-builder';
 import { isBlockedResponse, isNormalResponse, type ChatResponseNormal, type ChatResponseBlocked } from '@/lib/types/chat-response';
 import { StructuredNormalResponse, StructuredBlockedResponse } from '@/components/assistant/structured-response';
-import { CarvedHeader } from '@/components/antiquarian';
+import { CarvedHeader, ParchmentCard, BrassButton, InkStampButton, DecorativeDivider } from '@/components/antiquarian';
+import { springs, fadeUp } from '@/lib/animations';
 
 interface Message {
   id: string;
@@ -40,6 +41,60 @@ const welcomeMessage: Message = {
   role: 'assistant',
   content: "Hello! I'm your narrative copilot. I have access to your Story Bible, characters, and manuscript. How can I help you today?",
 };
+
+// ─── Ink Dots Loading Animation ───
+function InkDotsLoader() {
+  return (
+    <span className="inline-flex items-center gap-1">
+      {[0, 1, 2].map((i) => (
+        <span
+          key={i}
+          className="w-1.5 h-1.5 rounded-full bg-brass-500"
+          style={{
+            animation: `ink-pulse 1.2s ease-in-out ${i * 0.2}s infinite`,
+          }}
+        />
+      ))}
+      <style>{`
+        @keyframes ink-pulse {
+          0%, 80%, 100% { opacity: 0.25; transform: scale(0.8); }
+          40% { opacity: 1; transform: scale(1.2); }
+        }
+      `}</style>
+    </span>
+  );
+}
+
+// ─── Audit Status Badge ───
+function AuditStatusBadge({ status }: { status: AuditResult['status'] }) {
+  const config = {
+    Clear: { bg: 'bg-forest-700/15', text: 'text-forest-800', border: 'border-forest-600/30', icon: CheckCircle2 },
+    Warnings: { bg: 'bg-brass-500/15', text: 'text-brass-800', border: 'border-brass-500/30', icon: AlertTriangle },
+    Contradictions: { bg: 'bg-wax-500/15', text: 'text-wax-800', border: 'border-wax-500/30', icon: ShieldAlert },
+  };
+  const c = config[status];
+  const Icon = c.icon;
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold uppercase tracking-wider border ${c.bg} ${c.text} ${c.border}`}>
+      <Icon size={14} />
+      {status}
+    </span>
+  );
+}
+
+// ─── Risk Level Badge ───
+function RiskBadge({ level }: { level: AuditRisk['level'] }) {
+  const styles = {
+    High: 'bg-wax-500/20 text-wax-700 border-wax-500/30',
+    Medium: 'bg-brass-500/20 text-brass-700 border-brass-500/30',
+    Low: 'bg-brass-400/15 text-brass-600 border-brass-400/30',
+  };
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider border ${styles[level]}`}>
+      {level}
+    </span>
+  );
+}
 
 export default function AssistantPage() {
   const { state, updateField } = useStory();
@@ -245,6 +300,7 @@ export default function AssistantPage() {
 
   return (
     <div className="flex flex-col h-full max-w-5xl mx-auto p-4 md:p-8">
+      {/* ─── Header ─── */}
       <div className="mb-4 shrink-0">
         <CarvedHeader
           title="Narrative Assistant"
@@ -264,190 +320,211 @@ export default function AssistantPage() {
         />
       </div>
 
-      <div className="flex-1 overflow-y-auto space-y-6 pr-4 pb-4">
+      {/* ─── Messages ─── */}
+      <div className="flex-1 overflow-y-auto space-y-5 pr-2 pb-4 scrollbar-thin">
         <AnimatePresence initial={false}>
           {messages.map((msg) => (
             <motion.div
               key={msg.id}
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              className={`flex gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}
+              transition={springs.gentle}
+              className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}
             >
+              {/* Avatar */}
               <div
-                className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
-                  msg.role === 'user' ? 'bg-forest-700' : 'bg-parchment-200 border border-sepia-300/50'
-                }`}
-              >
-                {msg.role === 'user' ? <User size={20} className="text-cream-50" /> : <Bot size={20} className="text-brass-500" />}
-              </div>
-              <div
-                className={`max-w-[80%] rounded-xl px-5 py-4 ${
+                className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 border-2 shadow-sm ${
                   msg.role === 'user'
-                    ? 'bg-forest-700 text-cream-50 rounded-tr-sm'
-                    : 'bg-parchment-100 border border-sepia-300/50 text-sepia-700 rounded-tl-sm texture-parchment'
+                    ? 'bg-forest-700 border-forest-800'
+                    : 'bg-parchment-200 border-brass-400/40'
                 }`}
               >
-                {msg.isBlockedMode && (
-                  <div className="flex items-center gap-2 mb-3 pb-2 border-b border-sepia-300/30 text-brass-600">
-                    <LockKeyhole size={14} />
-                    <span className="text-xs font-bold uppercase tracking-wider">Blocked Mode Active</span>
-                  </div>
-                )}
-                <div className="prose prose-sepia max-w-none font-sans leading-relaxed whitespace-pre-wrap">
-                  {msg.role === 'user' ? msg.content : renderAssistantMessage(msg)}
-                </div>
+                {msg.role === 'user'
+                  ? <User size={16} className="text-cream-50" />
+                  : <Feather size={16} className="text-brass-600" />
+                }
               </div>
+
+              {/* Bubble */}
+              {msg.role === 'user' ? (
+                <div className="max-w-[80%] rounded-xl rounded-tr-sm px-5 py-3 bg-forest-700 text-cream-50 border-2 border-forest-800 shadow-sm">
+                  <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                </div>
+              ) : (
+                <ParchmentCard variant="default" padding="none" className="max-w-[80%] rounded-tl-sm overflow-hidden">
+                  {msg.isBlockedMode && (
+                    <div className="flex items-center gap-2 px-5 py-2.5 bg-brass-500/10 border-b border-brass-400/30">
+                      <LockKeyhole size={13} className="text-brass-600" />
+                      <span className="text-xs font-bold uppercase tracking-wider text-brass-700">Blocked Mode</span>
+                    </div>
+                  )}
+                  <div className="px-5 py-4 prose prose-sepia prose-sm max-w-none font-sans leading-relaxed whitespace-pre-wrap">
+                    {renderAssistantMessage(msg)}
+                  </div>
+                </ParchmentCard>
+              )}
             </motion.div>
           ))}
+
+          {/* Loading indicator */}
           {isLoading && (
             <motion.div
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              className="flex gap-4"
+              transition={springs.gentle}
+              className="flex gap-3"
             >
-              <div className="w-10 h-10 rounded-full bg-parchment-200 border border-sepia-300/50 flex items-center justify-center shrink-0">
-                <Bot size={20} className="text-brass-500" />
+              <div className="w-9 h-9 rounded-full bg-parchment-200 border-2 border-brass-400/40 flex items-center justify-center shrink-0 shadow-sm">
+                <Feather size={16} className="text-brass-600" />
               </div>
-              <div className="bg-parchment-100 border border-sepia-300/50 rounded-xl rounded-tl-sm px-5 py-4 flex items-center gap-3">
-                <Loader2 size={18} className="animate-spin text-brass-500" />
-                <span className="text-sepia-600 text-sm font-medium">
-                  Thinking about your story...
+              <ParchmentCard variant="default" padding="sm" className="flex items-center gap-3">
+                <InkDotsLoader />
+                <span className="text-sepia-600 text-sm font-medium italic">
+                  Consulting the manuscript...
                 </span>
-              </div>
+              </ParchmentCard>
             </motion.div>
           )}
         </AnimatePresence>
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="shrink-0 pt-4 border-t border-sepia-300/50">
+      {/* ─── Input Area ─── */}
+      <div className="shrink-0 pt-4">
+        <DecorativeDivider variant="brass-rule" className="mb-4" />
+
+        {/* Audit Results Panel */}
         <AnimatePresence>
           {pendingAudit && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-              className="bg-parchment-100 border border-sepia-300/40 rounded-xl p-6 mb-4 texture-parchment shadow-parchment"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-serif font-bold text-sepia-900 flex items-center gap-2">
-                  <ShieldAlert className="text-brass-600" />
-                  Continuity Audit Results
-                </h3>
-                <button onClick={() => setPendingAudit(null)} className="text-sepia-500 hover:text-sepia-700" aria-label="Dismiss audit results">
-                  <X size={20} />
-                </button>
-              </div>
-
-              <div className="space-y-6 max-h-[40vh] overflow-y-auto pr-2">
-                <div className="flex items-center gap-3">
-                  <span className="text-sm text-sepia-600 uppercase tracking-wider font-medium">Status:</span>
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1.5 ${
-                    pendingAudit.result.status === 'Clear' ? 'bg-forest-500/10 text-forest-400' :
-                    pendingAudit.result.status === 'Warnings' ? 'bg-brass-500/10 text-brass-600' :
-                    'bg-wax-500/10 text-wax-500'
-                  }`}>
-                    {pendingAudit.result.status === 'Clear' && <CheckCircle2 size={16} />}
-                    {pendingAudit.result.status === 'Warnings' && <AlertTriangle size={16} />}
-                    {pendingAudit.result.status === 'Contradictions' && <ShieldAlert size={16} />}
-                    {pendingAudit.result.status}
-                  </span>
+            <motion.div {...fadeUp} exit={{ opacity: 0, y: 12 }}>
+              <ParchmentCard variant="aged" padding="none" className="mb-4">
+                {/* Audit header */}
+                <div className="flex items-center justify-between px-5 pt-5 pb-3">
+                  <h3 className="flex items-center gap-2 text-lg font-serif font-bold text-sepia-900">
+                    <ShieldAlert size={20} className="text-brass-600" />
+                    Continuity Audit
+                  </h3>
+                  <button
+                    onClick={() => setPendingAudit(null)}
+                    className="p-1.5 rounded-lg text-sepia-400 hover:text-sepia-700 hover:bg-sepia-300/20 transition-colors"
+                    aria-label="Dismiss audit results"
+                  >
+                    <X size={18} />
+                  </button>
                 </div>
 
-                {pendingAudit.result.risks && pendingAudit.result.risks.length > 0 && (
-                  <div className="space-y-3">
-                    <h4 className="text-sm font-medium text-sepia-700 uppercase tracking-wider">Risks Found</h4>
-                    {pendingAudit.result.risks.map((risk, idx) => (
-                      <div key={idx} className="bg-parchment-200 border border-sepia-300/50 rounded-xl p-4">
-                        <div className="flex items-start gap-3">
-                          <span className={`mt-0.5 px-2 py-0.5 rounded text-xs font-bold ${
-                            risk.level === 'High' ? 'bg-wax-500/20 text-wax-500' :
-                            risk.level === 'Medium' ? 'bg-brass-500/20 text-brass-600' :
-                            'bg-brass-400/20 text-brass-400'
-                          }`}>
-                            {risk.level}
-                          </span>
-                          <div>
-                            <p className="text-sepia-800 text-sm leading-relaxed">{risk.description}</p>
-                            {risk.affectedElements && risk.affectedElements.length > 0 && (
-                              <div className="mt-2 flex flex-wrap gap-2">
-                                {risk.affectedElements.map((el, i) => (
-                                  <span key={i} className="text-xs bg-parchment-200 text-sepia-600 px-2 py-1 rounded">
-                                    {el}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
+                <div className="px-5 pb-5 space-y-5 max-h-[40vh] overflow-y-auto">
+                  {/* Status */}
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-sepia-500 uppercase tracking-wider font-medium">Status</span>
+                    <AuditStatusBadge status={pendingAudit.result.status} />
+                  </div>
+
+                  {/* Risks */}
+                  {pendingAudit.result.risks && pendingAudit.result.risks.length > 0 && (
+                    <div className="space-y-3">
+                      <h4 className="text-xs font-semibold text-sepia-600 uppercase tracking-wider">Risks Found</h4>
+                      {pendingAudit.result.risks.map((risk, idx) => (
+                        <ParchmentCard key={idx} variant="inset" padding="sm">
+                          <div className="flex items-start gap-3">
+                            <RiskBadge level={risk.level} />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sepia-800 text-sm leading-relaxed">{risk.description}</p>
+                              {risk.affectedElements && risk.affectedElements.length > 0 && (
+                                <div className="mt-2 flex flex-wrap gap-1.5">
+                                  {risk.affectedElements.map((el, i) => (
+                                    <span key={i} className="text-[10px] bg-parchment-300/60 text-sepia-600 px-2 py-0.5 rounded-full border border-sepia-300/30 font-medium">
+                                      {el}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {pendingAudit.result.suggestedCorrections && pendingAudit.result.suggestedCorrections.length > 0 && (
-                  <div className="space-y-2">
-                    <h4 className="text-sm font-medium text-sepia-700 uppercase tracking-wider">Suggested Corrections</h4>
-                    <ul className="list-disc list-inside text-sm text-sepia-600 space-y-1">
-                      {pendingAudit.result.suggestedCorrections.map((corr, idx) => (
-                        <li key={idx}>{corr}</li>
+                        </ParchmentCard>
                       ))}
-                    </ul>
-                  </div>
-                )}
-
-                {pendingAudit.result.safeVersion && (
-                  <div className="space-y-2">
-                    <h4 className="text-sm font-medium text-sepia-700 uppercase tracking-wider">Safe Version</h4>
-                    <div className="bg-parchment-200 border border-sepia-300/50 rounded-xl p-4 text-sm text-sepia-700 italic">
-                      {pendingAudit.result.safeVersion}
                     </div>
-                  </div>
-                )}
-              </div>
+                  )}
 
-              <div className="flex items-center justify-end gap-3 pt-4 mt-4 border-t border-sepia-300/50">
-                <button
-                  onClick={() => {
-                    setInput(pendingAudit.result.safeVersion || pendingAudit.request);
-                    setPendingAudit(null);
-                  }}
-                  className="px-4 py-2 rounded-lg text-sm font-medium text-sepia-700 hover:bg-sepia-300/20 transition-colors"
-                >
-                  Use Safe Version
-                </button>
-                <button
-                  onClick={() => {
-                    const req = pendingAudit.request;
-                    setPendingAudit(null);
-                    handleSend(req);
-                  }}
-                  className="px-4 py-2 rounded-lg text-sm font-medium bg-wax-500/10 text-wax-500 hover:bg-wax-500/20 transition-colors"
-                >
-                  Proceed Anyway
-                </button>
-              </div>
+                  {/* Corrections */}
+                  {pendingAudit.result.suggestedCorrections && pendingAudit.result.suggestedCorrections.length > 0 && (
+                    <div className="space-y-2">
+                      <h4 className="text-xs font-semibold text-sepia-600 uppercase tracking-wider">Suggested Corrections</h4>
+                      <ul className="list-none text-sm text-sepia-600 space-y-1.5">
+                        {pendingAudit.result.suggestedCorrections.map((corr, idx) => (
+                          <li key={idx} className="flex items-start gap-2">
+                            <span className="w-1 h-1 rounded-full bg-brass-500/60 mt-2 shrink-0" />
+                            {corr}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Safe Version */}
+                  {pendingAudit.result.safeVersion && (
+                    <div className="space-y-2">
+                      <h4 className="text-xs font-semibold text-sepia-600 uppercase tracking-wider">Safe Version</h4>
+                      <ParchmentCard variant="inset" padding="sm">
+                        <p className="text-sm text-sepia-700 italic leading-relaxed">{pendingAudit.result.safeVersion}</p>
+                      </ParchmentCard>
+                    </div>
+                  )}
+                </div>
+
+                {/* Audit actions */}
+                <div className="px-5 pb-4">
+                  <DecorativeDivider variant="section" className="mb-4" />
+                  <div className="flex items-center justify-end gap-3">
+                    <BrassButton
+                      size="sm"
+                      icon={<BookOpen size={14} />}
+                      onClick={() => {
+                        setInput(pendingAudit.result.safeVersion || pendingAudit.request);
+                        setPendingAudit(null);
+                      }}
+                    >
+                      Use Safe Version
+                    </BrassButton>
+                    <InkStampButton
+                      variant="danger"
+                      size="sm"
+                      icon={<AlertTriangle size={14} />}
+                      onClick={() => {
+                        const req = pendingAudit.request;
+                        setPendingAudit(null);
+                        handleSend(req);
+                      }}
+                    >
+                      Proceed Anyway
+                    </InkStampButton>
+                  </div>
+                </div>
+              </ParchmentCard>
             </motion.div>
           )}
         </AnimatePresence>
 
-        <div className="relative">
-          <div className="flex gap-2 mb-3 px-1">
-            <button
-              onClick={() => handleSend("I'm blocked")}
-              disabled={isLoading || isAuditing || pendingAudit !== null}
-              className="text-xs bg-parchment-200 hover:bg-parchment-300 text-sepia-700 px-3 py-1.5 rounded-full transition-colors border border-sepia-300/50 disabled:opacity-50"
-            >
-              &quot;I&apos;m blocked&quot;
-            </button>
-            <button
-              onClick={() => handleSend("Help me continue")}
-              disabled={isLoading || isAuditing || pendingAudit !== null}
-              className="text-xs bg-parchment-200 hover:bg-parchment-300 text-sepia-700 px-3 py-1.5 rounded-full transition-colors border border-sepia-300/50 disabled:opacity-50"
-            >
-              &quot;Help me continue&quot;
-            </button>
-          </div>
+        {/* Quick prompts */}
+        <div className="flex gap-2 mb-3">
+          <button
+            onClick={() => handleSend("I'm blocked")}
+            disabled={isLoading || isAuditing || pendingAudit !== null}
+            className="text-xs font-medium bg-parchment-200 hover:bg-parchment-300 text-sepia-700 px-3 py-1.5 rounded-full transition-all border border-sepia-300/50 disabled:opacity-40 hover:border-brass-400/40 active:scale-95"
+          >
+            &quot;I&apos;m blocked&quot;
+          </button>
+          <button
+            onClick={() => handleSend("Help me continue")}
+            disabled={isLoading || isAuditing || pendingAudit !== null}
+            className="text-xs font-medium bg-parchment-200 hover:bg-parchment-300 text-sepia-700 px-3 py-1.5 rounded-full transition-all border border-sepia-300/50 disabled:opacity-40 hover:border-brass-400/40 active:scale-95"
+          >
+            &quot;Help me continue&quot;
+          </button>
+        </div>
+
+        {/* Textarea + action buttons */}
+        <ParchmentCard variant="default" padding="none" className="relative">
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -459,27 +536,27 @@ export default function AssistantPage() {
             }}
             placeholder="Ask about your story, request ideas, or say 'I'm stuck'..."
             maxLength={5000}
-            className="w-full bg-parchment-100 border border-sepia-300/50 rounded-xl pl-5 pr-24 py-4 text-sepia-900 placeholder-sepia-500 focus:outline-none focus:ring-2 focus:ring-brass-400/40 resize-none h-24"
+            className="w-full bg-transparent pl-5 pr-24 py-4 text-sepia-900 placeholder-sepia-400/60 focus:outline-none resize-none h-24 text-sm leading-relaxed"
           />
           <div className="absolute right-3 bottom-3 flex items-center gap-2">
             <button
               onClick={handleAudit}
               disabled={!input.trim() || isLoading || isAuditing || pendingAudit !== null}
-              className="p-2 bg-parchment-200 text-brass-600 rounded-xl hover:bg-sepia-300/30 disabled:opacity-50 disabled:hover:bg-parchment-200 transition-colors"
+              className="p-2.5 rounded-lg text-brass-600 bg-parchment-200 hover:bg-brass-500/15 border border-brass-400/30 disabled:opacity-40 disabled:hover:bg-parchment-200 transition-all active:scale-95"
               aria-label="Continuity Audit"
             >
-              {isAuditing ? <Loader2 size={20} className="animate-spin" /> : <ShieldAlert size={20} />}
+              {isAuditing ? <Loader2 size={18} className="animate-spin" /> : <ShieldAlert size={18} />}
             </button>
             <button
               onClick={() => handleSend()}
               disabled={!input.trim() || isLoading || isAuditing || pendingAudit !== null}
-              className="p-2 bg-forest-700 text-cream-50 rounded-xl hover:bg-forest-600 disabled:opacity-50 disabled:hover:bg-forest-700 transition-colors"
+              className="p-2.5 rounded-lg bg-forest-700 text-cream-50 border-2 border-forest-800 hover:bg-forest-600 disabled:opacity-40 disabled:hover:bg-forest-700 transition-all active:scale-95 shadow-sm"
               aria-label="Send message"
             >
-              <Send size={20} />
+              <Send size={18} />
             </button>
           </div>
-        </div>
+        </ParchmentCard>
       </div>
     </div>
   );

@@ -20,6 +20,7 @@ import {
   Map
 } from 'lucide-react';
 import { useState } from 'react';
+import { useStory } from '@/lib/store';
 
 const navItems = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
@@ -38,6 +39,8 @@ const navItems = [
 export function ParchmentSidebar() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
+  const { state } = useStory();
+  const totalWords = state.chapters.reduce((s, c) => s + (c.content ? c.content.split(/\s+/).filter(Boolean).length : 0), 0);
 
   return (
     <>
@@ -84,6 +87,20 @@ export function ParchmentSidebar() {
             );
           })}
         </nav>
+
+        <div className="px-4 py-3 mx-3 mb-2 bg-mahogany-800/50 rounded-xl border border-mahogany-700/30">
+          <div className="text-[10px] font-mono text-brass-400/60 uppercase tracking-widest mb-2">Project</div>
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div>
+              <span className="text-cream-300/40 block">Words</span>
+              <span className="text-cream-100 font-mono font-medium">{totalWords.toLocaleString()}</span>
+            </div>
+            <div>
+              <span className="text-cream-300/40 block">Chapters</span>
+              <span className="text-cream-100 font-mono font-medium">{state.chapters.length}</span>
+            </div>
+          </div>
+        </div>
 
         <div className="p-4 border-t border-mahogany-700/50">
           <Link

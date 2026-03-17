@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useUnsavedChanges } from '@/hooks/use-unsaved-changes';
 import { Save, Book, Settings2 } from 'lucide-react';
 import { motion } from 'motion/react';
-import { InkStampButton, CarvedHeader } from '@/components/antiquarian';
+import { InkStampButton, CarvedHeader, DecorativeDivider } from '@/components/antiquarian';
 
 export default function BiblePage() {
   const { state, updateField } = useStory();
@@ -45,7 +45,7 @@ export default function BiblePage() {
         animate={{ opacity: 1, y: 0 }}
         className="space-y-8"
       >
-        <section className="space-y-4">
+        <section className="space-y-4 border-l-4 border-l-brass-500 pl-5">
           <label className="block text-sm font-medium text-sepia-600 uppercase tracking-wider">
             Project Title
           </label>
@@ -58,7 +58,7 @@ export default function BiblePage() {
           />
         </section>
 
-        <section className="space-y-4">
+        <section className="space-y-4 border-l-4 border-l-forest-700 pl-5">
           <label className="block text-sm font-medium text-sepia-600 uppercase tracking-wider">
             Global Synopsis
           </label>
@@ -70,7 +70,9 @@ export default function BiblePage() {
           />
         </section>
 
-        <section className="space-y-4">
+        <DecorativeDivider variant="flourish" className="my-6" />
+
+        <section className="space-y-4 border-l-4 border-l-sepia-500 pl-5">
           <label className="flex items-center gap-2 text-sm font-medium text-sepia-600 uppercase tracking-wider">
             <Settings2 size={16} />
             Style & Tone Profile
@@ -83,7 +85,7 @@ export default function BiblePage() {
           />
         </section>
 
-        <section className="space-y-4">
+        <section className="space-y-4 border-l-4 border-l-brass-700 pl-5">
           <label className="block text-sm font-medium text-sepia-600 uppercase tracking-wider">
             Current Author Intent
           </label>

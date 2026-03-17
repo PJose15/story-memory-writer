@@ -6,13 +6,20 @@ import { useUnsavedChanges } from '@/hooks/use-unsaved-changes';
 import { Plus, Trash2, Edit3, Save, X, Clock, ShieldCheck, Shield, ShieldAlert, ShieldOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useConfirm } from '@/components/confirm-dialog';
-import { BrassButton, CarvedHeader, ParchmentCard } from '@/components/antiquarian';
+import { BrassButton, CarvedHeader, EmptyState, ParchmentCard, DecorativeDivider } from '@/components/antiquarian';
 
 const statusConfig = {
   confirmed: { icon: ShieldCheck, color: 'text-forest-700', bg: 'bg-forest-700/10', label: 'Confirmed Canon' },
   flexible: { icon: Shield, color: 'text-brass-600', bg: 'bg-brass-500/10', label: 'Flexible Canon' },
   draft: { icon: ShieldAlert, color: 'text-brass-800', bg: 'bg-brass-400/10', label: 'Draft Idea' },
   discarded: { icon: ShieldOff, color: 'text-wax-600', bg: 'bg-wax-500/10', label: 'Discarded' },
+};
+
+const markerColorByCanon: Record<string, string> = {
+  confirmed: 'bg-forest-700',
+  flexible: 'bg-brass-600',
+  draft: 'bg-sepia-500 border border-dashed border-sepia-400',
+  discarded: 'bg-wax-600 opacity-50',
 };
 
 export default function TimelinePage() {
@@ -81,6 +88,8 @@ export default function TimelinePage() {
         }
       />
 
+      <DecorativeDivider variant="chapter-break" className="my-4" />
+
       <div className="relative space-y-8 before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-sepia-300/50 before:to-transparent">
         <AnimatePresence>
           {state.timeline_events.map((event, index) => (
@@ -91,7 +100,7 @@ export default function TimelinePage() {
               exit={{ opacity: 0, scale: 0.95 }}
               className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active"
             >
-              <div className="flex items-center justify-center w-10 h-10 rounded-full border-4 border-parchment-50 bg-brass-600 text-sepia-500 group-hover:text-brass-500 group-hover:bg-brass-700 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10 transition-colors">
+              <div className={`flex items-center justify-center w-10 h-10 rounded-full border-4 border-parchment-50 ${markerColorByCanon[event.canonStatus || ''] || 'bg-brass-600'} text-sepia-500 group-hover:text-brass-500 group-hover:bg-brass-700 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10 transition-colors`}>
                 <Clock size={16} />
               </div>
 
@@ -195,13 +204,11 @@ export default function TimelinePage() {
         </AnimatePresence>
 
         {state.timeline_events.length === 0 && (
-          <div className="text-center py-20 relative z-10">
-            <Clock size={48} className="mx-auto text-sepia-300 mb-4" />
-            <p className="text-sepia-600 text-lg">Your timeline is empty.</p>
-            <p className="text-sepia-500 text-sm mt-2">Add your first event to start tracking history.</p>
-          </div>
+          <EmptyState variant="timeline" title="Your timeline is empty" subtitle="Mark the moments that shaped your story." action={{ label: 'Add your first event', onClick: handleAddEvent }} />
         )}
       </div>
+
+      <DecorativeDivider variant="chapter-break" className="my-4" />
     </div>
   );
 }

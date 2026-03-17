@@ -8,3 +8,7 @@ export { ConfirmProvider, useConfirm } from './parchment-modal';
 export { ToastProvider, useToast } from './antiquarian-toast';
 export { ParchmentSidebar } from './parchment-sidebar';
 export { LibraryShell } from './library-shell';
+export { EmptyState } from './empty-state';
+export { CharacterAvatar } from './character-avatar';
+export { DecorativeDivider } from './decorative-divider';
+export { ProgressRing } from './progress-ring';

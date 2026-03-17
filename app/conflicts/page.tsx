@@ -7,7 +7,7 @@ import { Plus, Trash2, Edit3, Save, X, Swords, CheckCircle2, ShieldCheck, Shield
 import { motion, AnimatePresence } from 'motion/react';
 import { fadeUp } from '@/lib/animations';
 import { useConfirm } from '@/components/confirm-dialog';
-import { BrassButton, CarvedHeader } from '@/components/antiquarian';
+import { BrassButton, CarvedHeader, EmptyState } from '@/components/antiquarian';
 
 const statusConfig = {
   confirmed: { icon: ShieldCheck, color: 'text-forest-700', bg: 'bg-forest-700/10', label: 'Confirmed Canon' },
@@ -100,7 +100,7 @@ export default function ConflictsPage() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
-              className={`bg-parchment-100 border ${conflict.status === 'resolved' ? 'border-forest-500/30 opacity-75' : 'border-sepia-300/50'} rounded-xl overflow-hidden transition-all texture-parchment shadow-parchment`}
+              className={`bg-parchment-100 border ${conflict.status === 'resolved' ? 'border-forest-500/30 opacity-75 border-l-4 border-l-forest-600' : 'border-sepia-300/50 border-l-4 border-l-wax-500'} rounded-xl overflow-hidden transition-all texture-parchment shadow-parchment`}
             >
               {editingId === conflict.id ? (
                 <div className="p-6 space-y-4">
@@ -212,11 +212,7 @@ export default function ConflictsPage() {
         </AnimatePresence>
 
         {state.active_conflicts.length === 0 && (
-          <div className="col-span-full text-center py-20">
-            <Swords size={48} className="mx-auto text-sepia-300 mb-4" />
-            <p className="text-sepia-600 text-lg">No active conflicts.</p>
-            <p className="text-sepia-500 text-sm mt-2">Add a conflict to track tension in your story.</p>
-          </div>
+          <EmptyState variant="conflicts" title="No conflicts yet" subtitle="Every great story needs tension. What stands in your characters' way?" action={{ label: 'Add a conflict', onClick: handleAddConflict }} />
         )}
       </div>
     </div>

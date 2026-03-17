@@ -5,7 +5,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { Lock, Trash2, ShieldCheck, ShieldAlert, Shield, ShieldOff, Filter } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { fadeUp } from '@/lib/animations';
-import { CarvedHeader } from '@/components/antiquarian';
+import { CarvedHeader, EmptyState } from '@/components/antiquarian';
 
 type ItemType = 'character' | 'timeline' | 'conflict' | 'chapter' | 'scene' | 'world_rule' | 'location' | 'theme' | 'open_loop' | 'foreshadowing';
 
@@ -174,11 +174,7 @@ export default function CanonLockPage() {
         </AnimatePresence>
 
         {filteredItems.length === 0 && (
-          <div className="col-span-full text-center py-20">
-            <Filter size={48} className="mx-auto text-sepia-300 mb-4" />
-            <p className="text-sepia-600 text-lg">No items match your filters.</p>
-            <p className="text-sepia-500 text-sm mt-2">Try changing the type or status filter.</p>
-          </div>
+          <EmptyState variant="canon" title="No items match your filters" subtitle="Try adjusting your search criteria." />
         )}
       </div>
     </div>

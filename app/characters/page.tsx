@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { fadeUp } from '@/lib/animations';
 import ReactMarkdown from 'react-markdown';
 import { useConfirm } from '@/components/confirm-dialog';
-import { CarvedHeader, BrassButton } from '@/components/antiquarian';
+import { CarvedHeader, BrassButton, CharacterAvatar, DecorativeDivider, WaxSealBadge } from '@/components/antiquarian';
 
 const defaultCurrentState: CharacterState = {
   emotionalState: '',
@@ -179,7 +179,7 @@ export default function CharactersPage() {
         />
       </motion.div>
 
-      <div className="grid grid-cols-1 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         <AnimatePresence>
           {state.characters.map((char) => {
             const isExpanded = expandedId === char.id;
@@ -562,7 +562,9 @@ export default function CharactersPage() {
                 <div className="flex flex-col h-full">
                   <div className="p-6 cursor-pointer hover:bg-parchment-200/30 transition-colors" onClick={() => setExpandedId(isExpanded ? null : char.id)}>
                     <div className="flex items-start justify-between">
-                      <div>
+                      <div className="flex items-start gap-4">
+                        <CharacterAvatar name={char.name} size="lg" indicator={char.currentState?.indicator} />
+                        <div>
                         <h2 className="text-xl font-serif font-semibold text-sepia-900 flex items-center gap-2">
                           {char.name}
                           {char.currentState?.indicator && char.currentState.indicator !== 'stable' && (
@@ -588,6 +590,7 @@ export default function CharactersPage() {
                               {char.currentState.indicator}
                             </span>
                           )}
+                        </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -622,7 +625,8 @@ export default function CharactersPage() {
                   </div>
 
                   {isExpanded && (
-                    <div className="px-6 pb-6 border-t border-sepia-300/30 pt-6 bg-parchment-200/30 animate-in fade-in slide-in-from-top-2">
+                    <div className="px-6 pb-6 pt-2 bg-parchment-200/30 animate-in fade-in slide-in-from-top-2">
+                      <DecorativeDivider variant="brass-rule" className="my-4" />
                       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
                         
                         {/* Left Sidebar: Static Profile & Knowledge */}

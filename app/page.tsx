@@ -3,10 +3,16 @@
 import { useStory } from '@/lib/store';
 import { useSession } from '@/lib/session';
 import { motion } from 'motion/react';
-import { BookOpen, Users, Clock, Swords, AlertCircle } from 'lucide-react';
+import { BookOpen, Users, Clock, Swords, AlertCircle, Flame } from 'lucide-react';
 import Link from 'next/link';
-import { stagger, hoverLift, physicalDrop } from '@/lib/animations';
-import { CarvedHeader, ParchmentCard } from '@/components/antiquarian';
+import { stagger, hoverLift, physicalDrop, fadeUp } from '@/lib/animations';
+import {
+  CarvedHeader,
+  ParchmentCard,
+  EmptyState,
+  CharacterAvatar,
+  DecorativeDivider,
+} from '@/components/antiquarian';
 
 const blockMessages: Record<string, { headline: string; nudge: string }> = {
   fear: {
@@ -27,16 +33,97 @@ const blockMessages: Record<string, { headline: string; nudge: string }> = {
   },
 };
 
+// ─── Inline SVG: Animated Candle ───
+function CandleIcon() {
+  return (
+    <svg viewBox="0 0 24 40" className="w-6 h-10 shrink-0" fill="none">
+      <rect x="8" y="16" width="8" height="20" rx="1.5" fill="#c49b48" opacity="0.6" />
+      <rect x="9" y="14" width="6" height="4" rx="1" fill="#a88540" opacity="0.5" />
+      <line x1="12" y1="14" x2="12" y2="10" stroke="#5a3d1e" strokeWidth="0.8" />
+      <ellipse cx="12" cy="8" rx="3" ry="5" fill="#c49b48" opacity="0.5">
+        <animate attributeName="ry" values="5;4;5.5;4.5;5" dur="2s" repeatCount="indefinite" />
+        <animate attributeName="opacity" values="0.5;0.7;0.4;0.6;0.5" dur="2s" repeatCount="indefinite" />
+      </ellipse>
+      <ellipse cx="12" cy="7" rx="1.5" ry="2.5" fill="#f0dfc0" opacity="0.6">
+        <animate attributeName="ry" values="2.5;2;3;2;2.5" dur="1.5s" repeatCount="indefinite" />
+      </ellipse>
+    </svg>
+  );
+}
+
+// ─── Thread SVG for open loops ───
+function ThreadWisp() {
+  return (
+    <svg viewBox="0 0 20 12" className="w-5 h-3 shrink-0 mt-1.5" fill="none">
+      <path d="M2 6 Q6 2 10 6 Q14 10 18 6" stroke="#c49b48" strokeWidth="1.2" strokeLinecap="round" opacity="0.5" />
+    </svg>
+  );
+}
+
+// ─── Story Anatomy Bar ───
+function StoryAnatomyBar({ chapters, characters, events, conflicts }: {
+  chapters: number; characters: number; events: number; conflicts: number;
+}) {
+  const total = chapters + characters + events + conflicts;
+  if (total === 0) return null;
+
+  const segments = [
+    { count: chapters, color: 'bg-forest-700', label: 'Chapters', href: '/manuscript' },
+    { count: characters, color: 'bg-brass-600', label: 'Characters', href: '/characters' },
+    { count: events, color: 'bg-sepia-500', label: 'Timeline', href: '/timeline' },
+    { count: conflicts, color: 'bg-wax-600', label: 'Conflicts', href: '/conflicts' },
+  ].filter(s => s.count > 0);
+
+  return (
+    <motion.div {...fadeUp}>
+      <div className="flex items-center gap-3 mb-3">
+        <Flame size={16} className="text-brass-600" />
+        <h2 className="text-sm font-serif font-semibold text-sepia-700 uppercase tracking-wider">Story Anatomy</h2>
+        <DecorativeDivider variant="section" className="flex-1" />
+      </div>
+      <div className="flex h-3 rounded-full overflow-hidden bg-parchment-200/50 border border-sepia-300/20">
+        {segments.map((seg) => (
+          <Link
+            key={seg.label}
+            href={seg.href}
+            className={`${seg.color} transition-all hover:brightness-110 relative group`}
+            style={{ width: `${(seg.count / total) * 100}%` }}
+            title={`${seg.label}: ${seg.count}`}
+          >
+            <span className="sr-only">{seg.label}: {seg.count}</span>
+          </Link>
+        ))}
+      </div>
+      <div className="flex gap-4 mt-2">
+        {segments.map((seg) => (
+          <div key={seg.label} className="flex items-center gap-1.5 text-[10px] text-sepia-500">
+            <span className={`w-2 h-2 rounded-full ${seg.color}`} />
+            {seg.label}
+          </div>
+        ))}
+      </div>
+    </motion.div>
+  );
+}
+
+// ─── Canon Status Colors ───
+const canonColors: Record<string, string> = {
+  confirmed: 'border-l-forest-700',
+  flexible: 'border-l-brass-600',
+  draft: 'border-l-sepia-500',
+  discarded: 'border-l-wax-600',
+};
+
 export default function Dashboard() {
   const { state } = useStory();
   const { session } = useSession();
 
-  const stats = [
-    { name: 'Chapters', value: state.chapters.length, icon: BookOpen, href: '/manuscript' },
-    { name: 'Characters', value: state.characters.length, icon: Users, href: '/characters' },
-    { name: 'Timeline Events', value: state.timeline_events.length, icon: Clock, href: '/timeline' },
-    { name: 'Active Conflicts', value: state.active_conflicts.length, icon: Swords, href: '/conflicts' },
-  ];
+  const totalWords = state.chapters.reduce(
+    (sum, ch) => sum + (ch.content ? ch.content.split(/\s+/).filter(Boolean).length : 0),
+    0
+  );
+  const activeConflicts = state.active_conflicts.filter(c => c.status === 'active').length;
+  const resolvedConflicts = state.active_conflicts.filter(c => c.status === 'resolved').length;
 
   const blockMsg = session.blockType ? blockMessages[session.blockType] : null;
 
@@ -47,79 +134,199 @@ export default function Dashboard() {
         subtitle={state.synopsis || 'No synopsis added yet. Head to the Story Bible to define your core narrative.'}
       />
 
+      {/* Writer's Block Message */}
       {blockMsg && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           data-testid="block-message"
         >
-        <ParchmentCard variant="inset" padding="lg">
-          <p className="text-lg font-serif text-sepia-900">{blockMsg.headline}</p>
-          <p className="text-sm text-sepia-600 mt-2 italic">{blockMsg.nudge}</p>
-        </ParchmentCard>
+          <ParchmentCard variant="inset" padding="lg" className="border-l-4 border-l-brass-500">
+            <div className="flex items-start gap-4">
+              <CandleIcon />
+              <div>
+                <p className="text-xl font-serif text-sepia-900">{blockMsg.headline}</p>
+                <p className="text-sm text-sepia-600 mt-2 italic">{blockMsg.nudge}</p>
+              </div>
+            </div>
+          </ParchmentCard>
         </motion.div>
       )}
 
+      {/* ── Stat Cards ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat, i) => (
-          <Link key={stat.name} href={stat.href}>
-            <motion.div
-              {...stagger.cards(i)}
-              {...hoverLift}
-            >
+        {/* Chapters Card */}
+        <Link href="/manuscript">
+          <motion.div {...stagger.cards(0)} {...hoverLift}>
             <ParchmentCard padding="lg" hover className="group cursor-pointer">
-              <div className="flex items-center justify-between mb-4">
-                <stat.icon className="text-brass-600 group-hover:text-brass-500 transition-colors" size={24} />
-                <span className="text-3xl font-light text-sepia-900">{stat.value}</span>
+              <div className="flex items-center justify-between mb-3">
+                <BookOpen className="text-brass-600 group-hover:text-brass-500 transition-colors" size={22} />
+                <span className="text-3xl font-light text-sepia-900">{state.chapters.length}</span>
               </div>
-              <h3 className="text-sm font-medium text-sepia-600 uppercase tracking-wider">{stat.name}</h3>
+              <h3 className="text-xs font-medium text-sepia-600 uppercase tracking-wider">Chapters</h3>
+              {totalWords > 0 && (
+                <p className="text-[10px] font-mono text-sepia-400 mt-1">{totalWords.toLocaleString()} words</p>
+              )}
             </ParchmentCard>
-            </motion.div>
-          </Link>
-        ))}
+          </motion.div>
+        </Link>
+
+        {/* Characters Card */}
+        <Link href="/characters">
+          <motion.div {...stagger.cards(1)} {...hoverLift}>
+            <ParchmentCard padding="lg" hover className="group cursor-pointer">
+              <div className="flex items-center justify-between mb-3">
+                <Users className="text-brass-600 group-hover:text-brass-500 transition-colors" size={22} />
+                <span className="text-3xl font-light text-sepia-900">{state.characters.length}</span>
+              </div>
+              <h3 className="text-xs font-medium text-sepia-600 uppercase tracking-wider">Characters</h3>
+              {state.characters.length > 0 && (
+                <div className="flex items-center mt-2 -space-x-2">
+                  {state.characters.slice(0, 4).map((c) => (
+                    <CharacterAvatar key={c.id} name={c.name} size="sm" indicator={c.currentState?.indicator} />
+                  ))}
+                  {state.characters.length > 4 && (
+                    <span className="text-[10px] font-mono text-sepia-400 ml-2">+{state.characters.length - 4}</span>
+                  )}
+                </div>
+              )}
+            </ParchmentCard>
+          </motion.div>
+        </Link>
+
+        {/* Timeline Card */}
+        <Link href="/timeline">
+          <motion.div {...stagger.cards(2)} {...hoverLift}>
+            <ParchmentCard padding="lg" hover className="group cursor-pointer">
+              <div className="flex items-center justify-between mb-3">
+                <Clock className="text-brass-600 group-hover:text-brass-500 transition-colors" size={22} />
+                <span className="text-3xl font-light text-sepia-900">{state.timeline_events.length}</span>
+              </div>
+              <h3 className="text-xs font-medium text-sepia-600 uppercase tracking-wider">Timeline Events</h3>
+              {state.timeline_events.length > 0 && (
+                <div className="flex items-center gap-1 mt-2">
+                  {[0, 1, 2].map((i) => (
+                    <span key={i} className="flex items-center gap-1">
+                      <span className={`w-2 h-2 rounded-full ${i < state.timeline_events.length ? 'bg-brass-500' : 'bg-sepia-300/30'}`} />
+                      {i < 2 && <span className="w-3 h-px bg-sepia-300/40" />}
+                    </span>
+                  ))}
+                  {state.timeline_events.length > 0 && (
+                    <span className="text-[10px] font-mono text-sepia-400 ml-1">
+                      {state.timeline_events[0]?.date || ''}
+                    </span>
+                  )}
+                </div>
+              )}
+            </ParchmentCard>
+          </motion.div>
+        </Link>
+
+        {/* Conflicts Card */}
+        <Link href="/conflicts">
+          <motion.div {...stagger.cards(3)} {...hoverLift}>
+            <ParchmentCard padding="lg" hover className="group cursor-pointer">
+              <div className="flex items-center justify-between mb-3">
+                <Swords className="text-brass-600 group-hover:text-brass-500 transition-colors" size={22} />
+                <span className="text-3xl font-light text-sepia-900">{state.active_conflicts.length}</span>
+              </div>
+              <h3 className="text-xs font-medium text-sepia-600 uppercase tracking-wider">Conflicts</h3>
+              {state.active_conflicts.length > 0 && (
+                <div className="flex items-center gap-2 mt-2">
+                  <div className="flex h-1.5 flex-1 rounded-full overflow-hidden bg-sepia-300/20">
+                    {activeConflicts > 0 && (
+                      <div
+                        className="bg-wax-500 rounded-l-full"
+                        style={{ width: `${(activeConflicts / state.active_conflicts.length) * 100}%` }}
+                      />
+                    )}
+                    {resolvedConflicts > 0 && (
+                      <div
+                        className="bg-forest-600"
+                        style={{ width: `${(resolvedConflicts / state.active_conflicts.length) * 100}%` }}
+                      />
+                    )}
+                  </div>
+                  <span className="text-[10px] font-mono text-sepia-400">{activeConflicts}a/{resolvedConflicts}r</span>
+                </div>
+              )}
+            </ParchmentCard>
+          </motion.div>
+        </Link>
       </div>
 
+      {/* ── Story Anatomy ── */}
+      <StoryAnatomyBar
+        chapters={state.chapters.length}
+        characters={state.characters.length}
+        events={state.timeline_events.length}
+        conflicts={state.active_conflicts.length}
+      />
+
+      {/* ── Recent Chapters & Open Loops ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-6">
-          <h2 className="text-xl font-serif font-semibold text-sepia-900 flex items-center gap-2">
-            <BookOpen size={20} className="text-brass-600" />
-            Recent Chapters
-          </h2>
+        <div className="lg:col-span-2 space-y-4">
+          <div className="flex items-center gap-3">
+            <BookOpen size={18} className="text-brass-600" />
+            <h2 className="text-lg font-serif font-semibold text-sepia-900">Recent Chapters</h2>
+            <DecorativeDivider variant="section" className="flex-1" />
+          </div>
           {state.chapters.length === 0 ? (
-            <div className="bg-parchment-100/50 border border-sepia-300/30 border-dashed rounded-xl p-8 text-center">
-              <p className="text-sepia-500 text-sm">No chapters added yet.</p>
-              <Link href="/manuscript" className="text-forest-700 hover:text-forest-600 text-sm font-medium mt-2 inline-block">
-                Start writing &rarr;
-              </Link>
-            </div>
+            <EmptyState
+              variant="manuscript"
+              title="Your story awaits"
+              subtitle="Every great manuscript begins with a single chapter."
+              action={{ label: 'Start writing', href: '/manuscript' }}
+            />
           ) : (
             <div className="space-y-3">
-              {state.chapters.slice(-3).reverse().map((chapter) => (
-                <motion.div key={chapter.id} {...physicalDrop}>
-                <ParchmentCard>
-                  <h3 className="font-medium text-sepia-800">{chapter.title}</h3>
-                  <p className="text-sm text-sepia-500 mt-1 line-clamp-2">{chapter.summary}</p>
-                </ParchmentCard>
-                </motion.div>
-              ))}
+              {state.chapters.slice(-3).reverse().map((chapter, i) => {
+                const wordCount = chapter.content ? chapter.content.split(/\s+/).filter(Boolean).length : 0;
+                const statusColor = canonColors[chapter.canonStatus || 'draft'] || 'border-l-sepia-500';
+                return (
+                  <motion.div key={chapter.id} {...physicalDrop}>
+                    <ParchmentCard className={`border-l-4 ${statusColor}`}>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-3 min-w-0">
+                          <span className="shrink-0 w-7 h-7 rounded-full bg-brass-500/15 flex items-center justify-center text-xs font-mono text-brass-700">
+                            {state.chapters.length - i}
+                          </span>
+                          <div className="min-w-0">
+                            <h3 className="font-medium text-sepia-800 truncate">{chapter.title}</h3>
+                            <p className="text-sm text-sepia-500 mt-1 line-clamp-2">{chapter.summary}</p>
+                          </div>
+                        </div>
+                        {wordCount > 0 && (
+                          <span className="shrink-0 text-[10px] font-mono text-sepia-400 bg-parchment-200/60 px-2 py-0.5 rounded">
+                            {wordCount.toLocaleString()}w
+                          </span>
+                        )}
+                      </div>
+                    </ParchmentCard>
+                  </motion.div>
+                );
+              })}
             </div>
           )}
         </div>
 
-        <div className="space-y-6">
-          <h2 className="text-xl font-serif font-semibold text-sepia-900 flex items-center gap-2">
-            <AlertCircle size={20} className="text-brass-600" />
-            Open Loops
-          </h2>
-          {state.open_loops.length === 0 ? (
-            <div className="bg-parchment-100/50 border border-sepia-300/30 border-dashed rounded-xl p-8 text-center">
-              <p className="text-sepia-500 text-sm">No open loops tracked.</p>
-            </div>
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <AlertCircle size={18} className="text-brass-600" />
+            <h2 className="text-lg font-serif font-semibold text-sepia-900">Open Loops</h2>
+            <DecorativeDivider variant="section" className="flex-1" />
+          </div>
+          {state.open_loops.filter(l => l.status === 'open').length === 0 ? (
+            <EmptyState
+              variant="loops"
+              title="No loose threads"
+              subtitle="Your narrative threads are all accounted for."
+            />
           ) : (
             <div className="space-y-3">
               {state.open_loops.filter(l => l.status === 'open').slice(0, 5).map((loop) => (
-                <ParchmentCard key={loop.id} padding="sm" className="flex items-start gap-3">
-                  <div className="w-2 h-2 rounded-full bg-amber-500 mt-1.5 shrink-0" />
+                <ParchmentCard key={loop.id} padding="sm" className="flex items-start gap-2">
+                  <ThreadWisp />
                   <p className="text-sm text-sepia-700 leading-relaxed">{loop.description}</p>
                 </ParchmentCard>
               ))}
