@@ -32,7 +32,12 @@ import { useBraindump } from '@/hooks/use-braindump';
 import { BraindumpPanel } from './braindump-panel';
 import { BraindumpHistoryDrawer } from './braindump-history-drawer';
 import { BraindumpToolbarMessage } from './braindump-toolbar-message';
-import { Theater, Shuffle, Mic, ClipboardList } from 'lucide-react';
+import { Theater, Shuffle, Mic, ClipboardList, BookCopy } from 'lucide-react';
+import { createMetricsCollector } from '@/lib/flow-metrics';
+import type { MetricsCollector } from '@/lib/flow-metrics';
+import { useChapterVersions } from '@/hooks/use-chapter-versions';
+import { VersionSwitcher } from './version-switcher';
+import { VersionCompare } from './version-compare';
 
 const PAUSE_TIMEOUT = 30000; // 30 seconds
 const MOMENTUM_DECAY_INTERVAL = 100; // ms
@@ -57,6 +62,7 @@ export function FlowEditor({ chapterId, onExit }: FlowEditorProps) {
   const pauseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const momentumTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const metricsCollectorRef = useRef<MetricsCollector>(createMetricsCollector());
 
   // Heteronym state
   const [heteronyms] = useState(() => readHeteronyms());
@@ -91,6 +97,11 @@ export function FlowEditor({ chapterId, onExit }: FlowEditorProps) {
     projectName: state.title || 'Untitled Project',
   });
   const [toolbarMessage, setToolbarMessage] = useState<'unsupported' | 'denied' | null>(null);
+
+  // Version history state
+  const chapterVersions = useChapterVersions(chapterId, initialContent);
+  const [versionPanelOpen, setVersionPanelOpen] = useState(false);
+  const [compareOpen, setCompareOpen] = useState(false);
 
   // On mount: check for pending return data (cursor restore + toast)
   useEffect(() => {
@@ -157,7 +168,7 @@ export function FlowEditor({ chapterId, onExit }: FlowEditorProps) {
       return;
     }
 
-    const ret = sceneChange.returnToOriginal(wordCount);
+    const ret = sceneChange.returnToOriginal(wordCount, content);
 
     setOverlayConfig({
       message: 'Returning to your chapter...',
@@ -336,6 +347,7 @@ export function FlowEditor({ chapterId, onExit }: FlowEditorProps) {
       (e.ctrlKey && e.key === 'Delete')
     ) {
       e.preventDefault();
+      metricsCollectorRef.current.recordDeletionAttempt();
       return;
     }
 
@@ -344,9 +356,10 @@ export function FlowEditor({ chapterId, onExit }: FlowEditorProps) {
       clearPrompt();
     }
 
-    // Increase momentum on typing
+    // Increase momentum on typing + record keystroke
     if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
       setMomentum(prev => Math.min(1, prev + MOMENTUM_INCREMENT));
+      metricsCollectorRef.current.recordKeystroke(Date.now());
     }
 
     // Reset pause timer
@@ -386,6 +399,50 @@ export function FlowEditor({ chapterId, onExit }: FlowEditorProps) {
           <span className="text-xs text-sepia-400">{wordCount} words</span>
         </div>
         <div className="flex items-center gap-2">
+          <div className="relative">
+            <button
+              onClick={() => setVersionPanelOpen(!versionPanelOpen)}
+              className="text-sm text-sepia-500 hover:text-sepia-700 transition-colors p-1.5 rounded-lg hover:bg-parchment-200"
+              aria-label="Version history"
+            >
+              <BookCopy size={16} />
+              {chapterVersions.versionCount > 1 && (
+                <span className="absolute -top-1 -right-1 bg-brass-500 text-white text-[9px] rounded-full w-3.5 h-3.5 flex items-center justify-center">
+                  {chapterVersions.versionCount}
+                </span>
+              )}
+            </button>
+            {versionPanelOpen && (
+              <VersionSwitcher
+                versions={chapterVersions.versions}
+                activeVersionId={chapterVersions.activeVersion?.id ?? null}
+                onSwitch={(id) => {
+                  // Save current content to current version before switching
+                  if (chapterVersions.activeVersion) {
+                    chapterVersions.createVersion(content, chapterVersions.activeVersion.label + ' (auto)', 'auto-snapshot');
+                  }
+                  const target = chapterVersions.switchVersion(id);
+                  if (target) {
+                    setContent(target.content);
+                    scheduleAutosave(target.content);
+                  }
+                  setVersionPanelOpen(false);
+                }}
+                onRename={chapterVersions.rename}
+                onMarkCanonical={chapterVersions.markCanonical}
+                onDelete={chapterVersions.remove}
+                onCreate={() => {
+                  chapterVersions.createVersion(content, `Version ${String.fromCharCode(65 + chapterVersions.versionCount)}`, 'manual');
+                  setVersionPanelOpen(false);
+                }}
+                onCompare={() => {
+                  setVersionPanelOpen(false);
+                  setCompareOpen(true);
+                }}
+                onClose={() => setVersionPanelOpen(false)}
+              />
+            )}
+          </div>
           {heteronyms.length > 1 && (
             <button
               onClick={() => setVoiceSwitchOpen(true)}
@@ -479,6 +536,14 @@ export function FlowEditor({ chapterId, onExit }: FlowEditorProps) {
           <MicroPromptDisplay prompt={prompt} isLoading={isLoading} />
         </div>
       </div>
+
+      {/* Version compare overlay */}
+      {compareOpen && chapterVersions.versions.length >= 2 && (
+        <VersionCompare
+          versions={chapterVersions.versions}
+          onClose={() => setCompareOpen(false)}
+        />
+      )}
 
       {/* Voice switch modal */}
       {voiceSwitchOpen && (

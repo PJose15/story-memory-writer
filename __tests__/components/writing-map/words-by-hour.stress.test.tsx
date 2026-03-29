@@ -36,6 +36,9 @@ function makeSession(overrides: Partial<WritingSession> = {}): WritingSession {
     flowScore: 4,
     heteronymId: null,
     heteronymName: null,
+    keystrokeMetrics: null,
+    autoFlowScore: null,
+    flowMoments: null,
     ...overrides,
   };
 }

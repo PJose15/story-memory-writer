@@ -22,6 +22,9 @@ function makeSession(overrides: Partial<WritingSession> = {}): WritingSession {
     flowScore: 4,
     heteronymId: null,
     heteronymName: null,
+    keystrokeMetrics: null,
+    autoFlowScore: null,
+    flowMoments: null,
     ...overrides,
   };
 }
@@ -51,7 +54,9 @@ describe('SessionsTable', () => {
 
   it('shows dash for null flow score', () => {
     render(<SessionsTable sessions={[makeSession({ flowScore: null })]} />);
-    expect(screen.getByText('—')).toBeTruthy();
+    // Both Auto Flow (null by default) and Flow (null) render em dashes
+    const dashes = screen.getAllByText('—');
+    expect(dashes.length).toBe(2);
   });
 
   it('sorts by words when header clicked', () => {

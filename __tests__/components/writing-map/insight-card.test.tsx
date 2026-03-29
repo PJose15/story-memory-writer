@@ -23,6 +23,9 @@ function makeSession(overrides: Partial<WritingSession> = {}): WritingSession {
     flowScore: 4,
     heteronymId: null,
     heteronymName: null,
+    keystrokeMetrics: null,
+    autoFlowScore: null,
+    flowMoments: null,
     ...overrides,
   };
 }
@@ -44,7 +47,7 @@ describe('InsightCard', () => {
     expect(screen.getByText(/at least 5 sessions/)).toBeTruthy();
   });
 
-  it('shows ✨ secret hour with % when 5+ sessions exist', () => {
+  it('shows secret hour with % when 5+ sessions exist', () => {
     const sessions = Array.from({ length: 6 }, (_, i) =>
       makeSession({
         id: `s-${i}`,
@@ -53,11 +56,11 @@ describe('InsightCard', () => {
       })
     );
     render(<InsightCard sessions={sessions} />);
-    expect(screen.getByText(/✨ Your secret hour/)).toBeTruthy();
+    expect(screen.getByText(/Your secret hour/)).toBeTruthy();
     expect(screen.getByText(/%/)).toBeTruthy();
   });
 
-  it('shows 🌙 for night writer sessions', () => {
+  it('shows night writer for late-night sessions', () => {
     const sessions = Array.from({ length: 6 }, (_, i) =>
       makeSession({
         id: `s-${i}`,
@@ -66,10 +69,10 @@ describe('InsightCard', () => {
       })
     );
     render(<InsightCard sessions={sessions} />);
-    expect(screen.getByText(/night writer 🌙/)).toBeTruthy();
+    expect(screen.getByText(/night writer\./)).toBeTruthy();
   });
 
-  it('shows 🌅 for early bird sessions', () => {
+  it('shows early bird for morning sessions', () => {
     const sessions = Array.from({ length: 6 }, (_, i) =>
       makeSession({
         id: `s-${i}`,
@@ -78,7 +81,7 @@ describe('InsightCard', () => {
       })
     );
     render(<InsightCard sessions={sessions} />);
-    expect(screen.getByText(/early bird writer 🌅/)).toBeTruthy();
+    expect(screen.getByText(/early bird writer\./)).toBeTruthy();
   });
 
   it('shows flat productivity message when hours are even', () => {

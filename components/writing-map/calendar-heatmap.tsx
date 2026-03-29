@@ -40,6 +40,8 @@ interface DayData {
   sessionCount: number;
   avgFlowScore: number | null;
   totalMinutes: number;
+  flowMomentCount: number;
+  avgAutoFlowScore: number | null;
 }
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -54,14 +56,18 @@ export function CalendarHeatmap({ sessions }: CalendarHeatmapProps) {
 
   const { cells, monthLabels } = useMemo(() => {
     // Build a map of date -> aggregated data
-    const dayMap = new Map<string, { words: number; sessionCount: number; flowScores: number[]; totalMs: number }>();
+    const dayMap = new Map<string, { words: number; sessionCount: number; flowScores: number[]; totalMs: number; flowMomentCount: number; autoFlowScores: number[] }>();
     for (const session of sessions) {
       const date = session.startedAt.slice(0, 10);
-      const existing = dayMap.get(date) || { words: 0, sessionCount: 0, flowScores: [], totalMs: 0 };
+      const existing = dayMap.get(date) || { words: 0, sessionCount: 0, flowScores: [], totalMs: 0, flowMomentCount: 0, autoFlowScores: [] };
       existing.words += session.wordsAdded;
       existing.sessionCount++;
       if (session.flowScore) existing.flowScores.push(session.flowScore);
       existing.totalMs += new Date(session.endedAt).getTime() - new Date(session.startedAt).getTime();
+      existing.flowMomentCount += session.flowMoments?.length ?? 0;
+      if (session.autoFlowScore !== null && session.autoFlowScore !== undefined) {
+        existing.autoFlowScores.push(session.autoFlowScore);
+      }
       dayMap.set(date, existing);
     }
 
@@ -97,6 +103,10 @@ export function CalendarHeatmap({ sessions }: CalendarHeatmapProps) {
           ? Math.round(raw.flowScores.reduce((a, b) => a + b, 0) / raw.flowScores.length)
           : null,
         totalMinutes: raw ? Math.round(raw.totalMs / 60_000) : 0,
+        flowMomentCount: raw?.flowMomentCount || 0,
+        avgAutoFlowScore: raw && raw.autoFlowScores.length > 0
+          ? Math.round(raw.autoFlowScores.reduce((a, b) => a + b, 0) / raw.autoFlowScores.length)
+          : null,
       };
 
       cells.push({ date: dateStr, words, col, row, dayData });
@@ -187,6 +197,12 @@ export function CalendarHeatmap({ sessions }: CalendarHeatmapProps) {
                     lines.push(`${cell.words.toLocaleString()} words`);
                     lines.push(`${dayData.sessionCount} session${dayData.sessionCount === 1 ? '' : 's'}`);
                     lines.push(flowEmoji ? `Avg flow: ${flowEmoji}` : 'No rating');
+                    if (dayData.avgAutoFlowScore !== null) {
+                      lines.push(`Auto flow: ${dayData.avgAutoFlowScore}/100`);
+                    }
+                    if (dayData.flowMomentCount > 0) {
+                      lines.push(`${dayData.flowMomentCount} flow moment${dayData.flowMomentCount !== 1 ? 's' : ''}`);
+                    }
                     lines.push(`Writing time: ${durationStr}`);
                   } else {
                     lines.push('No writing');

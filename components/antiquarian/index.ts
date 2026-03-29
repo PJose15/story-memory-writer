@@ -1,5 +1,6 @@
 export { ParchmentCard } from './parchment-card';
 export { ParchmentInput, ParchmentTextarea } from './parchment-input';
+export { ParchmentSelect } from './parchment-select';
 export { WaxSealBadge } from './wax-seal-badge';
 export { InkStampButton } from './ink-stamp-button';
 export { BrassButton } from './brass-button';

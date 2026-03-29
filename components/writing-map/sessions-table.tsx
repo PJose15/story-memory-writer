@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronUp, ChevronDown } from 'lucide-react';
 import type { WritingSession, FlowScore } from '@/lib/types/writing-session';
+import { FlowMomentsBadge } from './flow-moments-badge';
 
 const FLOW_EMOJIS: Record<number, string> = {
   1: '😩',
@@ -13,7 +14,7 @@ const FLOW_EMOJIS: Record<number, string> = {
   5: '🔥',
 };
 
-type SortField = 'date' | 'words' | 'duration' | 'flow';
+type SortField = 'date' | 'words' | 'duration' | 'flow' | 'autoFlow';
 type SortDir = 'asc' | 'desc';
 
 interface SessionsTableProps {
@@ -70,6 +71,9 @@ export function SessionsTable({ sessions }: SessionsTableProps) {
         case 'flow':
           cmp = (a.flowScore || 0) - (b.flowScore || 0);
           break;
+        case 'autoFlow':
+          cmp = (a.autoFlowScore || 0) - (b.autoFlowScore || 0);
+          break;
       }
       return sortDir === 'asc' ? cmp : -cmp;
     });
@@ -119,6 +123,9 @@ export function SessionsTable({ sessions }: SessionsTableProps) {
             <th className="text-right py-2 px-3 font-medium cursor-pointer hover:text-sepia-800" onClick={() => handleSort('duration')}>
               Duration {renderSortIcon("duration")}
             </th>
+            <th className="text-center py-2 px-3 font-medium cursor-pointer hover:text-sepia-800" onClick={() => handleSort('autoFlow')}>
+              Auto Flow {renderSortIcon("autoFlow")}
+            </th>
             <th className="text-center py-2 px-3 font-medium cursor-pointer hover:text-sepia-800" onClick={() => handleSort('flow')}>
               Flow {renderSortIcon("flow")}
             </th>
@@ -139,6 +146,25 @@ export function SessionsTable({ sessions }: SessionsTableProps) {
               <td className="py-2 px-3 text-sepia-600">{formatTime(session.startedAt)}</td>
               <td className="py-2 px-3 text-right text-sepia-800">+{session.wordsAdded.toLocaleString()}</td>
               <td className="py-2 px-3 text-right text-sepia-600">{formatDuration(session.startedAt, session.endedAt)}</td>
+              <td className="py-2 px-3 text-center">
+                {session.autoFlowScore !== null && session.autoFlowScore !== undefined ? (
+                  <div className="flex items-center justify-center gap-1">
+                    <span
+                      className={`font-medium ${
+                        session.autoFlowScore >= 70 ? 'text-forest-700' :
+                        session.autoFlowScore >= 40 ? 'text-amber-600' :
+                        'text-sepia-500'
+                      }`}
+                      title={`Auto flow: ${session.autoFlowScore}/100`}
+                    >
+                      {session.autoFlowScore}
+                    </span>
+                    <FlowMomentsBadge count={session.flowMoments?.length ?? 0} />
+                  </div>
+                ) : (
+                  <span className="text-sepia-400">—</span>
+                )}
+              </td>
               <td className="py-2 px-3 text-center">
                 {session.flowScore ? (
                   <span title={`Flow: ${session.flowScore}/5`}>{FLOW_EMOJIS[session.flowScore]}</span>

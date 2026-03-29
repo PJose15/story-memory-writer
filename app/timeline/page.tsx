@@ -3,17 +3,10 @@
 import { useStory, TimelineEvent, CanonStatus } from '@/lib/store';
 import { useState } from 'react';
 import { useUnsavedChanges } from '@/hooks/use-unsaved-changes';
-import { Plus, Trash2, Edit3, Save, X, Clock, ShieldCheck, Shield, ShieldAlert, ShieldOff } from 'lucide-react';
+import { Plus, Trash2, Edit3, Save, X, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useConfirm } from '@/components/confirm-dialog';
-import { BrassButton, CarvedHeader, EmptyState, ParchmentCard, DecorativeDivider } from '@/components/antiquarian';
-
-const statusConfig = {
-  confirmed: { icon: ShieldCheck, color: 'text-forest-700', bg: 'bg-forest-700/10', label: 'Confirmed Canon' },
-  flexible: { icon: Shield, color: 'text-brass-600', bg: 'bg-brass-500/10', label: 'Flexible Canon' },
-  draft: { icon: ShieldAlert, color: 'text-brass-800', bg: 'bg-brass-400/10', label: 'Draft Idea' },
-  discarded: { icon: ShieldOff, color: 'text-wax-600', bg: 'bg-wax-500/10', label: 'Discarded' },
-};
+import { BrassButton, CarvedHeader, EmptyState, ParchmentCard, DecorativeDivider, ParchmentInput, ParchmentTextarea, ParchmentSelect, InkStampButton, WaxSealBadge } from '@/components/antiquarian';
 
 const markerColorByCanon: Record<string, string> = {
   confirmed: 'bg-forest-700',
@@ -107,51 +100,42 @@ export default function TimelinePage() {
               <ParchmentCard className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)]">
                 {editingId === event.id ? (
                   <div className="space-y-4">
-                    <input
+                    <ParchmentInput
                       type="text"
                       value={editForm.date || ''}
                       onChange={(e) => setEditForm({ ...editForm, date: e.target.value })}
-                      className="w-full bg-parchment-200 border border-sepia-300/50 rounded-lg px-4 py-2 text-sm font-mono text-brass-500 focus:outline-none focus:ring-2 focus:ring-brass-400/40"
+                      className="font-mono text-brass-500"
                       placeholder="Date / Time (e.g., Year 1, Day 1)"
                     />
-                    <textarea
+                    <ParchmentTextarea
                       value={editForm.description || ''}
                       onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-                      className="w-full h-24 bg-parchment-200 border border-sepia-300/50 rounded-lg px-4 py-3 text-sm text-sepia-700 font-sans resize-y focus:outline-none focus:ring-2 focus:ring-brass-400/40"
+                      className="h-24"
                       placeholder="Event description..."
                     />
-                    <textarea
+                    <ParchmentTextarea
                       value={editForm.impact || ''}
                       onChange={(e) => setEditForm({ ...editForm, impact: e.target.value })}
-                      className="w-full h-20 bg-parchment-200 border border-sepia-300/50 rounded-lg px-4 py-3 text-sm text-sepia-600 font-sans resize-y focus:outline-none focus:ring-2 focus:ring-brass-400/40"
+                      className="h-20"
                       placeholder="Impact on the story/characters..."
                     />
                     <div className="flex items-center gap-3 pt-2">
-                      <select
+                      <ParchmentSelect
                         value={editForm.canonStatus || 'draft'}
                         onChange={(e) => setEditForm({ ...editForm, canonStatus: e.target.value as CanonStatus })}
-                        className="bg-parchment-200 border border-sepia-300/50 rounded-lg px-3 py-2 text-sm text-sepia-700 focus:outline-none focus:ring-2 focus:ring-brass-400/40"
                       >
                         <option value="confirmed">Confirmed Canon</option>
                         <option value="flexible">Flexible Canon</option>
                         <option value="draft">Draft Idea</option>
                         <option value="discarded">Discarded</option>
-                      </select>
+                      </ParchmentSelect>
                       <div className="flex-1" />
-                      <button
-                        onClick={handleCancel}
-                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sepia-600 hover:text-sepia-800 hover:bg-sepia-300/20 transition-colors text-sm"
-                      >
-                        <X size={16} />
+                      <InkStampButton variant="ghost" size="sm" onClick={handleCancel} icon={<X size={16} />}>
                         Cancel
-                      </button>
-                      <button
-                        onClick={handleSave}
-                        className="flex items-center gap-2 bg-forest-700 text-cream-50 px-3 py-1.5 rounded-lg font-medium hover:bg-forest-600 transition-colors text-sm"
-                      >
-                        <Save size={16} />
+                      </InkStampButton>
+                      <InkStampButton variant="primary" size="sm" onClick={handleSave} icon={<Save size={16} />}>
                         Save
-                      </button>
+                      </InkStampButton>
                     </div>
                   </div>
                 ) : (
@@ -160,13 +144,7 @@ export default function TimelinePage() {
                       <div className="flex items-center gap-2">
                         <span className="font-mono text-sm text-brass-500 bg-brass-400/10 px-2 py-1 rounded">{event.date}</span>
                         {event.canonStatus && (
-                          <span className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${statusConfig[event.canonStatus].bg} ${statusConfig[event.canonStatus].color}`}>
-                            {(() => {
-                              const Icon = statusConfig[event.canonStatus].icon;
-                              return <Icon size={12} />;
-                            })()}
-                            {statusConfig[event.canonStatus].label}
-                          </span>
+                          <WaxSealBadge status={event.canonStatus} />
                         )}
                       </div>
                       <div className="flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100 transition-opacity">

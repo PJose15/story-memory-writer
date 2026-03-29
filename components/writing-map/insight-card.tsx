@@ -22,12 +22,14 @@ interface Insight {
 }
 
 export function InsightCard({ sessions }: InsightCardProps) {
-  const insight = useMemo((): Insight => {
+  const insights = useMemo((): Insight[] => {
+    const result: Insight[] = [];
+
     if (sessions.length < 5) {
-      return {
+      return [{
         headline: 'Keep writing!',
         detail: 'Keep writing — we need at least 5 sessions to reveal your patterns.',
-      };
+      }];
     }
 
     // Calculate words per hour
@@ -55,41 +57,81 @@ export function InsightCard({ sessions }: InsightCardProps) {
     const avg = nonZeroHours.length > 0 ? nonZeroHours.reduce((a, b) => a + b, 0) / nonZeroHours.length : 0;
 
     if (nonZeroHours.length >= 4 && avg > 0 && peakWords < avg * 1.5) {
-      return {
+      result.push({
         headline: "You're consistently productive at all hours. Impressive.",
         detail: '',
-      };
+      });
+    } else {
+      const hourRange = formatHourRange(peakHour);
+      const percentMore = avg > 0 ? Math.round(((peakWords - avg) / avg) * 100) : 0;
+
+      let headline = `Your secret hour: You write ${percentMore}% more between ${hourRange} than at any other time.`;
+
+      if (peakHour >= 22 || peakHour < 6) {
+        headline += ' You\'re a night writer.';
+      } else if (peakHour >= 5 && peakHour < 8) {
+        headline += ' You\'re an early bird writer.';
+      }
+
+      result.push({ headline, detail: '' });
     }
 
-    const hourRange = formatHourRange(peakHour);
+    // Flow-based insights
+    const sessionsWithFlow = sessions.filter(s => s.autoFlowScore !== null && s.autoFlowScore !== undefined);
+    if (sessionsWithFlow.length >= 3) {
+      const avgWPM = sessionsWithFlow
+        .filter(s => s.keystrokeMetrics?.avgWPM)
+        .reduce((sum, s) => sum + (s.keystrokeMetrics?.avgWPM ?? 0), 0) / Math.max(1, sessionsWithFlow.filter(s => s.keystrokeMetrics?.avgWPM).length);
 
-    // Calculate % more than average
-    const percentMore = avg > 0 ? Math.round(((peakWords - avg) / avg) * 100) : 0;
+      if (avgWPM > 0) {
+        result.push({
+          headline: `Your average typing speed is ${Math.round(avgWPM)} WPM across ${sessionsWithFlow.length} tracked sessions.`,
+          detail: '',
+        });
+      }
 
-    let headline = `✨ Your secret hour: You write ${percentMore}% more between ${hourRange} than at any other time.`;
+      // Flow moments peak hour
+      const flowHourBuckets = new Array(24).fill(0) as number[];
+      for (const s of sessionsWithFlow) {
+        if (s.flowMoments && s.flowMoments.length > 0) {
+          const hour = new Date(s.startedAt).getHours();
+          flowHourBuckets[hour] += s.flowMoments.length;
+        }
+      }
 
-    // Add time-of-day emoji annotation
-    if (peakHour >= 22 || peakHour < 6) {
-      headline += ' You\'re a night writer 🌙';
-    } else if (peakHour >= 5 && peakHour < 8) {
-      headline += ' You\'re an early bird writer 🌅';
+      let flowPeakHour = -1;
+      let flowPeakCount = 0;
+      for (let h = 0; h < 24; h++) {
+        if (flowHourBuckets[h] > flowPeakCount) {
+          flowPeakCount = flowHourBuckets[h];
+          flowPeakHour = h;
+        }
+      }
+
+      if (flowPeakCount > 0) {
+        result.push({
+          headline: `Your flow moments peak at ${formatHourRange(flowPeakHour)} with ${flowPeakCount} detected.`,
+          detail: '',
+        });
+      }
     }
 
-    return {
-      headline,
-      detail: '',
-    };
+    return result.length > 0 ? result : [{ headline: 'Keep writing!', detail: 'Keep writing — we need at least 5 sessions to reveal your patterns.' }];
   }, [sessions]);
 
   return (
-    <div className="bg-parchment-100 border border-sepia-300/50 rounded-xl p-6 texture-parchment shadow-parchment" data-testid="insight-card">
-      <div className="flex items-start gap-3">
-        <Lightbulb size={20} className="text-amber-400 shrink-0 mt-0.5" />
-        <div>
-          <h3 className="text-base font-medium text-sepia-900">{insight.headline}</h3>
-          {insight.detail && <p className="text-sm text-sepia-600 mt-1 leading-relaxed">{insight.detail}</p>}
+    <div className="space-y-3" data-testid="insight-card">
+      {insights.map((insight, i) => (
+        <div key={i} className="bg-parchment-100 border border-sepia-300/50 rounded-xl p-6 texture-parchment shadow-parchment">
+          <div className="flex items-start gap-3">
+            <Lightbulb size={20} className="text-amber-400 shrink-0 mt-0.5" />
+            <div>
+              <h3 className="text-base font-medium text-sepia-900">{insight.headline}</h3>
+              {insight.detail && <p className="text-sm text-sepia-600 mt-1 leading-relaxed">{insight.detail}</p>}
+            </div>
+          </div>
         </div>
-      </div>
+      ))}
     </div>
   );
 }

@@ -22,6 +22,9 @@ function makeSession(overrides: Partial<WritingSession> = {}): WritingSession {
     flowScore: 4,
     heteronymId: null,
     heteronymName: null,
+    keystrokeMetrics: null,
+    autoFlowScore: null,
+    flowMoments: null,
     ...overrides,
   };
 }
@@ -57,7 +60,7 @@ describe('InsightCard STRESS', () => {
         makeSession({ id: `s-${i}`, startedAt: localDateAt(14, i), wordsAdded: 200 })
       );
       render(<InsightCard sessions={sessions} />);
-      expect(screen.getByText(/✨ Your secret hour/)).toBeTruthy();
+      expect(screen.getByText(/Your secret hour/)).toBeTruthy();
     });
 
     it('6 sessions → shows insight', () => {
@@ -65,7 +68,7 @@ describe('InsightCard STRESS', () => {
         makeSession({ id: `s-${i}`, startedAt: localDateAt(14, i), wordsAdded: 200 })
       );
       render(<InsightCard sessions={sessions} />);
-      expect(screen.getByText(/✨ Your secret hour/)).toBeTruthy();
+      expect(screen.getByText(/Your secret hour/)).toBeTruthy();
     });
 
     it('1000 sessions does not crash', () => {
@@ -103,15 +106,15 @@ describe('InsightCard STRESS', () => {
         makeSession({ id: 'low-3', startedAt: localDateAt(10), wordsAdded: 100 }),
       ];
       render(<InsightCard sessions={sessions} />);
-      expect(screen.getByText(/✨ Your secret hour/)).toBeTruthy();
+      expect(screen.getByText(/Your secret hour/)).toBeTruthy();
       expect(screen.getByText(/%/)).toBeTruthy();
     });
   });
 
   // ──────────────────────────────────────────────────────
-  // TIME-OF-DAY EMOJI BOUNDARIES
+  // TIME-OF-DAY LABEL BOUNDARIES
   // ──────────────────────────────────────────────────────
-  describe('time-of-day emoji boundaries', () => {
+  describe('time-of-day label boundaries', () => {
     function makeConcentratedSessions(peakHour: number) {
       return [
         ...Array.from({ length: 8 }, (_, i) => makeSession({ id: `peak-${i}`, startedAt: localDateAt(peakHour, i), wordsAdded: 500 })),
@@ -119,60 +122,60 @@ describe('InsightCard STRESS', () => {
       ];
     }
 
-    it('hour 22 → night writer 🌙', () => {
+    it('hour 22 → night writer', () => {
       render(<InsightCard sessions={makeConcentratedSessions(22)} />);
-      expect(screen.getByText(/night writer 🌙/)).toBeTruthy();
+      expect(screen.getByText(/night writer\./)).toBeTruthy();
     });
 
-    it('hour 23 → night writer 🌙', () => {
+    it('hour 23 → night writer', () => {
       render(<InsightCard sessions={makeConcentratedSessions(23)} />);
-      expect(screen.getByText(/night writer 🌙/)).toBeTruthy();
+      expect(screen.getByText(/night writer\./)).toBeTruthy();
     });
 
-    it('hour 0 (midnight) → night writer 🌙', () => {
+    it('hour 0 (midnight) → night writer', () => {
       render(<InsightCard sessions={makeConcentratedSessions(0)} />);
-      expect(screen.getByText(/night writer 🌙/)).toBeTruthy();
+      expect(screen.getByText(/night writer\./)).toBeTruthy();
     });
 
-    it('hour 3 → night writer 🌙', () => {
+    it('hour 3 → night writer', () => {
       render(<InsightCard sessions={makeConcentratedSessions(3)} />);
-      expect(screen.getByText(/night writer 🌙/)).toBeTruthy();
+      expect(screen.getByText(/night writer\./)).toBeTruthy();
     });
 
-    it('hour 5 → night writer 🌙 (caught by h < 6 before early bird check)', () => {
+    it('hour 5 → night writer (caught by h < 6 before early bird check)', () => {
       render(<InsightCard sessions={makeConcentratedSessions(5)} />);
-      expect(screen.getByText(/night writer 🌙/)).toBeTruthy();
+      expect(screen.getByText(/night writer\./)).toBeTruthy();
     });
 
-    it('hour 6 → early bird writer 🌅', () => {
+    it('hour 6 → early bird writer', () => {
       render(<InsightCard sessions={makeConcentratedSessions(6)} />);
-      expect(screen.getByText(/early bird writer 🌅/)).toBeTruthy();
+      expect(screen.getByText(/early bird writer\./)).toBeTruthy();
     });
 
-    it('hour 7 → early bird writer 🌅', () => {
+    it('hour 7 → early bird writer', () => {
       render(<InsightCard sessions={makeConcentratedSessions(7)} />);
-      expect(screen.getByText(/early bird writer 🌅/)).toBeTruthy();
+      expect(screen.getByText(/early bird writer\./)).toBeTruthy();
     });
 
-    it('hour 8 → no emoji (outside both ranges)', () => {
+    it('hour 8 → no night/early label (outside both ranges)', () => {
       render(<InsightCard sessions={makeConcentratedSessions(8)} />);
       const card = screen.getByTestId('insight-card');
-      expect(card.textContent).not.toContain('🌙');
-      expect(card.textContent).not.toContain('🌅');
+      expect(card.textContent).not.toContain('night writer');
+      expect(card.textContent).not.toContain('early bird writer');
     });
 
-    it('hour 14 → no emoji (afternoon)', () => {
+    it('hour 14 → no night/early label (afternoon)', () => {
       render(<InsightCard sessions={makeConcentratedSessions(14)} />);
       const card = screen.getByTestId('insight-card');
-      expect(card.textContent).not.toContain('🌙');
-      expect(card.textContent).not.toContain('🌅');
+      expect(card.textContent).not.toContain('night writer');
+      expect(card.textContent).not.toContain('early bird writer');
     });
 
-    it('hour 21 → no emoji (just before night range)', () => {
+    it('hour 21 → no night/early label (just before night range)', () => {
       render(<InsightCard sessions={makeConcentratedSessions(21)} />);
       const card = screen.getByTestId('insight-card');
-      expect(card.textContent).not.toContain('🌙');
-      expect(card.textContent).not.toContain('🌅');
+      expect(card.textContent).not.toContain('night writer');
+      expect(card.textContent).not.toContain('early bird writer');
     });
   });
 
@@ -209,7 +212,7 @@ describe('InsightCard STRESS', () => {
         makeSession({ id: 'low-4', startedAt: localDateAt(11), wordsAdded: 50 }),
       ];
       render(<InsightCard sessions={sessions} />);
-      expect(screen.getByText(/✨ Your secret hour/)).toBeTruthy();
+      expect(screen.getByText(/Your secret hour/)).toBeTruthy();
     });
   });
 
@@ -266,7 +269,7 @@ describe('InsightCard STRESS', () => {
       ];
       render(<InsightCard sessions={sessions} />);
       // Since both are equal, code picks first (hour 8) due to iteration order
-      expect(screen.getByText(/✨ Your secret hour/)).toBeTruthy();
+      expect(screen.getByText(/Your secret hour/)).toBeTruthy();
     });
   });
 });

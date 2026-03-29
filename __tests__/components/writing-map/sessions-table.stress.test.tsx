@@ -22,6 +22,9 @@ function makeSession(overrides: Partial<WritingSession> = {}): WritingSession {
     flowScore: 4,
     heteronymId: null,
     heteronymName: null,
+    keystrokeMetrics: null,
+    autoFlowScore: null,
+    flowMoments: null,
     ...overrides,
   };
 }
@@ -195,7 +198,7 @@ describe('SessionsTable STRESS', () => {
 
     it('sorts by flow score', () => {
       render(<SessionsTable sessions={sessions} />);
-      fireEvent.click(screen.getByRole('columnheader', { name: /Flow/ }));
+      fireEvent.click(screen.getByRole('columnheader', { name: /^Flow/ }));
       expect(screen.getAllByRole('row')).toHaveLength(4);
     });
 
@@ -206,7 +209,7 @@ describe('SessionsTable STRESS', () => {
         makeSession({ id: 's3', flowScore: 1 }),
       ];
       render(<SessionsTable sessions={mixed} />);
-      fireEvent.click(screen.getByRole('columnheader', { name: /Flow/ }));
+      fireEvent.click(screen.getByRole('columnheader', { name: /^Flow/ }));
       expect(screen.getAllByRole('row')).toHaveLength(4);
     });
 
@@ -252,7 +255,9 @@ describe('SessionsTable STRESS', () => {
 
     it('null score → dash', () => {
       render(<SessionsTable sessions={[makeSession({ flowScore: null })]} />);
-      expect(screen.getByText('—')).toBeTruthy();
+      // Both Auto Flow (null by default) and Flow (null) render em dashes
+      const dashes = screen.getAllByText('—');
+      expect(dashes.length).toBe(2);
     });
   });
 
@@ -347,14 +352,15 @@ describe('SessionsTable STRESS', () => {
   // COLUMN HEADERS
   // ──────────────────────────────────────────────────────
   describe('column headers', () => {
-    it('renders all 6 column headers', () => {
+    it('renders all 7 column headers', () => {
       render(<SessionsTable sessions={[makeSession()]} />);
       expect(screen.getByText('Project')).toBeTruthy();
       expect(screen.getByRole('columnheader', { name: /Date/ })).toBeTruthy();
       expect(screen.getByText('Time')).toBeTruthy();
       expect(screen.getByRole('columnheader', { name: /Words/ })).toBeTruthy();
       expect(screen.getByRole('columnheader', { name: /Duration/ })).toBeTruthy();
-      expect(screen.getByRole('columnheader', { name: /Flow/ })).toBeTruthy();
+      expect(screen.getByRole('columnheader', { name: /Auto Flow/ })).toBeTruthy();
+      expect(screen.getByRole('columnheader', { name: /^Flow/ })).toBeTruthy();
     });
   });
 });

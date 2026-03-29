@@ -9,6 +9,7 @@ import {
   writeSceneChangeReturn,
 } from '@/lib/types/scene-change';
 import type { SceneChangeState, SceneChangeReturn } from '@/lib/types/scene-change';
+import { addVersion, readVersions } from '@/lib/types/chapter-version';
 
 const DEFAULT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
 const EXTENSION_MS = 10 * 60 * 1000; // 10 minutes
@@ -29,7 +30,7 @@ export interface UseSceneChangeReturn {
     chapters: Chapter[]
   ): string | null;
   grantExtension(): void;
-  returnToOriginal(currentWordCount: number): SceneChangeReturn;
+  returnToOriginal(currentWordCount: number, alternateContent?: string): SceneChangeReturn;
   cancelSceneChange(): void;
 }
 
@@ -144,11 +145,27 @@ export function useSceneChange(nonDiscardedChapterCount: number): UseSceneChange
   }, [sceneState]);
 
   const returnToOriginal = useCallback(
-    (currentWordCount: number): SceneChangeReturn => {
+    (currentWordCount: number, alternateContent?: string): SceneChangeReturn => {
       const wordsWritten = Math.max(
         0,
         currentWordCount - (sceneState?.wordCountAtArrivalAlternate ?? 0)
       );
+
+      // Auto-snapshot alternate chapter content as a version
+      if (alternateContent && sceneState?.alternateChapterId && wordsWritten > 0) {
+        const existing = readVersions(sceneState.alternateChapterId);
+        if (existing.length > 0) {
+          const dateStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          addVersion(
+            sceneState.alternateChapterId,
+            alternateContent,
+            `Scene Change — ${dateStr}`,
+            'scene-change',
+            false
+          );
+        }
+      }
+
       const ret: SceneChangeReturn = {
         cursorPosition: sceneState?.originalCursorPosition ?? 0,
         wordsWritten,

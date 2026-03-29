@@ -3,18 +3,11 @@
 import { useStory, Conflict, CanonStatus } from '@/lib/store';
 import { useState } from 'react';
 import { useUnsavedChanges } from '@/hooks/use-unsaved-changes';
-import { Plus, Trash2, Edit3, Save, X, Swords, CheckCircle2, ShieldCheck, Shield, ShieldAlert, ShieldOff } from 'lucide-react';
+import { Plus, Trash2, Edit3, Save, X, Swords, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { fadeUp } from '@/lib/animations';
 import { useConfirm } from '@/components/confirm-dialog';
-import { BrassButton, CarvedHeader, EmptyState } from '@/components/antiquarian';
-
-const statusConfig = {
-  confirmed: { icon: ShieldCheck, color: 'text-forest-700', bg: 'bg-forest-700/10', label: 'Confirmed Canon' },
-  flexible: { icon: Shield, color: 'text-brass-600', bg: 'bg-brass-500/10', label: 'Flexible Canon' },
-  draft: { icon: ShieldAlert, color: 'text-brass-800', bg: 'bg-brass-400/10', label: 'Draft Idea' },
-  discarded: { icon: ShieldOff, color: 'text-wax-600', bg: 'bg-wax-500/10', label: 'Discarded' },
-};
+import { BrassButton, CarvedHeader, EmptyState, ParchmentCard, ParchmentInput, ParchmentTextarea, ParchmentSelect, InkStampButton, WaxSealBadge } from '@/components/antiquarian';
 
 export default function ConflictsPage() {
   const { state, updateField } = useStory();
@@ -100,34 +93,33 @@ export default function ConflictsPage() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
-              className={`bg-parchment-100 border ${conflict.status === 'resolved' ? 'border-forest-500/30 opacity-75 border-l-4 border-l-forest-600' : 'border-sepia-300/50 border-l-4 border-l-wax-500'} rounded-xl overflow-hidden transition-all texture-parchment shadow-parchment`}
             >
+            <ParchmentCard padding="none" className={`overflow-hidden ${conflict.status === 'resolved' ? 'border-l-4 border-l-forest-600 opacity-75' : 'border-l-4 border-l-wax-500'}`}>
               {editingId === conflict.id ? (
                 <div className="p-6 space-y-4">
-                  <input
+                  <ParchmentInput
                     type="text"
                     value={editForm.title || ''}
                     onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
-                    className="w-full bg-parchment-200 border border-sepia-300/50 rounded-lg px-4 py-3 text-xl font-serif font-semibold text-sepia-900 focus:outline-none focus:ring-2 focus:ring-brass-400/40"
+                    className="text-xl font-serif font-semibold"
                     placeholder="Conflict Title"
                   />
-                  <textarea
+                  <ParchmentTextarea
                     value={editForm.description || ''}
                     onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-                    className="w-full h-32 bg-parchment-200 border border-sepia-300/50 rounded-lg px-4 py-3 text-sm text-sepia-700 font-sans resize-y focus:outline-none focus:ring-2 focus:ring-brass-400/40"
+                    className="h-32"
                     placeholder="Describe the tension, stakes, and involved parties..."
                   />
                   <div className="flex items-center gap-3 pt-2">
-                    <select
+                    <ParchmentSelect
                       value={editForm.canonStatus || 'draft'}
                       onChange={(e) => setEditForm({ ...editForm, canonStatus: e.target.value as CanonStatus })}
-                      className="bg-parchment-200 border border-sepia-300/50 rounded-lg px-3 py-2 text-sm text-sepia-700 focus:outline-none focus:ring-2 focus:ring-brass-400/40"
                     >
                       <option value="confirmed">Confirmed Canon</option>
                       <option value="flexible">Flexible Canon</option>
                       <option value="draft">Draft Idea</option>
                       <option value="discarded">Discarded</option>
-                    </select>
+                    </ParchmentSelect>
                     <label className="flex items-center gap-2 text-sm text-sepia-600 cursor-pointer">
                       <input
                         type="checkbox"
@@ -138,20 +130,12 @@ export default function ConflictsPage() {
                       Mark as Resolved
                     </label>
                     <div className="flex-1" />
-                    <button
-                      onClick={handleCancel}
-                      className="flex items-center gap-2 px-4 py-2 rounded-lg text-sepia-600 hover:text-sepia-800 hover:bg-sepia-300/20 transition-colors"
-                    >
-                      <X size={18} />
+                    <InkStampButton variant="ghost" onClick={handleCancel} icon={<X size={18} />}>
                       Cancel
-                    </button>
-                    <button
-                      onClick={handleSave}
-                      className="flex items-center gap-2 bg-forest-700 text-cream-50 px-4 py-2 rounded-lg font-medium hover:bg-forest-600 transition-colors"
-                    >
-                      <Save size={18} />
+                    </InkStampButton>
+                    <InkStampButton variant="primary" onClick={handleSave} icon={<Save size={18} />}>
                       Save
-                    </button>
+                    </InkStampButton>
                   </div>
                 </div>
               ) : (
@@ -171,13 +155,7 @@ export default function ConflictsPage() {
                         {conflict.title}
                       </h2>
                       {conflict.canonStatus && (
-                        <span className={`flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${statusConfig[conflict.canonStatus].bg} ${statusConfig[conflict.canonStatus].color}`}>
-                          {(() => {
-                            const Icon = statusConfig[conflict.canonStatus].icon;
-                            return <Icon size={12} />;
-                          })()}
-                          {statusConfig[conflict.canonStatus].label}
-                        </span>
+                        <WaxSealBadge status={conflict.canonStatus} />
                       )}
                     </div>
                     <div className="flex items-center gap-2">
@@ -207,6 +185,7 @@ export default function ConflictsPage() {
                   </div>
                 </div>
               )}
+            </ParchmentCard>
             </motion.div>
           ))}
         </AnimatePresence>

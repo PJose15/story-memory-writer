@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { CarvedHeader, ParchmentCard } from '@/components/antiquarian';
 import { readSessions } from '@/lib/types/writing-session';
 import { CalendarHeatmap } from '@/components/writing-map/calendar-heatmap';
 import { WordsByHour } from '@/components/writing-map/words-by-hour';
 import { InsightCard } from '@/components/writing-map/insight-card';
 import { SessionsTable } from '@/components/writing-map/sessions-table';
+import { FlowTimeline } from '@/components/writing-map/flow-timeline';
 import type { WritingSession } from '@/lib/types/writing-session';
 
 export default function WritingMapPage() {
@@ -14,6 +15,12 @@ export default function WritingMapPage() {
 
   const totalWords = sessions.reduce((sum, s) => sum + s.wordsAdded, 0);
   const totalSessions = sessions.length;
+
+  const latestFlowSession = useMemo(() => {
+    const withFlow = sessions.filter(s => s.autoFlowScore !== null && s.autoFlowScore !== undefined);
+    if (withFlow.length === 0) return null;
+    return withFlow.sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime())[0];
+  }, [sessions]);
 
   return (
     <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-8">
@@ -40,7 +47,21 @@ export default function WritingMapPage() {
         </ParchmentCard>
       </section>
 
-      {/* Section 3: Insight Card */}
+      {/* Section 3: Latest Flow Timeline */}
+      {latestFlowSession && (
+        <section aria-label="Latest flow timeline">
+          <h2 className="text-lg font-medium text-sepia-800 mb-4">Latest Flow</h2>
+          <FlowTimeline
+            sessionStart={latestFlowSession.startedAt}
+            sessionEnd={latestFlowSession.endedAt}
+            autoFlowScore={latestFlowSession.autoFlowScore}
+            flowMoments={latestFlowSession.flowMoments}
+            avgWPM={latestFlowSession.keystrokeMetrics?.avgWPM}
+          />
+        </section>
+      )}
+
+      {/* Section 4: Insight Card */}
       <section aria-label="Writing insight">
         <InsightCard sessions={sessions} />
       </section>

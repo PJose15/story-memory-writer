@@ -3,17 +3,11 @@
 import { useStory, Chapter, CanonStatus } from '@/lib/store';
 import { useState } from 'react';
 import { useUnsavedChanges } from '@/hooks/use-unsaved-changes';
-import { Plus, Trash2, Edit3, Save, X, BookOpen, ShieldCheck, Shield, ShieldAlert, ShieldOff, ChevronUp, ChevronDown } from 'lucide-react';
+import { Plus, Trash2, Edit3, Save, X, BookOpen, ChevronUp, ChevronDown, BookCopy } from 'lucide-react';
+import { readVersions } from '@/lib/types/chapter-version';
 import { motion, AnimatePresence } from 'motion/react';
 import { useConfirm } from '@/components/confirm-dialog';
-import { BrassButton, CarvedHeader, EmptyState, ParchmentCard } from '@/components/antiquarian';
-
-const statusConfig = {
-  confirmed: { icon: ShieldCheck, color: 'text-forest-700', bg: 'bg-forest-700/10', label: 'Confirmed Canon' },
-  flexible: { icon: Shield, color: 'text-brass-600', bg: 'bg-brass-500/10', label: 'Flexible Canon' },
-  draft: { icon: ShieldAlert, color: 'text-brass-800', bg: 'bg-brass-400/10', label: 'Draft Idea' },
-  discarded: { icon: ShieldOff, color: 'text-wax-600', bg: 'bg-wax-500/10', label: 'Discarded' },
-};
+import { BrassButton, CarvedHeader, EmptyState, ParchmentCard, ParchmentInput, ParchmentTextarea, ParchmentSelect, InkStampButton, WaxSealBadge } from '@/components/antiquarian';
 
 export default function ManuscriptPage() {
   const { state, updateField } = useStory();
@@ -121,51 +115,42 @@ export default function ManuscriptPage() {
             <ParchmentCard padding="none" className="overflow-hidden">
               {editingId === chapter.id ? (
                 <div className="p-6 space-y-4">
-                  <input
+                  <ParchmentInput
                     type="text"
                     value={editForm.title || ''}
                     onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
-                    className="w-full bg-parchment-200 border border-sepia-300/50 rounded-lg px-4 py-3 text-xl font-serif font-semibold text-sepia-900 focus:outline-none focus:ring-2 focus:ring-brass-400/40"
+                    className="text-xl font-serif font-semibold"
                     placeholder="Chapter Title"
                   />
-                  <textarea
+                  <ParchmentTextarea
                     value={editForm.content || ''}
                     onChange={(e) => setEditForm({ ...editForm, content: e.target.value })}
-                    className="w-full h-64 bg-parchment-200 border border-sepia-300/50 rounded-lg px-4 py-3 text-sepia-700 font-serif leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-brass-400/40"
+                    className="h-64 font-serif leading-relaxed"
                     placeholder="Start writing your chapter here..."
                   />
-                  <textarea
+                  <ParchmentTextarea
                     value={editForm.summary || ''}
                     onChange={(e) => setEditForm({ ...editForm, summary: e.target.value })}
-                    className="w-full h-24 bg-parchment-200 border border-sepia-300/50 rounded-lg px-4 py-3 text-sm text-sepia-600 font-sans resize-y focus:outline-none focus:ring-2 focus:ring-brass-400/40"
+                    className="h-24"
                     placeholder="Brief summary for the Story Bible..."
                   />
                   <div className="flex items-center gap-3 pt-2">
-                    <select
+                    <ParchmentSelect
                       value={editForm.canonStatus || 'draft'}
                       onChange={(e) => setEditForm({ ...editForm, canonStatus: e.target.value as CanonStatus })}
-                      className="bg-parchment-200 border border-sepia-300/50 rounded-lg px-3 py-2 text-sm text-sepia-700 focus:outline-none focus:ring-2 focus:ring-brass-400/40"
                     >
                       <option value="confirmed">Confirmed Canon</option>
                       <option value="flexible">Flexible Canon</option>
                       <option value="draft">Draft Idea</option>
                       <option value="discarded">Discarded</option>
-                    </select>
+                    </ParchmentSelect>
                     <div className="flex-1" />
-                    <button
-                      onClick={handleCancel}
-                      className="flex items-center gap-2 px-4 py-2 rounded-lg text-sepia-600 hover:text-sepia-800 hover:bg-sepia-300/20 transition-colors"
-                    >
-                      <X size={18} />
+                    <InkStampButton variant="ghost" onClick={handleCancel} icon={<X size={18} />}>
                       Cancel
-                    </button>
-                    <button
-                      onClick={handleSave}
-                      className="flex items-center gap-2 bg-forest-700 text-cream-50 px-4 py-2 rounded-lg font-medium hover:bg-forest-600 transition-colors"
-                    >
-                      <Save size={18} />
+                    </InkStampButton>
+                    <InkStampButton variant="primary" onClick={handleSave} icon={<Save size={18} />}>
                       Save Chapter
-                    </button>
+                    </InkStampButton>
                   </div>
                 </div>
               ) : (
@@ -174,13 +159,7 @@ export default function ManuscriptPage() {
                     <div className="flex items-center gap-3">
                       <h2 className="text-2xl font-serif font-semibold text-sepia-900">{chapter.title}</h2>
                       {chapter.canonStatus && (
-                        <span className={`flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${statusConfig[chapter.canonStatus].bg} ${statusConfig[chapter.canonStatus].color}`}>
-                          {(() => {
-                            const Icon = statusConfig[chapter.canonStatus].icon;
-                            return <Icon size={12} />;
-                          })()}
-                          {statusConfig[chapter.canonStatus].label}
-                        </span>
+                        <WaxSealBadge status={chapter.canonStatus} />
                       )}
                     </div>
                     <div className="flex items-center gap-1">
@@ -222,8 +201,16 @@ export default function ManuscriptPage() {
                   <div className="prose prose-sepia max-w-none font-serif text-sepia-700 leading-relaxed line-clamp-4">
                     {chapter.content || <span className="text-sepia-400 italic">Empty chapter...</span>}
                   </div>
-                  <div className="mt-2 text-xs text-sepia-400 font-mono">
-                    {wordCount(chapter.content).toLocaleString()} words
+                  <div className="mt-2 flex items-center gap-3 text-xs text-sepia-400 font-mono">
+                    <span>{wordCount(chapter.content).toLocaleString()} words</span>
+                    {(() => {
+                      const vCount = readVersions(chapter.id).length;
+                      return vCount > 0 ? (
+                        <span className="inline-flex items-center gap-0.5 text-sepia-500">
+                          <BookCopy size={10} /> {vCount} version{vCount !== 1 ? 's' : ''}
+                        </span>
+                      ) : null;
+                    })()}
                   </div>
                   {chapter.summary && (
                     <div className="mt-6 pt-4 border-t border-sepia-300/50">

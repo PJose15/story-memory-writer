@@ -28,6 +28,9 @@ function makeSession(overrides: Partial<WritingSession> = {}): WritingSession {
     flowScore: 4,
     heteronymId: null,
     heteronymName: null,
+    keystrokeMetrics: null,
+    autoFlowScore: null,
+    flowMoments: null,
     ...overrides,
   };
 }
@@ -132,6 +135,95 @@ describe('writing-session', () => {
       const bad = { ...makeSession(), heteronymId: 123 };
       storage[SESSIONS_KEY] = JSON.stringify([bad]);
       expect(readSessions()).toEqual([]);
+    });
+
+    it('accepts sessions with keystroke metrics', () => {
+      const sess = makeSession({
+        keystrokeMetrics: {
+          avgWPM: 45.2,
+          peakWPM: 62.1,
+          totalPauses: 3,
+          avgPauseDuration: 4000,
+          deletionAttempts: 5,
+          deletionRatio: 0.02,
+          totalKeystrokes: 250,
+        },
+        autoFlowScore: 72,
+        flowMoments: [{ startTime: 1000, endTime: 61000, avgWPM: 50.0, peakWPM: 55.0 }],
+      });
+      storage[SESSIONS_KEY] = JSON.stringify([sess]);
+      expect(readSessions()).toEqual([sess]);
+    });
+
+    it('accepts legacy sessions without metrics fields (backward compat)', () => {
+      const legacy = {
+        id: 'sess-1',
+        projectId: 'proj-1',
+        projectName: 'My Novel',
+        startedAt: '2026-03-10T10:00:00Z',
+        endedAt: '2026-03-10T10:30:00Z',
+        wordsStart: 100,
+        wordsEnd: 250,
+        wordsAdded: 150,
+        flowScore: 4,
+      };
+      storage[SESSIONS_KEY] = JSON.stringify([legacy]);
+      const result = readSessions();
+      expect(result).toHaveLength(1);
+      expect(result[0].keystrokeMetrics).toBeNull();
+      expect(result[0].autoFlowScore).toBeNull();
+      expect(result[0].flowMoments).toBeNull();
+    });
+
+    it('accepts sessions with null metrics fields', () => {
+      const sess = makeSession({
+        keystrokeMetrics: null,
+        autoFlowScore: null,
+        flowMoments: null,
+      });
+      storage[SESSIONS_KEY] = JSON.stringify([sess]);
+      expect(readSessions()).toEqual([sess]);
+    });
+
+    it('rejects sessions with invalid keystrokeMetrics type', () => {
+      const bad = { ...makeSession(), keystrokeMetrics: 'not-an-object' };
+      storage[SESSIONS_KEY] = JSON.stringify([bad]);
+      expect(readSessions()).toEqual([]);
+    });
+
+    it('rejects sessions with invalid autoFlowScore type', () => {
+      const bad = { ...makeSession(), autoFlowScore: 'not-a-number' };
+      storage[SESSIONS_KEY] = JSON.stringify([bad]);
+      expect(readSessions()).toEqual([]);
+    });
+
+    it('rejects sessions with invalid flowMoments type', () => {
+      const bad = { ...makeSession(), flowMoments: 'not-an-array' };
+      storage[SESSIONS_KEY] = JSON.stringify([bad]);
+      expect(readSessions()).toEqual([]);
+    });
+
+    it('normalizes missing metrics fields to null on legacy data', () => {
+      const legacy = {
+        id: 'sess-old',
+        projectId: 'proj-1',
+        projectName: 'Old Novel',
+        startedAt: '2025-01-01T10:00:00Z',
+        endedAt: '2025-01-01T10:30:00Z',
+        wordsStart: 0,
+        wordsEnd: 100,
+        wordsAdded: 100,
+        flowScore: 3,
+        heteronymId: null,
+        heteronymName: null,
+        // no keystrokeMetrics, autoFlowScore, or flowMoments
+      };
+      storage[SESSIONS_KEY] = JSON.stringify([legacy]);
+      const result = readSessions();
+      expect(result).toHaveLength(1);
+      expect(result[0].keystrokeMetrics).toBeNull();
+      expect(result[0].autoFlowScore).toBeNull();
+      expect(result[0].flowMoments).toBeNull();
     });
   });
 

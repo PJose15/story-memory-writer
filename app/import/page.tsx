@@ -6,7 +6,7 @@ import type { ExtractedData, ExtractedChapter, ExtractedCharacter, ExtractedChar
 import { UploadCloud, FileText, CheckCircle2, AlertCircle, Loader2, ArrowRight, Save, X, ChevronUp, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useToast } from '@/components/toast';
-import { CarvedHeader, ParchmentCard } from '@/components/antiquarian';
+import { CarvedHeader, ParchmentCard, BrassButton, InkStampButton } from '@/components/antiquarian';
 
 export default function ImportPage() {
   const { state, updateField } = useStory();
@@ -345,9 +345,9 @@ export default function ImportPage() {
             </div>
             <h3 className="text-lg font-medium text-sepia-800 mb-2">Drag & Drop Files Here</h3>
             <p className="text-sm text-sepia-500 mb-6">Supports PDF, DOCX, TXT, and Markdown files.</p>
-            <button className="bg-parchment-200 hover:bg-sepia-300/30 text-sepia-800 px-6 py-2 rounded-lg font-medium transition-colors">
+            <BrassButton>
               Browse Files
-            </button>
+            </BrassButton>
           </div>
 
           {files.length > 0 && (
@@ -372,12 +372,9 @@ export default function ImportPage() {
                 ))}
               </ul>
               <div className="flex justify-end">
-                <button
-                  onClick={handleUpload}
-                  className="bg-forest-700 hover:bg-forest-600 text-cream-50 px-6 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors"
-                >
-                  Start Ingestion <ArrowRight size={18} />
-                </button>
+                <InkStampButton variant="primary" onClick={handleUpload} icon={<ArrowRight size={18} />}>
+                  Start Ingestion
+                </InkStampButton>
               </div>
             </ParchmentCard>
           )}
@@ -726,18 +723,12 @@ export default function ImportPage() {
           </div>
 
           <div className="flex justify-end gap-4 pt-6 border-t border-sepia-300/50">
-            <button
-              onClick={reset}
-              className="px-6 py-2 rounded-lg font-medium text-sepia-600 hover:text-sepia-800 transition-colors"
-            >
+            <InkStampButton variant="ghost" onClick={reset}>
               Cancel
-            </button>
-            <button
-              onClick={handleConfirmImport}
-              className="bg-forest-700 hover:bg-forest-600 text-cream-50 px-6 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors"
-            >
-              <Save size={18} /> Merge into Project Memory
-            </button>
+            </InkStampButton>
+            <InkStampButton variant="primary" onClick={handleConfirmImport} icon={<Save size={18} />}>
+              Merge into Project Memory
+            </InkStampButton>
           </div>
         </div>
       )}
@@ -752,12 +743,9 @@ export default function ImportPage() {
             <p className="text-sepia-600 text-sm max-w-md mx-auto mb-8">
               Your manuscript has been successfully parsed, structured, and merged into your project memory. You can now continue writing with full context.
             </p>
-            <button
-              onClick={reset}
-              className="bg-parchment-200 hover:bg-sepia-300/30 text-sepia-800 px-6 py-2 rounded-lg font-medium transition-colors"
-            >
+            <BrassButton onClick={reset}>
               Import More Files
-            </button>
+            </BrassButton>
           </div>
         </div>
       )}

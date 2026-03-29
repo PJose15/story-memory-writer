@@ -12,6 +12,7 @@ import {
 } from '@/lib/types/writing-session';
 import type { WritingSession, FlowScore } from '@/lib/types/writing-session';
 import { getActiveHeteronymId, readHeteronyms } from '@/lib/types/heteronym';
+import type { MetricsCollector } from '@/lib/flow-metrics';
 
 const MIN_WORDS_TO_START = 10;
 const IDLE_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
@@ -19,12 +20,17 @@ const HEARTBEAT_INTERVAL_MS = 30 * 1000; // 30 seconds
 const MIN_SESSION_WORDS = 5; // minimum words added to count as a session
 const MIN_FLOW_SCORE_MINUTES = 3; // minimum session length to show flow score modal
 
+interface SessionTrackerOptions {
+  metricsCollectorRef?: React.RefObject<MetricsCollector | null>;
+}
+
 interface SessionTrackerState {
   pendingFlowScore: { sessionId: string } | null;
   dismissFlowScore: () => void;
 }
 
-export function useSessionTracker(): SessionTrackerState {
+export function useSessionTracker(options?: SessionTrackerOptions): SessionTrackerState {
+  const metricsRef = options?.metricsCollectorRef;
   const { state } = useStory();
   const pathname = usePathname();
 
@@ -84,6 +90,12 @@ export function useSessionTracker(): SessionTrackerState {
     const durationMs = new Date(endedAt).getTime() - new Date(sessionStartRef.current).getTime();
     const durationMinutes = durationMs / 60_000;
 
+    // Capture keystroke metrics if collector is available
+    const collector = metricsRef?.current ?? null;
+    const keystrokeMetrics = collector ? collector.getSnapshot() : null;
+    const autoFlowScore = collector ? collector.computeAutoFlowScore() : null;
+    const flowMoments = collector ? collector.detectFlowMoments() : null;
+
     const session: WritingSession = {
       id: sessionIdRef.current,
       projectId: getProjectId(),
@@ -96,6 +108,9 @@ export function useSessionTracker(): SessionTrackerState {
       flowScore: null,
       heteronymId: heteronymIdRef.current,
       heteronymName: heteronymNameRef.current,
+      keystrokeMetrics,
+      autoFlowScore,
+      flowMoments: flowMoments && flowMoments.length > 0 ? flowMoments : null,
     };
 
     addSession(session);
@@ -204,6 +219,9 @@ export function useSessionTracker(): SessionTrackerState {
           flowScore: null,
           heteronymId: wip.heteronymId ?? null,
           heteronymName: wip.heteronymName ?? null,
+          keystrokeMetrics: null,
+          autoFlowScore: null,
+          flowMoments: null,
         };
         addSession(recovered);
       }

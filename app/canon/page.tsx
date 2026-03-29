@@ -5,7 +5,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { Lock, Trash2, ShieldCheck, ShieldAlert, Shield, ShieldOff, Filter } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { fadeUp } from '@/lib/animations';
-import { CarvedHeader, EmptyState } from '@/components/antiquarian';
+import { CarvedHeader, EmptyState, ParchmentCard, ParchmentSelect, WaxSealBadge } from '@/components/antiquarian';
 
 type ItemType = 'character' | 'timeline' | 'conflict' | 'chapter' | 'scene' | 'world_rule' | 'location' | 'theme' | 'open_loop' | 'foreshadowing';
 
@@ -66,8 +66,6 @@ export default function CanonLockPage() {
     updateField(field, items.map(item => item.id === id ? { ...item, canonStatus: newStatus } : item) as StoryState[typeof field]);
   }, [state, updateField]);
 
-  const selectClasses = "bg-parchment-200 border border-sepia-300/60 rounded-lg px-3 py-2 text-sm text-sepia-800 focus:outline-none focus:ring-2 focus:ring-brass-400/40";
-
   return (
     <div className="p-8 max-w-5xl mx-auto space-y-8">
       <motion.div {...fadeUp}>
@@ -77,10 +75,9 @@ export default function CanonLockPage() {
           icon={<Lock size={24} />}
           actions={
             <div className="flex flex-wrap gap-2">
-              <select
+              <ParchmentSelect
                 value={filterType}
                 onChange={(e) => setFilterType(e.target.value as ItemType | 'all')}
-                className={selectClasses}
               >
                 <option value="all">All Types</option>
                 <option value="character">Characters</option>
@@ -93,19 +90,18 @@ export default function CanonLockPage() {
                 <option value="theme">Themes</option>
                 <option value="open_loop">Open Loops</option>
                 <option value="foreshadowing">Foreshadowing</option>
-              </select>
+              </ParchmentSelect>
 
-              <select
+              <ParchmentSelect
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value as CanonStatus | 'all')}
-                className={selectClasses}
               >
                 <option value="all">All Statuses</option>
                 <option value="confirmed">Confirmed Canon</option>
                 <option value="flexible">Flexible Canon</option>
                 <option value="draft">Draft Idea</option>
                 <option value="discarded">Discarded</option>
-              </select>
+              </ParchmentSelect>
             </div>
           }
         />
@@ -115,7 +111,6 @@ export default function CanonLockPage() {
         <AnimatePresence>
           {filteredItems.map((item) => {
             const config = statusConfig[item.status];
-            const Icon = config.icon;
 
             return (
               <motion.div
@@ -124,18 +119,15 @@ export default function CanonLockPage() {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
                 layout
-                className={`bg-parchment-100 border ${config.border} rounded-xl p-5 shadow-parchment flex flex-col texture-parchment`}
               >
+              <ParchmentCard padding="none" className={`p-5 flex flex-col ${config.border}`}>
                 <div className="flex items-start justify-between mb-3">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-xs font-medium text-sepia-600 uppercase tracking-wider bg-parchment-200 px-2 py-0.5 rounded">
                         {item.type}
                       </span>
-                      <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium ${config.bg} ${config.color}`}>
-                        <Icon size={12} />
-                        {config.label}
-                      </div>
+                      <WaxSealBadge status={item.status} />
                     </div>
                     <h3 className="text-lg font-serif font-semibold text-sepia-900">{item.title}</h3>
                   </div>
@@ -168,6 +160,7 @@ export default function CanonLockPage() {
                     );
                   })}
                 </div>
+              </ParchmentCard>
               </motion.div>
             );
           })}

@@ -3,7 +3,7 @@
 import { forwardRef } from 'react';
 
 interface InkStampButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'danger';
+  variant?: 'primary' | 'danger' | 'ghost';
   size?: 'sm' | 'md' | 'lg';
   icon?: React.ReactNode;
   loading?: boolean;
@@ -14,6 +14,8 @@ const variantStyles = {
     'bg-forest-700 text-cream-50 border-2 border-forest-800 hover:bg-forest-600 active:bg-forest-800',
   danger:
     'bg-wax-700 text-cream-50 border-2 border-wax-800 hover:bg-wax-600 active:bg-wax-800',
+  ghost:
+    'bg-transparent text-sepia-600 border-2 border-transparent hover:text-sepia-800 hover:bg-sepia-300/20',
 };
 
 const sizeStyles = {

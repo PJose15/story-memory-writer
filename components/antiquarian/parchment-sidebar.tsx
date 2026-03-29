@@ -17,7 +17,8 @@ import {
   Lock,
   UploadCloud,
   Zap,
-  Map
+  Map,
+  BookOpenCheck
 } from 'lucide-react';
 import { useState } from 'react';
 import { useStory } from '@/lib/store';
@@ -34,6 +35,7 @@ const navItems = [
   { name: 'Assistant', href: '/assistant', icon: MessageSquareText },
   { name: 'Import', href: '/import', icon: UploadCloud },
   { name: 'Writing Map', href: '/writing-map', icon: Map },
+  { name: 'Reader Mode', href: '/reader', icon: BookOpenCheck },
 ];
 
 export function ParchmentSidebar() {

@@ -4,6 +4,23 @@ const PROJECT_ID_KEY = 'zagafy_project_id';
 
 export type FlowScore = 1 | 2 | 3 | 4 | 5;
 
+export interface SessionKeystrokeMetrics {
+  avgWPM: number;
+  peakWPM: number;
+  totalPauses: number;
+  avgPauseDuration: number;
+  deletionAttempts: number;
+  deletionRatio: number;
+  totalKeystrokes: number;
+}
+
+export interface SessionFlowMoment {
+  startTime: number;
+  endTime: number;
+  avgWPM: number;
+  peakWPM: number;
+}
+
 export interface WritingSession {
   id: string;
   projectId: string;
@@ -16,6 +33,9 @@ export interface WritingSession {
   flowScore: FlowScore | null;
   heteronymId: string | null;
   heteronymName: string | null;
+  keystrokeMetrics: SessionKeystrokeMetrics | null;
+  autoFlowScore: number | null; // 0-100
+  flowMoments: SessionFlowMoment[] | null;
 }
 
 function isFlowScore(v: unknown): v is FlowScore | null {
@@ -24,6 +44,18 @@ function isFlowScore(v: unknown): v is FlowScore | null {
 
 function isNullableString(v: unknown): boolean {
   return v === null || v === undefined || typeof v === 'string';
+}
+
+function isNullableObject(v: unknown): boolean {
+  return v === null || v === undefined || typeof v === 'object';
+}
+
+function isNullableNumber(v: unknown): boolean {
+  return v === null || v === undefined || typeof v === 'number';
+}
+
+function isNullableArray(v: unknown): boolean {
+  return v === null || v === undefined || Array.isArray(v);
 }
 
 function isWritingSession(v: unknown): v is WritingSession {
@@ -46,9 +78,16 @@ function isWritingSession(v: unknown): v is WritingSession {
   if (!isNullableString(o.heteronymId) || !isNullableString(o.heteronymName)) {
     return false;
   }
+  // Backward compatible: existing sessions without metrics fields are valid
+  if (!isNullableObject(o.keystrokeMetrics) || !isNullableNumber(o.autoFlowScore) || !isNullableArray(o.flowMoments)) {
+    return false;
+  }
   // Normalize missing fields to null
   o.heteronymId = o.heteronymId ?? null;
   o.heteronymName = o.heteronymName ?? null;
+  o.keystrokeMetrics = o.keystrokeMetrics ?? null;
+  o.autoFlowScore = o.autoFlowScore ?? null;
+  o.flowMoments = o.flowMoments ?? null;
   return true;
 }
 
@@ -100,7 +139,9 @@ export function getProjectId(): string {
   }
 }
 
-export function saveWipSession(session: Omit<WritingSession, 'endedAt' | 'wordsEnd' | 'wordsAdded' | 'flowScore'> & { currentWords: number }): void {
+type WipSession = Omit<WritingSession, 'endedAt' | 'wordsEnd' | 'wordsAdded' | 'flowScore' | 'keystrokeMetrics' | 'autoFlowScore' | 'flowMoments'> & { currentWords: number };
+
+export function saveWipSession(session: WipSession): void {
   try {
     localStorage.setItem(WIP_KEY, JSON.stringify(session));
   } catch {
@@ -108,7 +149,7 @@ export function saveWipSession(session: Omit<WritingSession, 'endedAt' | 'wordsE
   }
 }
 
-export function readWipSession(): (Omit<WritingSession, 'endedAt' | 'wordsEnd' | 'wordsAdded' | 'flowScore'> & { currentWords: number }) | null {
+export function readWipSession(): WipSession | null {
   try {
     const raw = localStorage.getItem(WIP_KEY);
     if (!raw) return null;
