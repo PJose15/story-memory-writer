@@ -106,10 +106,11 @@ export function EntityCatalog({ entities, onSelect }: EntityCatalogProps) {
           types.map(type => {
             const items = grouped[type];
             if (items.length === 0) return null;
+            const GroupIcon = TYPE_ICONS[type];
             return (
               <div key={type} className="space-y-2">
                 <h3 className="text-xs font-medium text-sepia-600 uppercase tracking-wider flex items-center gap-2">
-                  {(() => { const Icon = TYPE_ICONS[type]; return <Icon size={14} />; })()}
+                  <GroupIcon size={14} />
                   {TYPE_LABELS[type]} ({items.length})
                 </h3>
                 <div className="space-y-1.5">

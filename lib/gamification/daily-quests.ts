@@ -1,16 +1,9 @@
 import type { DailyQuest, QuestsState, QuestType } from '@/lib/types/gamification';
 import type { StoryState } from '@/lib/store';
+import { formatDateKey } from './date-utils';
 
 const MAX_HISTORY = 30;
 const XP_REWARD = 50;
-
-// L19: Shared date formatting
-function formatDateKey(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-}
 
 // ─── Seeded PRNG (mulberry32) ───
 
@@ -32,8 +25,8 @@ function mulberry32(seed: number): () => number {
   };
 }
 
-function pick<T>(arr: T[], rng: () => number): T {
-  if (arr.length === 0) throw new Error('pick() called on empty array');
+function pick<T>(arr: T[], rng: () => number): T | undefined {
+  if (arr.length === 0) return undefined;
   return arr[Math.floor(rng() * arr.length)];
 }
 
@@ -60,9 +53,9 @@ function getContext(story: StoryState | null, rng: () => number): QuestContext {
   if (!story || (chars.length === 0 && conflicts.length === 0 && locs.length === 0)) {
     return { characterName: 'a character', conflictTitle: 'the central conflict', locationName: 'the main setting', hasStoryData: false };
   }
-  const characterName = chars.length > 0 ? pick(chars, rng).name : 'a character';
-  const conflictTitle = conflicts.length > 0 ? pick(conflicts, rng).title : 'the central conflict';
-  const locationName = locs.length > 0 ? pick(locs, rng).name : 'the main setting';
+  const characterName = chars.length > 0 ? pick(chars, rng)!.name : 'a character';
+  const conflictTitle = conflicts.length > 0 ? pick(conflicts, rng)!.title : 'the central conflict';
+  const locationName = locs.length > 0 ? pick(locs, rng)!.name : 'the main setting';
   return { characterName, conflictTitle, locationName, hasStoryData: true };
 }
 
@@ -123,7 +116,7 @@ export function generateDailyQuests(dateKey: string, storyState: StoryState | nu
 
   const types: QuestType[] = ['dialogue', 'character', 'story'];
   return types.map((type) => {
-    const template = pick(TEMPLATE_SETS[type], rng);
+    const template = pick(TEMPLATE_SETS[type], rng)!;
     return {
       id: `quest-${dateKey}-${type}`,
       type,

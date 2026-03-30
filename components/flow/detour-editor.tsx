@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
-import { Timer, ArrowLeft, Check } from 'lucide-react';
+import { Timer, Check } from 'lucide-react';
 import type { DetourSession } from '@/lib/scenery-change/types';
 
 interface DetourEditorProps {
@@ -53,12 +53,6 @@ export function DetourEditor({ detour, onEnd }: DetourEditorProps) {
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-forest-700 text-cream-50 hover:bg-forest-600 transition-colors"
           >
             <Check size={14} /> Done
-          </button>
-          <button
-            onClick={() => onEnd(content)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-sepia-500 hover:text-sepia-700 hover:bg-parchment-200 transition-colors"
-          >
-            <ArrowLeft size={14} /> Return
           </button>
         </div>
       </div>

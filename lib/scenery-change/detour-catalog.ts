@@ -80,18 +80,24 @@ export function getDetourSuggestions(
   // Filter/rank by relevance to block indicators
   let templates = [...DETOUR_TEMPLATES];
 
-  // If idle — shorter detours first
-  if (signal.indicators.includes('idle')) {
-    templates.sort((a, b) => a.durationMinutes - b.durationMinutes);
-  }
+  const hasIdle = signal.indicators.includes('idle');
+  const hasHighDeletion = signal.indicators.includes('high_deletion');
 
-  // If high deletion — creative reframing detours
-  if (signal.indicators.includes('high_deletion')) {
+  if (hasIdle || hasHighDeletion) {
     const preferred: DetourType[] = ['alternate_pov', 'sensory_snapshot', 'flash_forward'];
     templates.sort((a, b) => {
-      const aIdx = preferred.indexOf(a.type);
-      const bIdx = preferred.indexOf(b.type);
-      return (aIdx === -1 ? 99 : aIdx) - (bIdx === -1 ? 99 : bIdx);
+      // High deletion: prefer creative reframing detours
+      if (hasHighDeletion) {
+        const aIdx = preferred.indexOf(a.type);
+        const bIdx = preferred.indexOf(b.type);
+        const prefDiff = (aIdx === -1 ? 99 : aIdx) - (bIdx === -1 ? 99 : bIdx);
+        if (prefDiff !== 0) return prefDiff;
+      }
+      // Idle: shorter detours first (tiebreaker when both present)
+      if (hasIdle) {
+        return a.durationMinutes - b.durationMinutes;
+      }
+      return 0;
     });
   }
 

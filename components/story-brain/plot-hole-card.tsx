@@ -5,7 +5,7 @@ import { AlertTriangle, Eye, CheckCircle, Paintbrush, ArrowRight } from 'lucide-
 import type { PlotHole } from '@/lib/story-brain/plot-hole-types';
 import type { InconsistencyResolution, ResolutionAction } from '@/lib/story-brain/types';
 
-const IMPACT_COLORS: Record<string, string> = {
+const IMPACT_COLORS: Record<'high' | 'medium' | 'low', string> = {
   high: 'text-wax-600',
   medium: 'text-brass-600',
   low: 'text-sepia-500',

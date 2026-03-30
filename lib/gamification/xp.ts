@@ -34,21 +34,21 @@ export function calculateLevel(totalXP: number): number {
 }
 
 export function xpToNextLevel(totalXP: number): { current: number; needed: number; progress: number } {
-  if (!Number.isFinite(totalXP) || totalXP < 0) totalXP = 0;
-  const level = calculateLevel(totalXP);
+  const safeXP = (!Number.isFinite(totalXP) || totalXP < 0) ? 0 : totalXP;
+  const level = calculateLevel(safeXP);
   const currentLevelXP = xpForLevel(level);
   const nextLevelXP = xpForLevel(level + 1);
 
   // Below level 1 threshold (0-99 XP): show progress toward level 1
-  if (totalXP < currentLevelXP) {
+  if (safeXP < currentLevelXP) {
     const floor = level <= 1 ? 0 : xpForLevel(level - 1);
-    const current = totalXP - floor;
+    const current = safeXP - floor;
     const needed = currentLevelXP - floor;
     const progress = needed > 0 ? Math.min(100, (current / needed) * 100) : 100;
     return { current, needed, progress };
   }
 
-  const current = totalXP - currentLevelXP;
+  const current = safeXP - currentLevelXP;
   const needed = nextLevelXP - currentLevelXP;
   const progress = needed > 0 ? Math.min(100, (current / needed) * 100) : 100;
   return { current, needed, progress };

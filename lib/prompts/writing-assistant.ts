@@ -115,6 +115,6 @@ function buildWriterStateBlock(blockType: string): string {
     exhaustion: 'WRITER STATE: EXHAUSTION — Be minimal and gentle. Keep responses shorter. Suggest small, achievable next steps.',
     default: 'WRITER STATE: NEUTRAL — Be direct and collaborative. Mix strategic analysis with creative suggestions. Keep momentum.',
   };
-  const instruction = states[blockType.toLowerCase()];
-  return instruction ? `\n## Writer Emotional State\n\n${instruction}\n` : '';
+  const instruction = states[blockType.toLowerCase()] ?? states['default'];
+  return `\n## Writer Emotional State\n\n${instruction}\n`;
 }

@@ -165,7 +165,7 @@ export function getSprintStats(history: WritingSprint[]): SprintStats {
     totalSprints: history.length,
     completedSprints: completed.length,
     totalWordsWritten,
-    totalMinutes: Math.round(totalMinutes),
+    totalMinutes: Math.round(totalMinutes), // Display-only rounding; sub-minute precision not needed for stats
     avgWordsPerSprint: completed.length > 0 ? Math.round(totalWordsWritten / completed.length) : 0,
     targetsMetCount,
     targetMetRate: completed.length > 0 ? Math.round((targetsMetCount / completed.length) * 100) : 0,

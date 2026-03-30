@@ -1,5 +1,6 @@
 import type { WritingStreakState, StreakDay } from '@/lib/types/gamification';
 import type { WritingSession } from '@/lib/types/writing-session';
+import { formatDateKey } from './date-utils';
 
 const MAX_HISTORY = 90;
 const MIN_SESSION_MINUTES = 10;
@@ -24,12 +25,7 @@ export function isQualifyingSession(session: WritingSession): boolean {
 
 // ─── Date Helpers ───
 
-function toDateKey(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-}
+const toDateKey = formatDateKey;
 
 // ─── Update Streak ───
 

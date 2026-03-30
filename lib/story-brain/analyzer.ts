@@ -19,14 +19,6 @@ export function analyzeStoryState(state: StoryState): StoryBrainAnalysis {
     `${ch.title} ${ch.content} ${ch.summary}`.toLowerCase()
   );
 
-  // Scene index: chapterId → scene ids
-  const scenesByChapter = new Map<string, string[]>();
-  for (const scene of state.scenes) {
-    const existing = scenesByChapter.get(scene.chapterId) || [];
-    existing.push(scene.id);
-    scenesByChapter.set(scene.chapterId, existing);
-  }
-
   // ─── Characters ───
   for (const char of state.characters) {
     const nameLower = char.name.toLowerCase();

@@ -69,10 +69,10 @@ export function getDetourStats(): {
     return { totalDetours: 0, totalWords: 0, favoriteType: null };
   }
 
-  const totalWords = history.reduce((sum, s) => sum + s.wordCount, 0);
-
   const typeCounts = new Map<string, number>();
+  let totalWords = 0;
   for (const s of history) {
+    totalWords += s.wordCount;
     typeCounts.set(s.type, (typeCounts.get(s.type) || 0) + 1);
   }
 
