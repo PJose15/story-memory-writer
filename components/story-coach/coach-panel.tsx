@@ -31,6 +31,15 @@ export function CoachPanel({ insights, isLoading, error, onRefresh, onDismiss, o
 
   return (
     <AnimatePresence>
+      {/* M4: Click-outside backdrop on mobile to dismiss panel */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-black/30 z-[154] md:hidden"
+        onClick={onClose}
+        aria-hidden="true"
+      />
       <motion.div
         initial={{ x: '100%' }}
         animate={{ x: 0 }}

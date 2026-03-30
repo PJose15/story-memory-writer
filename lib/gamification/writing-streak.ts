@@ -8,6 +8,10 @@ const MIN_SESSION_MINUTES = 10;
 const STREAK_WARNING_URGENT_HOUR = 20; // 8 PM — urgent warning
 const STREAK_WARNING_REMINDER_HOUR = 18; // 6 PM — gentle reminder
 
+// M16: Cache streak history to avoid rebuilding 90-day array on every mount
+let _cachedHistoryKey: string | null = null;
+let _cachedHistory: StreakDay[] | null = null;
+
 // ─── Qualifying Session ───
 
 export function isQualifyingSession(session: WritingSession): boolean {
@@ -62,13 +66,21 @@ export function updateStreak(
 
   const longestStreak = Math.max(state.longestStreak, currentStreak);
 
-  // Build streak history for recent days (last 90)
-  const historyDate = new Date(todayKey + 'T00:00:00');
-  const streakHistory: StreakDay[] = [];
-  for (let i = 0; i < MAX_HISTORY; i++) {
-    const key = toDateKey(historyDate);
-    streakHistory.unshift({ dateKey: key, qualified: qualifyingDates.has(key) });
-    historyDate.setDate(historyDate.getDate() - 1);
+  // M16: Build streak history for recent days (last 90), cached by sessions+today
+  const cacheKey = `${todayKey}:${sessions.length}:${qualifyingDates.size}`;
+  let streakHistory: StreakDay[];
+  if (_cachedHistoryKey === cacheKey && _cachedHistory !== null) {
+    streakHistory = _cachedHistory;
+  } else {
+    const historyDate = new Date(todayKey + 'T00:00:00');
+    streakHistory = [];
+    for (let i = 0; i < MAX_HISTORY; i++) {
+      const key = toDateKey(historyDate);
+      streakHistory.unshift({ dateKey: key, qualified: qualifyingDates.has(key) });
+      historyDate.setDate(historyDate.getDate() - 1);
+    }
+    _cachedHistoryKey = cacheKey;
+    _cachedHistory = streakHistory;
   }
 
   const lastQualifyingDate = todayQualified

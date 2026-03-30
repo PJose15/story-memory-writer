@@ -168,17 +168,33 @@ export function isGamificationState(v: unknown): v is GamificationState {
   if (typeof xp.totalXP !== 'number' || !Number.isFinite(xp.totalXP)) return false;
   if (typeof xp.level !== 'number' || !Number.isFinite(xp.level)) return false;
   if (!Array.isArray(xp.events)) return false;
+  // M10: Shallow-validate first XP event element
+  if (xp.events.length > 0) {
+    const e = xp.events[0] as Record<string, unknown>;
+    if (typeof e?.id !== 'string' || typeof e?.type !== 'string' || typeof e?.amount !== 'number') return false;
+  }
 
   const streak = o.streak as Record<string, unknown>;
   if (typeof streak.currentStreak !== 'number' || !Number.isFinite(streak.currentStreak)) return false;
   if (typeof streak.longestStreak !== 'number' || !Number.isFinite(streak.longestStreak)) return false;
   // L15: Validate todayQualified is boolean
   if (typeof streak.todayQualified !== 'boolean') return false;
+  // M10: Shallow-validate first streakHistory element
+  if (Array.isArray(streak.streakHistory) && streak.streakHistory.length > 0) {
+    const sh = streak.streakHistory[0] as Record<string, unknown>;
+    if (typeof sh?.date !== 'string' && typeof sh?.dateKey !== 'string') return false;
+    if (typeof sh?.qualified !== 'boolean') return false;
+  }
 
   const quests = o.quests as Record<string, unknown>;
   if (!Array.isArray(quests.quests)) return false;
   // L16: Validate currentDate is string
   if (typeof quests.currentDate !== 'string') return false;
+  // M10: Shallow-validate first quest element
+  if (quests.quests.length > 0) {
+    const q = quests.quests[0] as Record<string, unknown>;
+    if (typeof q?.id !== 'string' || typeof q?.title !== 'string' || typeof q?.status !== 'string') return false;
+  }
 
   const sprints = o.sprints as Record<string, unknown>;
   if (!Array.isArray(sprints.sprintHistory)) return false;

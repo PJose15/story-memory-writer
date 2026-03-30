@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useDeferredValue } from 'react';
 import { CarvedHeader, ParchmentCard } from '@/components/antiquarian';
 import { useStoryBrain } from '@/hooks/use-story-brain';
 import { EntityCatalog } from '@/components/story-brain/entity-catalog';
@@ -24,12 +24,16 @@ export default function StoryBrainPage() {
     unresolve,
   } = useStoryBrain();
 
+  // M2: Defer heavy analysis results so the shell renders immediately
+  const deferredAnalysis = useDeferredValue(analysis);
+  const isStale = deferredAnalysis !== analysis;
+
   const [activeTab, setActiveTab] = useState<Tab>('entities');
   const [selectedEntity, setSelectedEntity] = useState<EntityCatalogEntry | null>(null);
 
   const tabs: { id: Tab; label: string; badge?: number }[] = [
-    { id: 'entities', label: 'Entities', badge: analysis.entities.length },
-    { id: 'relationships', label: 'Relationships', badge: analysis.relationships.length },
+    { id: 'entities', label: 'Entities', badge: deferredAnalysis.entities.length },
+    { id: 'relationships', label: 'Relationships', badge: deferredAnalysis.relationships.length },
     { id: 'alerts', label: 'Alerts', badge: unresolvedCount },
     { id: 'plot-holes', label: 'Plot Holes', badge: unresolvedPlotHoleCount },
   ];
@@ -38,26 +42,26 @@ export default function StoryBrainPage() {
     <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-6">
       <CarvedHeader
         title="Story Brain"
-        subtitle={`${analysis.entities.length} entities tracked — ${unresolvedCount + unresolvedPlotHoleCount} issues need attention`}
+        subtitle={`${deferredAnalysis.entities.length} entities tracked — ${unresolvedCount + unresolvedPlotHoleCount} issues need attention`}
       />
 
-      {/* Summary Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      {/* Summary Stats — M2: dim while deferred value is stale */}
+      <div className={`grid grid-cols-2 md:grid-cols-4 gap-3 transition-opacity ${isStale ? 'opacity-60' : ''}`}>
         <ParchmentCard padding="sm">
           <span className="text-[10px] text-sepia-400 block">Characters</span>
-          <span className="text-lg font-mono text-sepia-800">{analysis.entityCountByType.character}</span>
+          <span className="text-lg font-mono text-sepia-800">{deferredAnalysis.entityCountByType.character}</span>
         </ParchmentCard>
         <ParchmentCard padding="sm">
           <span className="text-[10px] text-sepia-400 block">Locations</span>
-          <span className="text-lg font-mono text-sepia-800">{analysis.entityCountByType.location}</span>
+          <span className="text-lg font-mono text-sepia-800">{deferredAnalysis.entityCountByType.location}</span>
         </ParchmentCard>
         <ParchmentCard padding="sm">
           <span className="text-[10px] text-sepia-400 block">Relationships</span>
-          <span className="text-lg font-mono text-sepia-800">{analysis.relationships.length}</span>
+          <span className="text-lg font-mono text-sepia-800">{deferredAnalysis.relationships.length}</span>
         </ParchmentCard>
         <ParchmentCard padding="sm">
           <span className="text-[10px] text-sepia-400 block">Total Mentions</span>
-          <span className="text-lg font-mono text-sepia-800">{analysis.totalMentions}</span>
+          <span className="text-lg font-mono text-sepia-800">{deferredAnalysis.totalMentions}</span>
         </ParchmentCard>
       </div>
 
@@ -89,13 +93,13 @@ export default function StoryBrainPage() {
         ))}
       </div>
 
-      {/* Tab Content */}
-      <div role="tabpanel">
+      {/* Tab Content — M2: dim while deferred value is stale */}
+      <div role="tabpanel" className={`transition-opacity ${isStale ? 'opacity-60' : ''}`}>
         {activeTab === 'entities' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className={selectedEntity ? 'lg:col-span-2' : 'lg:col-span-3'}>
               <EntityCatalog
-                entities={analysis.entities}
+                entities={deferredAnalysis.entities}
                 onSelect={setSelectedEntity}
               />
             </div>
@@ -103,7 +107,7 @@ export default function StoryBrainPage() {
               <div>
                 <EntityDetailCard
                   entity={selectedEntity}
-                  relationships={analysis.relationships}
+                  relationships={deferredAnalysis.relationships}
                   onClose={() => setSelectedEntity(null)}
                 />
               </div>
@@ -113,7 +117,7 @@ export default function StoryBrainPage() {
 
         {activeTab === 'relationships' && (
           <ParchmentCard padding="lg">
-            <RelationshipMatrix relationships={analysis.relationships} />
+            <RelationshipMatrix relationships={deferredAnalysis.relationships} />
           </ParchmentCard>
         )}
 

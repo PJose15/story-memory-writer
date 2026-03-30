@@ -100,11 +100,13 @@ const MILESTONE_DEFINITIONS: MilestoneDefinition[] = [
     phase: 'falling-action',
     description: 'Resolve at least 50% of your conflicts',
     weight: 10,
-    // M7: Null-guard active_conflicts
+    // M12: active_conflicts contains ALL conflicts (active + resolved).
+    // We count those with status 'resolved' against the total length.
     check: (s) => {
       if (!Array.isArray(s.active_conflicts) || s.active_conflicts.length === 0) return false;
+      const total = s.active_conflicts.length;
       const resolved = s.active_conflicts.filter((c) => c.status === 'resolved').length;
-      return resolved >= s.active_conflicts.length / 2;
+      return resolved >= total / 2;
     },
   },
 

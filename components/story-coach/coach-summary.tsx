@@ -16,6 +16,7 @@ export function CoachSummary({ insights, chapterTitle }: CoachSummaryProps) {
 
   if (total === 0) return null;
 
+  // M15: /flow reads the current chapter from session state, so no chapterId param needed
   return (
     <Link href="/flow">
       <ParchmentCard padding="sm" hover className="cursor-pointer">

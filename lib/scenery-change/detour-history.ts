@@ -3,6 +3,10 @@ import type { DetourSession } from './types';
 const STORAGE_KEY = 'zagafy_detour_history';
 const MAX_HISTORY = 50;
 
+// M13: Module-level cache to avoid re-parsing localStorage on every call
+let _cachedRaw: string | null = null;
+let _cachedHistory: DetourSession[] | null = null;
+
 function isDetourSession(v: unknown): v is DetourSession {
   if (typeof v !== 'object' || v === null) return false;
   const o = v as Record<string, unknown>;
@@ -19,16 +23,20 @@ function isDetourSession(v: unknown): v is DetourSession {
 export function readDetourHistory(): DetourSession[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
+    if (raw === _cachedRaw && _cachedHistory !== null) return _cachedHistory;
+    _cachedRaw = raw;
+    if (!raw) { _cachedHistory = []; return []; }
     const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter(isDetourSession);
+    if (!Array.isArray(parsed)) { _cachedHistory = []; return []; }
+    _cachedHistory = parsed.filter(isDetourSession);
+    return _cachedHistory;
   } catch {
     return [];
   }
 }
 
 function writeDetourHistory(sessions: DetourSession[]): void {
+  _cachedRaw = null; _cachedHistory = null; // M13: Invalidate cache on write
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions.slice(-MAX_HISTORY)));
   } catch {
@@ -81,6 +89,7 @@ export function getDetourStats(): {
 }
 
 export function clearDetourHistory(): void {
+  _cachedRaw = null; _cachedHistory = null; // M13: Invalidate cache on clear
   try {
     localStorage.removeItem(STORAGE_KEY);
   } catch {
