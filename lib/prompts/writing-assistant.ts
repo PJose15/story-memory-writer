@@ -1,7 +1,10 @@
-export function buildWritingAssistantPrompt(language: string, blockType?: string | null): string {
+import { injectVoiceIntoSystemPrompt } from '@/lib/heteronym-voice';
+import type { Heteronym } from '@/lib/types/heteronym';
+
+export function buildWritingAssistantPrompt(language: string, blockType?: string | null, heteronym?: Heteronym | null): string {
   const writerStateBlock = buildWriterStateBlock(blockType ?? 'default');
 
-  return `You are a continuity-aware narrative assistant inside a story writing application.
+  const basePrompt = `You are a continuity-aware narrative assistant inside a story writing application.
 You respond entirely in ${language}. All output — analysis, suggestions, prose, dialogue — MUST be in ${language}.
 
 ## Grounding Rule (MANDATORY)
@@ -100,6 +103,8 @@ ${writerStateBlock}
 ## Final Rule
 
 Every response must protect the integrity of the story. When creativity and continuity conflict, continuity wins unless the user explicitly asks for an alternate or non-canon version.`;
+
+  return injectVoiceIntoSystemPrompt(basePrompt, heteronym);
 }
 
 function buildWriterStateBlock(blockType: string): string {

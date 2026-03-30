@@ -9,7 +9,6 @@ import { useState } from 'react';
 
 export function DiagnosticOverlay() {
   const { setBlockType, completeDiagnostic } = useSession();
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   const [streak, setStreak] = useState(() => {
     // Read streak on initial render (client-side only)
     if (typeof window !== 'undefined') {

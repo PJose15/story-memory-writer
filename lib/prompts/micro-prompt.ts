@@ -46,6 +46,7 @@ export function buildMicroPromptContent(options: {
   genre?: string;
   protagonistName?: string;
   blockType?: BlockType;
+  voiceDirective?: string;
 }): string {
   const parts: string[] = [];
 
@@ -97,6 +98,10 @@ export function buildMicroPromptContent(options: {
   }
   if (options.blockType) {
     parts.push(`WRITER STATE: ${options.blockType}`);
+  }
+
+  if (options.voiceDirective && options.voiceDirective.trim()) {
+    parts.push(`\n## ACTIVE WRITING VOICE\n${options.voiceDirective}\nFrame your question in a way that resonates with this voice.\n`);
   }
 
   parts.push('\n--- WHAT THE WRITER JUST WROTE (they paused here) ---');

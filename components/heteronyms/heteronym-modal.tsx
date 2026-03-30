@@ -2,9 +2,11 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
-import { AnimatePresence, motion } from 'motion/react';
+import { motion } from 'motion/react';
 import { AvatarCircle } from './avatar-circle';
 import type { Heteronym } from '@/lib/types/heteronym';
+import type { HeteronymVoice } from '@/lib/heteronym-voice';
+import { VoiceToneEditor } from '@/components/heteronyms/voice-tone-editor';
 
 const COLOR_SWATCHES = [
   '#E74C3C', '#E67E22', '#F1C40F', '#2ECC71', '#1ABC9C', '#3498DB',
@@ -18,7 +20,7 @@ const EMOJI_OPTIONS = [
 
 interface HeteronymModalProps {
   heteronym?: Heteronym | null;
-  onSave: (data: { name: string; bio: string; styleNote: string; avatarColor: string; avatarEmoji: string }) => void;
+  onSave: (data: { name: string; bio: string; styleNote: string; avatarColor: string; avatarEmoji: string; voice?: HeteronymVoice }) => void;
   onClose: () => void;
 }
 
@@ -29,6 +31,7 @@ export function HeteronymModal({ heteronym, onSave, onClose }: HeteronymModalPro
   const [avatarColor, setAvatarColor] = useState(heteronym?.avatarColor || COLOR_SWATCHES[0]);
   const [avatarEmoji, setAvatarEmoji] = useState(heteronym?.avatarEmoji || '✍️');
   const [nameError, setNameError] = useState('');
+  const [voice, setVoice] = useState<HeteronymVoice | undefined>(heteronym?.voice);
   const [customEmoji, setCustomEmoji] = useState('');
   const nameInputRef = useRef<HTMLInputElement>(null);
 
@@ -57,6 +60,7 @@ export function HeteronymModal({ heteronym, onSave, onClose }: HeteronymModalPro
       styleNote: styleNote.trim(),
       avatarColor,
       avatarEmoji,
+      voice,
     });
   };
 
@@ -72,8 +76,7 @@ export function HeteronymModal({ heteronym, onSave, onClose }: HeteronymModalPro
   const isEditing = !!heteronym;
 
   return (
-    <AnimatePresence>
-      <motion.div
+    <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -149,18 +152,15 @@ export function HeteronymModal({ heteronym, onSave, onClose }: HeteronymModalPro
               <p className="text-xs text-sepia-500 text-right mt-1">{bio.length}/150</p>
             </div>
 
-            {/* Style Note */}
+            {/* Voice & Style */}
             <div>
-              <label className="block text-sm font-medium text-sepia-700 mb-1">Style Note</label>
-              <textarea
-                value={styleNote}
-                onChange={(e) => setStyleNote(e.target.value.slice(0, 200))}
-                maxLength={200}
-                rows={2}
-                className="w-full bg-parchment-200 border border-sepia-300/40 rounded-lg px-3 py-2 text-sepia-900 resize-none focus:outline-none focus:border-brass-500/60"
-                placeholder="How do they write? e.g. 'Fragmented sentences, raw emotion, no punctuation'"
+              <label className="block text-sm font-medium text-sepia-700 mb-2">Voice & Style</label>
+              <VoiceToneEditor
+                initialVoice={voice}
+                styleNote={styleNote}
+                onVoiceChange={setVoice}
+                onStyleNoteChange={setStyleNote}
               />
-              <p className="text-xs text-sepia-500 text-right mt-1">{styleNote.length}/200</p>
             </div>
 
             {/* Avatar Color */}
@@ -242,6 +242,5 @@ export function HeteronymModal({ heteronym, onSave, onClose }: HeteronymModalPro
           </form>
         </motion.div>
       </motion.div>
-    </AnimatePresence>
   );
 }

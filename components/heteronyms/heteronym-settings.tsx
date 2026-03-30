@@ -15,6 +15,7 @@ import {
   getDefaultHeteronym,
 } from '@/lib/types/heteronym';
 import type { Heteronym } from '@/lib/types/heteronym';
+import type { HeteronymVoice } from '@/lib/heteronym-voice';
 import { useToast } from '@/components/toast';
 import { useConfirm } from '@/components/confirm-dialog';
 
@@ -60,14 +61,16 @@ export function HeteronymSettings() {
     toast(`"${h.name}" deleted.`, 'success');
   };
 
-  const handleSave = (data: { name: string; bio: string; styleNote: string; avatarColor: string; avatarEmoji: string }) => {
+  const handleSave = (data: { name: string; bio: string; styleNote: string; avatarColor: string; avatarEmoji: string; voice?: HeteronymVoice }) => {
     if (editingHeteronym) {
       updateHeteronym(editingHeteronym.id, data);
       toast(`"${data.name}" updated.`, 'success');
     } else {
+      const { voice, ...restData } = data;
       const newH: Heteronym = {
         id: crypto.randomUUID(),
-        ...data,
+        ...restData,
+        voice,
         createdAt: new Date().toISOString(),
         isDefault: false,
       };

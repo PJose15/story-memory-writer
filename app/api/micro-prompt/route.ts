@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenAI, FinishReason } from '@google/genai';
 import { buildMicroPromptSystemPrompt, buildMicroPromptContent, validateMicroPromptResponse } from '@/lib/prompts/micro-prompt';
+import { buildVoiceDirective } from '@/lib/heteronym-voice';
 import { rateLimit } from '@/lib/rate-limit';
 import { AI_MODEL, SAFETY_SETTINGS } from '@/lib/ai-config';
 import { getErrorStatus } from '@/lib/api-error';
@@ -14,6 +15,8 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { recentText, genre, protagonistName, blockType, storyContext } = body;
+    const heteronym = body.heteronym && typeof body.heteronym === 'object' && typeof body.heteronym.name === 'string'
+      ? body.heteronym : null;
 
     if (typeof recentText !== 'string' || recentText.trim().length < 20) {
       return NextResponse.json(
@@ -34,12 +37,15 @@ export async function POST(req: NextRequest) {
     const words = recentText.trim().split(/\s+/);
     const truncatedText = words.slice(-600).join(' ');
 
+    const voiceDirective = heteronym ? buildVoiceDirective(heteronym) : undefined;
+
     const prompt = buildMicroPromptContent({
       recentText: truncatedText,
       storyContext,
       genre,
       protagonistName,
       blockType,
+      voiceDirective,
     });
 
     const response = await ai.models.generateContent({

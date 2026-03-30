@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useStory } from '@/lib/store';
 import { ReaderLayout } from '@/components/reader/reader-layout';
@@ -24,21 +24,22 @@ export default function ReaderPage() {
   const chapters = state.chapters.filter(ch => ch.canonStatus !== 'discarded');
   const chapter = chapters[chapterIndex];
 
-  const handleAnalyze = useCallback(() => {
+  const handleAnalyze = () => {
     if (!chapter?.content) return;
+    const content = chapter.content;
     setIsAnalyzing(true);
     // Run client-side analysis (synchronous but wrapped for UX)
     requestAnimationFrame(() => {
-      const result = analyzeText(chapter.content);
+      const result = analyzeText(content);
       setIssues(result);
       setIsAnalyzing(false);
     });
-  }, [chapter]);
+  };
 
-  const handleChapterChange = useCallback((index: number) => {
+  const handleChapterChange = (index: number) => {
     setChapterIndex(index);
     setIssues([]);
-  }, []);
+  };
 
   if (chapters.length === 0) {
     return (

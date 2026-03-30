@@ -35,6 +35,7 @@ export interface MetricsCollector {
   recordPause(duration: number): void;
   recordDeletionAttempt(): void;
   getSnapshot(): KeystrokeMetrics;
+  getRecentMetrics(windowMs: number): KeystrokeMetrics;
   detectFlowMoments(): FlowMoment[];
   computeAutoFlowScore(): number;
 }
@@ -226,11 +227,51 @@ export function createMetricsCollector(): MetricsCollector {
     return Math.round(Math.max(0, Math.min(100, raw)));
   }
 
+  function getRecentMetrics(windowMs: number): KeystrokeMetrics {
+    const now = keystrokeTimestamps.length > 0 ? keystrokeTimestamps[keystrokeTimestamps.length - 1] : Date.now();
+    const cutoff = now - windowMs;
+    const recentStrokes = keystrokeTimestamps.filter(t => t >= cutoff);
+
+    if (recentStrokes.length < 2) {
+      return {
+        avgWPM: 0, peakWPM: 0, totalPauses: 0, avgPauseDuration: 0,
+        deletionAttempts: 0, deletionRatio: 0, totalKeystrokes: recentStrokes.length,
+      };
+    }
+
+    const first = recentStrokes[0];
+    const last = recentStrokes[recentStrokes.length - 1];
+    const totalMin = (last - first) / 60_000;
+    const avgWPM = totalMin > 0 ? (recentStrokes.length / CHARS_PER_WORD) / totalMin : 0;
+
+    // Count pauses in window
+    let recentPauses = 0;
+    let pauseSum = 0;
+    for (let i = 1; i < recentStrokes.length; i++) {
+      const gap = recentStrokes[i] - recentStrokes[i - 1];
+      if (gap >= PAUSE_THRESHOLD_MS) {
+        recentPauses++;
+        pauseSum += gap;
+      }
+    }
+
+    return {
+      avgWPM: Math.round(avgWPM * 10) / 10,
+      peakWPM: Math.round(avgWPM * 10) / 10, // Simplified for recent window
+      totalPauses: recentPauses,
+      avgPauseDuration: recentPauses > 0 ? Math.round(pauseSum / recentPauses) : 0,
+      deletionAttempts,
+      deletionRatio: totalKeystrokes > 0 ? Math.round((deletionAttempts / totalKeystrokes) * 1000) / 1000 : 0,
+      totalKeystrokes: recentStrokes.length,
+    };
+  }
+
   return {
     recordKeystroke,
     recordPause,
     recordDeletionAttempt,
     getSnapshot,
+    getRecentMetrics,
     detectFlowMoments,
     computeAutoFlowScore,
   };

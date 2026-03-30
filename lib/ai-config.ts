@@ -30,4 +30,8 @@ export const AI_CONFIG = {
     temperature: 0.7,       // Creative nudges
     maxOutputTokens: 1024,
   },
+  storyCoach: {
+    temperature: 0.3,       // Analytical coaching
+    maxOutputTokens: 4096,
+  },
 } as const;

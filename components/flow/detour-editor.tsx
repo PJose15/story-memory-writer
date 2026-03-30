@@ -1,0 +1,83 @@
+'use client';
+
+import { useState, useEffect, useRef } from 'react';
+import { motion } from 'motion/react';
+import { Timer, ArrowLeft, Check } from 'lucide-react';
+import type { DetourSession } from '@/lib/scenery-change/types';
+
+interface DetourEditorProps {
+  detour: DetourSession;
+  onEnd: (content: string) => void;
+}
+
+export function DetourEditor({ detour, onEnd }: DetourEditorProps) {
+  const [content, setContent] = useState(detour.content || '');
+  const [elapsed, setElapsed] = useState(0);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    textareaRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setElapsed(prev => prev + 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const minutes = Math.floor(elapsed / 60);
+  const seconds = elapsed % 60;
+  const wordCount = content.trim().split(/\s+/).filter(Boolean).length;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[160] bg-parchment-100 flex flex-col"
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between px-6 py-3 border-b border-sepia-300/30">
+        <div className="flex items-center gap-3">
+          <h2 className="text-sm font-serif font-semibold text-brass-600">{detour.prompt.split('.')[0]}</h2>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-1.5 text-sepia-500">
+            <Timer size={14} />
+            <span className="text-xs font-mono">{minutes}:{seconds.toString().padStart(2, '0')}</span>
+          </div>
+          <span className="text-xs text-sepia-400">{wordCount} words</span>
+          <button
+            onClick={() => onEnd(content)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-forest-700 text-cream-50 hover:bg-forest-600 transition-colors"
+          >
+            <Check size={14} /> Done
+          </button>
+          <button
+            onClick={() => onEnd(content)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-sepia-500 hover:text-sepia-700 hover:bg-parchment-200 transition-colors"
+          >
+            <ArrowLeft size={14} /> Return
+          </button>
+        </div>
+      </div>
+
+      {/* Prompt display */}
+      <div className="px-6 py-3 bg-brass-500/5 border-b border-brass-500/10">
+        <p className="text-sm text-brass-700 italic">{detour.prompt}</p>
+      </div>
+
+      {/* Editor */}
+      <div className="flex-1 flex flex-col items-center px-4 py-8">
+        <textarea
+          ref={textareaRef}
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          placeholder="Start writing..."
+          className="w-full max-w-3xl flex-1 bg-transparent text-sepia-900 text-lg leading-relaxed font-serif placeholder-sepia-400 focus:outline-none resize-none"
+        />
+      </div>
+    </motion.div>
+  );
+}

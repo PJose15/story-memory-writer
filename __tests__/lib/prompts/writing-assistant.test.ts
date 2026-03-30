@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { buildWritingAssistantPrompt } from '@/lib/prompts/writing-assistant';
+import type { Heteronym } from '@/lib/types/heteronym';
+import type { HeteronymVoice } from '@/lib/heteronym-voice';
 
 describe('buildWritingAssistantPrompt', () => {
   it('is a non-empty string', () => {
@@ -125,5 +127,95 @@ describe('buildWritingAssistantPrompt', () => {
     const lineCount = result.split('\n').length;
     expect(lineCount).toBeLessThan(250);
     expect(lineCount).toBeGreaterThan(50);
+  });
+
+  // ─── Heteronym Voice Injection (3rd parameter) ───
+
+  describe('heteronym voice injection', () => {
+    const baseHeteronym: Heteronym = {
+      id: 'h-test',
+      name: 'Ricardo Reis',
+      bio: 'A classicist',
+      styleNote: '',
+      avatarColor: '#6366f1',
+      avatarEmoji: '✍️',
+      createdAt: '2025-01-01T00:00:00Z',
+      isDefault: false,
+    };
+
+    const voice: HeteronymVoice = {
+      tone: 'formal',
+      vocabulary: 'literary',
+      pacing: 'measured',
+      freeformNote: 'Uses classical allusions',
+    };
+
+    it('returns prompt without voice section when heteronym is null', () => {
+      const result = buildWritingAssistantPrompt('English', null, null);
+      expect(result).not.toContain('Active Writing Voice');
+    });
+
+    it('returns prompt without voice section when heteronym is undefined', () => {
+      const result = buildWritingAssistantPrompt('English', null, undefined);
+      expect(result).not.toContain('Active Writing Voice');
+    });
+
+    it('returns prompt without voice section when heteronym has no voice or styleNote', () => {
+      const result = buildWritingAssistantPrompt('English', null, baseHeteronym);
+      expect(result).not.toContain('Active Writing Voice');
+    });
+
+    it('injects voice section when heteronym has voice data', () => {
+      const h = { ...baseHeteronym, voice };
+      const result = buildWritingAssistantPrompt('English', null, h);
+      expect(result).toContain('## Active Writing Voice');
+      expect(result).toContain('Writing as "Ricardo Reis"');
+      expect(result).toContain('Formal & precise');
+      expect(result).toContain('Literary & rich');
+      expect(result).toContain('Measured');
+      expect(result).toContain('Uses classical allusions');
+    });
+
+    it('injects voice section when heteronym has only styleNote', () => {
+      const h = { ...baseHeteronym, styleNote: 'Writes in odes' };
+      const result = buildWritingAssistantPrompt('English', null, h);
+      expect(result).toContain('## Active Writing Voice');
+      expect(result).toContain('Style note: Writes in odes');
+    });
+
+    it('combines writer state and voice injection', () => {
+      const h = { ...baseHeteronym, voice };
+      const result = buildWritingAssistantPrompt('English', 'fear', h);
+      expect(result).toContain('WRITER STATE: FEAR');
+      expect(result).toContain('## Active Writing Voice');
+      expect(result).toContain('Writing as "Ricardo Reis"');
+    });
+
+    it('voice section appears after main prompt content', () => {
+      const h = { ...baseHeteronym, voice };
+      const result = buildWritingAssistantPrompt('English', null, h);
+      const voiceIdx = result.indexOf('## Active Writing Voice');
+      const finalRuleIdx = result.indexOf('Final Rule');
+      // Voice section comes after the Final Rule section
+      expect(voiceIdx).toBeGreaterThan(finalRuleIdx);
+    });
+
+    it('voice section includes coaching alignment instruction', () => {
+      const h = { ...baseHeteronym, voice };
+      const result = buildWritingAssistantPrompt('English', null, h);
+      expect(result).toContain('respect and reflect this voice profile');
+      expect(result).toContain('writing persona');
+    });
+
+    it('still contains all core sections when voice is injected', () => {
+      const h = { ...baseHeteronym, voice };
+      const result = buildWritingAssistantPrompt('English', null, h);
+      expect(result).toContain('Grounding Rule');
+      expect(result).toContain('Canon Hierarchy');
+      expect(result).toContain('Character Logic');
+      expect(result).toContain('Narrative Strategy Toolkit');
+      expect(result).toContain('Confidence Calibration');
+      expect(result).toContain('Final Rule');
+    });
   });
 });

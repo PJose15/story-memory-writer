@@ -1,3 +1,7 @@
+import type { HeteronymVoice } from '@/lib/heteronym-voice';
+
+export type { HeteronymVoice };
+
 const HETERONYMS_KEY = 'zagafy_heteronyms';
 const INITIALIZED_KEY = 'zagafy_heteronyms_initialized';
 const ACTIVE_KEY = 'zagafy_active_heteronym';
@@ -15,6 +19,7 @@ export interface Heteronym {
   avatarEmoji: string;
   createdAt: string;
   isDefault: boolean;
+  voice?: HeteronymVoice;
 }
 
 function isHeteronym(v: unknown): v is Heteronym {

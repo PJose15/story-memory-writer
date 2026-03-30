@@ -18,6 +18,25 @@ vi.mock('recharts', () => ({
   Cell: () => <div />,
 }));
 
+// Mock gamification hook
+vi.mock('@/hooks/use-gamification', () => ({
+  useGamification: () => ({
+    gamification: { xp: { totalXP: 0, level: 1, events: [] }, streak: { currentStreak: 0, longestStreak: 0, lastQualifyingDate: '', todayQualified: false, streakHistory: [] }, quests: { currentDate: '', quests: [], questHistory: [] }, sprints: { activeSprint: null, sprintHistory: [] }, finishing: { currentPhase: 'setup', overallProgress: 0, milestones: [], nextSuggestion: '' }, version: 1 },
+    xpProgress: { current: 0, needed: 200, progress: 0 },
+    streak: { currentStreak: 0, longestStreak: 0, lastQualifyingDate: '', todayQualified: false, streakHistory: [] },
+    streakWarning: null,
+    quests: [],
+    completeQuest: vi.fn(),
+    activeSprint: null,
+    startSprint: vi.fn(),
+    endSprint: vi.fn(),
+    abandonSprint: vi.fn(),
+    finishing: { currentPhase: 'setup', overallProgress: 0, milestones: [], nextSuggestion: '' },
+    refreshFinishing: vi.fn(),
+    awardXP: vi.fn(),
+  }),
+}));
+
 // Mock writing-session module
 vi.mock('@/lib/types/writing-session', () => ({
   readSessions: () => [

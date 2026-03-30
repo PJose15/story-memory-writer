@@ -24,6 +24,8 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { userInput, isBlockedRequest, language, chatHistory, knownEntities, blockType } = body;
+    const heteronym = body.heteronym && typeof body.heteronym === 'object' && typeof body.heteronym.name === 'string'
+      ? body.heteronym : null;
     const storyContext = typeof body.storyContext === 'string' ? body.storyContext : '';
 
     if (typeof userInput !== 'string' || !userInput.trim()) {
@@ -50,7 +52,7 @@ export async function POST(req: NextRequest) {
 
     const ai = new GoogleGenAI({ apiKey });
     const isBlocked = !!isBlockedRequest;
-    const systemPrompt = buildWritingAssistantPrompt(language, blockType);
+    const systemPrompt = buildWritingAssistantPrompt(language, blockType, heteronym ?? null);
     const config = isBlocked ? AI_CONFIG.chatBlocked : AI_CONFIG.chat;
     const responseSchema = isBlocked ? BLOCKED_RESPONSE_SCHEMA : NORMAL_RESPONSE_SCHEMA;
 

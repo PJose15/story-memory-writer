@@ -8,10 +8,16 @@ import { WordsByHour } from '@/components/writing-map/words-by-hour';
 import { InsightCard } from '@/components/writing-map/insight-card';
 import { SessionsTable } from '@/components/writing-map/sessions-table';
 import { FlowTimeline } from '@/components/writing-map/flow-timeline';
+import { HeteronymAnalytics } from '@/components/writing-map/heteronym-analytics';
 import type { WritingSession } from '@/lib/types/writing-session';
+import { useGamification } from '@/hooks/use-gamification';
+import { StreakBadge } from '@/components/gamification/streak-badge';
+import { XPBar } from '@/components/gamification/xp-bar';
+import { Flame, Zap } from 'lucide-react';
 
 export default function WritingMapPage() {
   const [sessions] = useState<WritingSession[]>(() => readSessions());
+  const { gamification, xpProgress, streak, streakWarning } = useGamification();
 
   const totalWords = sessions.reduce((sum, s) => sum + s.wordsAdded, 0);
   const totalSessions = sessions.length;
@@ -30,6 +36,24 @@ export default function WritingMapPage() {
           ? `${totalSessions.toLocaleString()} session${totalSessions === 1 ? '' : 's'} — ${totalWords.toLocaleString()} words tracked`
           : 'Your writing patterns will appear here as you write.'}
       />
+
+      {/* Streak + XP Summary */}
+      <ParchmentCard padding="md">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <StreakBadge streak={streak.currentStreak} warning={streakWarning} />
+          <div className="flex-1 w-full sm:max-w-xs">
+            <XPBar
+              level={gamification.xp.level}
+              current={xpProgress.current}
+              needed={xpProgress.needed}
+              progress={xpProgress.progress}
+            />
+          </div>
+          <div className="text-xs font-mono text-sepia-500">
+            Longest streak: {streak.longestStreak}d
+          </div>
+        </div>
+      </ParchmentCard>
 
       {/* Section 1: Calendar Heatmap */}
       <section aria-label="Writing activity heatmap">
@@ -66,7 +90,15 @@ export default function WritingMapPage() {
         <InsightCard sessions={sessions} />
       </section>
 
-      {/* Section 4: Sessions Table */}
+      {/* Section 5: Voice Analytics */}
+      <section aria-label="Heteronym voice analytics">
+        <h2 className="text-lg font-medium text-sepia-800 mb-4">Voice Analytics</h2>
+        <ParchmentCard className="p-4 md:p-6">
+          <HeteronymAnalytics />
+        </ParchmentCard>
+      </section>
+
+      {/* Section 6: Sessions Table */}
       <section aria-label="Recent writing sessions">
         <h2 className="text-lg font-medium text-sepia-800 mb-4">Recent Sessions</h2>
         <ParchmentCard className="p-4 md:p-6">

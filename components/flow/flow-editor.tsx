@@ -32,12 +32,17 @@ import { useBraindump } from '@/hooks/use-braindump';
 import { BraindumpPanel } from './braindump-panel';
 import { BraindumpHistoryDrawer } from './braindump-history-drawer';
 import { BraindumpToolbarMessage } from './braindump-toolbar-message';
-import { Theater, Shuffle, Mic, ClipboardList, BookCopy } from 'lucide-react';
+import { Theater, Shuffle, Mic, ClipboardList, BookCopy, Lightbulb } from 'lucide-react';
 import { createMetricsCollector } from '@/lib/flow-metrics';
 import type { MetricsCollector } from '@/lib/flow-metrics';
 import { useChapterVersions } from '@/hooks/use-chapter-versions';
 import { VersionSwitcher } from './version-switcher';
 import { VersionCompare } from './version-compare';
+import { useBlockDetector } from '@/hooks/use-block-detector';
+import { useStoryCoach } from '@/hooks/use-story-coach';
+import { SceneryChangePrompt } from './scenery-change-prompt';
+import { DetourEditor } from './detour-editor';
+import { CoachPanel } from '@/components/story-coach/coach-panel';
 
 const PAUSE_TIMEOUT = 30000; // 30 seconds
 const MOMENTUM_DECAY_INTERVAL = 100; // ms
@@ -63,6 +68,8 @@ export function FlowEditor({ chapterId, onExit }: FlowEditorProps) {
   const momentumTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const metricsCollectorRef = useRef<MetricsCollector>(createMetricsCollector());
+  const lastKeystrokeTimeRef = useRef<number>(Date.now());
+  const sessionStartTimeRef = useRef<number>(Date.now());
 
   // Heteronym state
   const [heteronyms] = useState(() => readHeteronyms());
@@ -72,6 +79,7 @@ export function FlowEditor({ chapterId, onExit }: FlowEditorProps) {
 
   const currentVoiceId = guestHeteronymId || activeHeteronymId;
   const guestHeteronym = guestHeteronymId ? heteronyms.find(h => h.id === guestHeteronymId) : null;
+  const activeHeteronym = currentVoiceId ? heteronyms.find(h => h.id === currentVoiceId) ?? null : null;
 
   const chapter = state.chapters.find(ch => ch.id === chapterId);
 
@@ -102,6 +110,24 @@ export function FlowEditor({ chapterId, onExit }: FlowEditorProps) {
   const chapterVersions = useChapterVersions(chapterId, initialContent);
   const [versionPanelOpen, setVersionPanelOpen] = useState(false);
   const [compareOpen, setCompareOpen] = useState(false);
+
+  // Block detector
+  const blockDetectorContext = useMemo(() => ({
+    characterNames: state.characters.filter(c => c.canonStatus !== 'discarded').map(c => c.name),
+    currentChapterTitle: chapter?.title,
+    genre: state.genre.join(', ') || undefined,
+  }), [state.characters, chapter, state.genre]);
+
+  const blockDetector = useBlockDetector(
+    metricsCollectorRef,
+    sessionStartTimeRef.current,
+    lastKeystrokeTimeRef,
+    blockDetectorContext
+  );
+
+  // Story coach
+  const storyCoach = useStoryCoach();
+  const [coachPanelOpen, setCoachPanelOpen] = useState(false);
 
   // On mount: check for pending return data (cursor restore + toast)
   useEffect(() => {
@@ -178,7 +204,7 @@ export function FlowEditor({ chapterId, onExit }: FlowEditorProps) {
         setFlowChapterId(originalId);
       },
     });
-  }, [sceneChange, wordCount, state.chapters, setFlowChapterId, toast]);
+  }, [sceneChange, wordCount, content, state.chapters, setFlowChapterId, toast]);
 
   const handleRecoveryReturn = useCallback(() => {
     setShowRecoveryModal(false);
@@ -226,7 +252,6 @@ export function FlowEditor({ chapterId, onExit }: FlowEditorProps) {
   const protagonist = state.characters.find(c => c.role === 'protagonist' || c.role === 'Protagonist');
 
   // Build story context for micro-prompts (memoized — only changes when story state changes)
-  // eslint-disable-next-line react-hooks/preserve-manual-memoization
   const storyContext = useMemo((): MicroPromptStoryContext => {
     const ctx: MicroPromptStoryContext = {};
 
@@ -319,8 +344,9 @@ export function FlowEditor({ chapterId, onExit }: FlowEditorProps) {
       genre: genre || undefined,
       protagonistName: protagonist?.name,
       blockType: session.blockType,
+      heteronym: activeHeteronym,
     });
-  }, [content, storyContext, genre, protagonist?.name, session.blockType, fetchPrompt]);
+  }, [content, storyContext, genre, protagonist?.name, session.blockType, fetchPrompt, activeHeteronym]);
 
   const resetPauseTimer = useCallback(() => {
     if (pauseTimerRef.current) clearTimeout(pauseTimerRef.current);
@@ -359,7 +385,9 @@ export function FlowEditor({ chapterId, onExit }: FlowEditorProps) {
     // Increase momentum on typing + record keystroke
     if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
       setMomentum(prev => Math.min(1, prev + MOMENTUM_INCREMENT));
-      metricsCollectorRef.current.recordKeystroke(Date.now());
+      const now = Date.now();
+      metricsCollectorRef.current.recordKeystroke(now);
+      lastKeystrokeTimeRef.current = now;
     }
 
     // Reset pause timer
@@ -443,6 +471,26 @@ export function FlowEditor({ chapterId, onExit }: FlowEditorProps) {
               />
             )}
           </div>
+          <button
+            onClick={() => {
+              setCoachPanelOpen(prev => !prev);
+              if (!coachPanelOpen) {
+                storyCoach.refresh(chapterId, {
+                  chapterContent: content,
+                  chapterTitle: chapter?.title,
+                  storyContext: storyContext.synopsis ?? '',
+                  heteronymVoice: activeHeteronym?.voice,
+                });
+              }
+            }}
+            className={`text-sm transition-colors p-1.5 rounded-lg hover:bg-parchment-200 ${
+              coachPanelOpen ? 'text-brass-500' : 'text-sepia-500 hover:text-sepia-700'
+            }`}
+            aria-label="Story coach"
+            aria-pressed={coachPanelOpen}
+          >
+            <Lightbulb size={16} />
+          </button>
           {heteronyms.length > 1 && (
             <button
               onClick={() => setVoiceSwitchOpen(true)}
@@ -531,10 +579,22 @@ export function FlowEditor({ chapterId, onExit }: FlowEditorProps) {
           spellCheck={false}
         />
 
+        {/* Block detector prompt */}
+        {blockDetector.blockSignal && !blockDetector.activeDetour && (
+          <SceneryChangePrompt
+            signal={blockDetector.blockSignal}
+            suggestions={blockDetector.suggestions}
+            onSelect={blockDetector.startDetour}
+            onDismiss={blockDetector.dismiss}
+          />
+        )}
+
         {/* Micro-prompt display */}
-        <div className="w-full max-w-3xl mt-4">
-          <MicroPromptDisplay prompt={prompt} isLoading={isLoading} />
-        </div>
+        {!blockDetector.blockSignal && (
+          <div className="w-full max-w-3xl mt-4">
+            <MicroPromptDisplay prompt={prompt} isLoading={isLoading} />
+          </div>
+        )}
       </div>
 
       {/* Version compare overlay */}
@@ -580,6 +640,31 @@ export function FlowEditor({ chapterId, onExit }: FlowEditorProps) {
 
       {/* Braindump history drawer */}
       {braindump.historyOpen && <BraindumpHistoryDrawer braindump={braindump} />}
+
+      {/* Detour editor (full-screen overlay) */}
+      {blockDetector.activeDetour && (
+        <DetourEditor
+          detour={blockDetector.activeDetour}
+          onEnd={blockDetector.endDetour}
+        />
+      )}
+
+      {/* Story coach panel */}
+      {coachPanelOpen && (
+        <CoachPanel
+          insights={storyCoach.insights}
+          isLoading={storyCoach.isLoading}
+          error={storyCoach.error}
+          onRefresh={() => storyCoach.refresh(chapterId, {
+            chapterContent: content,
+            chapterTitle: chapter?.title,
+            storyContext: storyContext.synopsis ?? '',
+            heteronymVoice: activeHeteronym?.voice,
+          })}
+          onDismiss={storyCoach.dismissInsight}
+          onClose={() => setCoachPanelOpen(false)}
+        />
+      )}
     </div>
   );
 }

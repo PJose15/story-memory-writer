@@ -2,17 +2,21 @@
 
 import { useState, useRef, useCallback } from 'react';
 import type { MicroPromptStoryContext } from '@/lib/prompts/micro-prompt';
+import type { Heteronym } from '@/lib/types/heteronym';
+
+interface MicroPromptOptions {
+  recentText: string;
+  storyContext?: MicroPromptStoryContext;
+  genre?: string;
+  protagonistName?: string;
+  blockType?: string | null;
+  heteronym?: Heteronym | null;
+}
 
 interface UseMicroPromptReturn {
   prompt: string | null;
   isLoading: boolean;
-  fetchPrompt: (options: {
-    recentText: string;
-    storyContext?: MicroPromptStoryContext;
-    genre?: string;
-    protagonistName?: string;
-    blockType?: string | null;
-  }) => void;
+  fetchPrompt: (options: MicroPromptOptions) => void;
   clearPrompt: () => void;
 }
 
@@ -22,13 +26,7 @@ export function useMicroPrompt(): UseMicroPromptReturn {
   const abortRef = useRef<AbortController | null>(null);
 
   const fetchPrompt = useCallback(
-    (options: {
-      recentText: string;
-      storyContext?: MicroPromptStoryContext;
-      genre?: string;
-      protagonistName?: string;
-      blockType?: string | null;
-    }) => {
+    (options: MicroPromptOptions) => {
       // Abort any in-flight request
       abortRef.current?.abort();
       abortRef.current = new AbortController();
