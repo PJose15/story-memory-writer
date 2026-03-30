@@ -1,0 +1,103 @@
+'use client';
+
+import { useState, useEffect, useRef } from 'react';
+import { ProgressRing } from '@/components/antiquarian';
+import { InkStampButton } from '@/components/antiquarian';
+import { getThemeConfig } from '@/lib/gamification/sprints';
+import type { WritingSprint } from '@/lib/types/gamification';
+
+interface SprintTimerProps {
+  sprint: WritingSprint;
+  currentWords: number;
+  onEnd: () => void;
+  onAbandon: () => void;
+}
+
+export function SprintTimer({ sprint, currentWords, onEnd, onAbandon }: SprintTimerProps) {
+  // L18: Shared end-time computation
+  const computedEnd = new Date(sprint.startTime).getTime() + sprint.durationMinutes * 60_000;
+  const endTimeMs = useRef(computedEnd);
+  const autoEndedRef = useRef(false);
+
+  const [secondsLeft, setSecondsLeft] = useState(() =>
+    Math.max(0, Math.floor((computedEnd - Date.now()) / 1000)),
+  );
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const config = getThemeConfig(sprint.theme);
+  const wordsWritten = Math.max(0, currentWords - sprint.wordsStart);
+  const timeProgress = sprint.durationMinutes * 60 > 0
+    ? ((sprint.durationMinutes * 60 - secondsLeft) / (sprint.durationMinutes * 60)) * 100
+    : 100;
+
+  // Compute from wall clock to avoid drift on tab backgrounding
+  useEffect(() => {
+    intervalRef.current = setInterval(() => {
+      const remaining = Math.max(0, Math.floor((endTimeMs.current - Date.now()) / 1000));
+      setSecondsLeft(remaining);
+      if (remaining <= 0 && intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    }, 1000);
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, []);
+
+  // Auto-end when timer reaches 0
+  useEffect(() => {
+    if (secondsLeft === 0 && !autoEndedRef.current) {
+      autoEndedRef.current = true;
+      onEnd();
+    }
+  }, [secondsLeft, onEnd]);
+
+  const minutes = Math.floor(secondsLeft / 60);
+  const seconds = secondsLeft % 60;
+  const timeDisplay = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  const isExpired = secondsLeft === 0;
+
+  return (
+    <div className="flex flex-col items-center gap-6 py-8">
+      {/* M5: Accessible timer with live region */}
+      <ProgressRing value={timeProgress} size="lg" color={isExpired ? 'forest' : 'brass'}>
+        <span
+          className="text-xl font-mono font-bold text-sepia-800"
+          aria-live="polite"
+          aria-atomic="true"
+          role="timer"
+        >
+          {timeDisplay}
+        </span>
+      </ProgressRing>
+
+      <div className="text-center space-y-1">
+        <h3 className="text-lg font-serif font-semibold text-sepia-800">{config.name}</h3>
+        <p className="text-xs text-sepia-500 italic max-w-md">{sprint.prompt}</p>
+      </div>
+
+      {/* L10: Accessible stat labels */}
+      <div className="flex items-center gap-6 text-center" role="group" aria-label="Sprint statistics">
+        <div aria-label={`${wordsWritten} words written`}>
+          <span className="text-2xl font-mono font-bold text-sepia-800">{wordsWritten}</span>
+          <span className="block text-[10px] text-sepia-400 uppercase" aria-hidden="true">Words</span>
+        </div>
+        <div className="w-px h-8 bg-sepia-300/30" aria-hidden="true" />
+        <div aria-label={`${sprint.targetWords} word target`}>
+          <span className="text-2xl font-mono font-bold text-sepia-800">{sprint.targetWords}</span>
+          <span className="block text-[10px] text-sepia-400 uppercase" aria-hidden="true">Target</span>
+        </div>
+      </div>
+
+      <div className="flex gap-3">
+        <InkStampButton variant="primary" onClick={onEnd}>
+          {isExpired ? 'See Results' : 'Finish Early'}
+        </InkStampButton>
+        {!isExpired && (
+          <InkStampButton variant="ghost" onClick={onAbandon}>
+            Abandon
+          </InkStampButton>
+        )}
+      </div>
+    </div>
+  );
+}

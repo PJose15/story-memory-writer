@@ -1,9 +1,10 @@
 'use client';
 
+import React from 'react';
 import { useStory } from '@/lib/store';
 import { useSession } from '@/lib/session';
 import { motion } from 'motion/react';
-import { BookOpen, Users, Clock, Swords, AlertCircle, Flame } from 'lucide-react';
+import { BookOpen, Users, Clock, Swords, AlertCircle, Flame, BrainCircuit } from 'lucide-react';
 import Link from 'next/link';
 import { stagger, hoverLift, physicalDrop, fadeUp } from '@/lib/animations';
 import {
@@ -13,6 +14,7 @@ import {
   CharacterAvatar,
   DecorativeDivider,
 } from '@/components/antiquarian';
+import { DashboardGamification } from '@/components/gamification/dashboard-gamification';
 
 const blockMessages: Record<string, { headline: string; nudge: string }> = {
   fear: {
@@ -103,6 +105,61 @@ function StoryAnatomyBar({ chapters, characters, events, conflicts }: {
         ))}
       </div>
     </motion.div>
+  );
+}
+
+// ─── Story Health Card ───
+function StoryHealthCard() {
+  // Lazy import to avoid SSR issues with localStorage
+  const [counts, setCounts] = React.useState<{ unresolved: number; plotHoles: number } | null>(null);
+  React.useEffect(() => {
+    import('@/lib/story-brain/analyzer').then(({ analyzeStoryState }) =>
+      import('@/lib/story-brain/inconsistency-detector').then(({ detectInconsistencies }) =>
+        import('@/lib/story-brain/plot-hole-detector').then(({ detectPlotHoles }) =>
+          import('@/lib/story-brain/resolutions').then(({ getResolutions }) => {
+            // Access state from localStorage directly for dashboard summary
+            try {
+              const raw = localStorage.getItem('zagafy_state');
+              if (!raw) return;
+              const state = JSON.parse(raw);
+              const analysis = analyzeStoryState(state);
+              const incs = detectInconsistencies(state, analysis);
+              const phs = detectPlotHoles(state, analysis);
+              const resolved = new Set(getResolutions().map(r => r.inconsistencyId));
+              setCounts({
+                unresolved: incs.filter(i => !resolved.has(i.id)).length,
+                plotHoles: phs.filter(p => !resolved.has(p.id)).length,
+              });
+            } catch { /* ignore */ }
+          })
+        )
+      )
+    );
+  }, []);
+
+  if (!counts || (counts.unresolved === 0 && counts.plotHoles === 0)) return null;
+  const total = counts.unresolved + counts.plotHoles;
+
+  return (
+    <Link href="/story-brain">
+      <motion.div {...fadeUp} {...hoverLift}>
+        <ParchmentCard padding="lg" hover className="cursor-pointer border-l-4 border-l-wax-500">
+          <div className="flex items-center gap-3">
+            <BrainCircuit size={20} className="text-wax-500 shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-sepia-800">
+                {total} story health issue{total !== 1 ? 's' : ''} detected
+              </p>
+              <p className="text-[10px] text-sepia-500 mt-0.5">
+                {counts.unresolved > 0 && `${counts.unresolved} inconsistenc${counts.unresolved !== 1 ? 'ies' : 'y'}`}
+                {counts.unresolved > 0 && counts.plotHoles > 0 && ' · '}
+                {counts.plotHoles > 0 && `${counts.plotHoles} plot hole${counts.plotHoles !== 1 ? 's' : ''}`}
+              </p>
+            </div>
+          </div>
+        </ParchmentCard>
+      </motion.div>
+    </Link>
   );
 }
 
@@ -254,6 +311,12 @@ export default function Dashboard() {
           </motion.div>
         </Link>
       </div>
+
+      {/* ── Gamification ── */}
+      <DashboardGamification />
+
+      {/* ── Story Health ── */}
+      <StoryHealthCard />
 
       {/* ── Story Anatomy ── */}
       <StoryAnatomyBar

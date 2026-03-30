@@ -13,6 +13,8 @@ import {
 import type { WritingSession, FlowScore } from '@/lib/types/writing-session';
 import { getActiveHeteronymId, readHeteronyms } from '@/lib/types/heteronym';
 import type { MetricsCollector } from '@/lib/flow-metrics';
+import { readGamification, writeGamification } from '@/lib/types/gamification';
+import { awardXP, XP_RATES } from '@/lib/gamification/xp';
 
 const MIN_WORDS_TO_START = 10;
 const IDLE_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
@@ -114,6 +116,23 @@ export function useSessionTracker(options?: SessionTrackerOptions): SessionTrack
     };
 
     addSession(session);
+
+    // Award gamification XP for words and session completion
+    try {
+      let gam = readGamification();
+      // XP for words: +10 per 100 words
+      const wordXP = Math.floor(wordsAdded / 100) * XP_RATES.WORDS_100;
+      if (wordXP > 0) {
+        gam = { ...gam, xp: awardXP(gam.xp, 'words', wordXP, `${wordsAdded} words written`) };
+      }
+      // XP for session completion (≥10 min)
+      if (durationMinutes >= 10) {
+        gam = { ...gam, xp: awardXP(gam.xp, 'session', XP_RATES.SESSION_COMPLETE, `${Math.round(durationMinutes)}min session`) };
+      }
+      writeGamification(gam);
+    } catch {
+      // Best effort — gamification XP should not block session tracking
+    }
 
     // Only show flow score modal for sessions longer than 3 minutes
     if (durationMinutes > MIN_FLOW_SCORE_MINUTES) {

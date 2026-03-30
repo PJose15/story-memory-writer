@@ -1,9 +1,9 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { StoryProvider } from '@/lib/store';
 import { SessionProvider } from '@/lib/session';
-import { ToastProvider } from '@/components/antiquarian/antiquarian-toast';
+import { ToastProvider, useToast } from '@/components/antiquarian/antiquarian-toast';
 import { ConfirmProvider } from '@/components/antiquarian/parchment-modal';
 import { ParchmentSidebar } from '@/components/antiquarian/parchment-sidebar';
 import { DiagnosticGate } from '@/components/diagnostic/diagnostic-gate';
@@ -11,6 +11,24 @@ import { useSessionTracker } from '@/hooks/use-session-tracker';
 import { FlowScoreModal } from '@/components/writing-map/flow-score-modal';
 import { updateSessionFlowScore } from '@/lib/types/writing-session';
 import type { FlowScore } from '@/lib/types/writing-session';
+import { readGamification } from '@/lib/types/gamification';
+import { getStreakWarning } from '@/lib/gamification/writing-streak';
+import { GamificationProvider } from '@/hooks/use-gamification';
+
+function StreakWarningToast() {
+  const { toast } = useToast();
+  const shownRef = useRef(false);
+  useEffect(() => {
+    if (shownRef.current) return;
+    shownRef.current = true;
+    try {
+      const gam = readGamification();
+      const warning = getStreakWarning(gam.streak, new Date().getHours());
+      if (warning) toast(warning, 'warning');
+    } catch { /* ignore */ }
+  }, [toast]);
+  return null;
+}
 
 function LibraryShellInner({ children }: { children: React.ReactNode }) {
   const { pendingFlowScore, dismissFlowScore } = useSessionTracker();
@@ -22,6 +40,7 @@ function LibraryShellInner({ children }: { children: React.ReactNode }) {
 
   return (
     <>
+      <StreakWarningToast />
       <ParchmentSidebar />
       <main
         id="main-content"
@@ -44,11 +63,13 @@ export function LibraryShell({ children }: { children: React.ReactNode }) {
   return (
     <StoryProvider>
       <SessionProvider>
-        <ToastProvider>
-          <ConfirmProvider>
-            <LibraryShellInner>{children}</LibraryShellInner>
-          </ConfirmProvider>
-        </ToastProvider>
+        <GamificationProvider>
+          <ToastProvider>
+            <ConfirmProvider>
+              <LibraryShellInner>{children}</LibraryShellInner>
+            </ConfirmProvider>
+          </ToastProvider>
+        </GamificationProvider>
       </SessionProvider>
     </StoryProvider>
   );

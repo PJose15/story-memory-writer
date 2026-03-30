@@ -18,10 +18,15 @@ import {
   UploadCloud,
   Zap,
   Map,
-  BookOpenCheck
+  BookOpenCheck,
+  BrainCircuit,
+  Timer,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useStory } from '@/lib/store';
+import { useGamification } from '@/hooks/use-gamification';
+import { StreakBadge } from '@/components/gamification/streak-badge';
+import { XPBar } from '@/components/gamification/xp-bar';
 
 const navItems = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
@@ -36,12 +41,15 @@ const navItems = [
   { name: 'Import', href: '/import', icon: UploadCloud },
   { name: 'Writing Map', href: '/writing-map', icon: Map },
   { name: 'Reader Mode', href: '/reader', icon: BookOpenCheck },
+  { name: 'Story Brain', href: '/story-brain', icon: BrainCircuit },
+  { name: 'Sprints', href: '/sprints', icon: Timer },
 ];
 
 export function ParchmentSidebar() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const { state } = useStory();
+  const { gamification, xpProgress, streak } = useGamification();
   const totalWords = state.chapters.reduce((s, c) => s + (c.content ? c.content.split(/\s+/).filter(Boolean).length : 0), 0);
 
   return (
@@ -100,6 +108,17 @@ export function ParchmentSidebar() {
             <div>
               <span className="text-cream-300/40 block">Chapters</span>
               <span className="text-cream-100 font-mono font-medium">{state.chapters.length}</span>
+            </div>
+          </div>
+          {/* Streak + XP */}
+          <div className="grid grid-cols-2 gap-2 text-xs mt-2 pt-2 border-t border-mahogany-700/30">
+            <div>
+              <span className="text-cream-300/40 block">Streak</span>
+              <span className="text-cream-100 font-mono font-medium">{streak.currentStreak}d</span>
+            </div>
+            <div>
+              <span className="text-cream-300/40 block">Level</span>
+              <span className="text-cream-100 font-mono font-medium">{gamification.xp.level}</span>
             </div>
           </div>
         </div>
