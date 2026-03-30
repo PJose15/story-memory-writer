@@ -35,14 +35,17 @@ export function useBlockDetector(
   const [suggestions, setSuggestions] = useState<DetourSuggestion[]>([]);
   const [activeDetour, setActiveDetour] = useState<DetourSession | null>(null);
   const cooldownUntilRef = useRef<number>(0);
+  const blockSignalRef = useRef(blockSignal);
+  blockSignalRef.current = blockSignal;
+  const activeDetourRef = useRef(activeDetour);
+  activeDetourRef.current = activeDetour;
 
-  // Periodic check
+  // Periodic check — uses refs to avoid re-creating interval on state changes
   useEffect(() => {
     const interval = setInterval(() => {
-      // Skip if in cooldown, already showing, or in a detour
       if (Date.now() < cooldownUntilRef.current) return;
-      if (blockSignal !== null) return;
-      if (activeDetour !== null) return;
+      if (blockSignalRef.current !== null) return;
+      if (activeDetourRef.current !== null) return;
 
       const collector = metricsCollectorRef.current;
       if (!collector) return;
@@ -59,7 +62,7 @@ export function useBlockDetector(
     }, CHECK_INTERVAL_MS);
 
     return () => clearInterval(interval);
-  }, [metricsCollectorRef, sessionStartTime, lastKeystrokeTimeRef, storyContext, blockSignal, activeDetour]);
+  }, [metricsCollectorRef, sessionStartTime, lastKeystrokeTimeRef, storyContext]);
 
   const dismiss = useCallback(() => {
     setBlockSignal(null);

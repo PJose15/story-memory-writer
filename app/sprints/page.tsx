@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { useStory } from '@/lib/store';
 import { useGamification } from '@/hooks/use-gamification';
 import { CarvedHeader, ParchmentCard } from '@/components/antiquarian';
@@ -24,20 +24,24 @@ export default function SprintsPage() {
 
   const stats = useMemo(() => getSprintStats(gamification.sprints.sprintHistory), [gamification.sprints.sprintHistory]);
 
-  const handleStart = (theme: SprintTheme) => {
-    startSprint(theme, totalWords);
+  // H8: Use ref for latest totalWords to avoid stale closure
+  const totalWordsRef = useRef(totalWords);
+  useEffect(() => { totalWordsRef.current = totalWords; }, [totalWords]);
+
+  const handleStart = useCallback((theme: SprintTheme) => {
+    startSprint(theme, totalWordsRef.current);
     setLastResult(null);
-  };
+  }, [startSprint]);
 
-  const handleEnd = () => {
-    const result = endSprint(totalWords);
+  const handleEnd = useCallback(() => {
+    const result = endSprint(totalWordsRef.current);
     setLastResult(result);
-  };
+  }, [endSprint]);
 
-  const handleAbandon = () => {
+  const handleAbandon = useCallback(() => {
     abandonSprint();
     setLastResult(null);
-  };
+  }, [abandonSprint]);
 
   return (
     <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-8">
@@ -71,7 +75,7 @@ export default function SprintsPage() {
       {stats.completedSprints > 0 && (
         <section className="space-y-3">
           <div className="flex items-center gap-3">
-            <BarChart3 size={16} className="text-brass-600" />
+            <BarChart3 size={16} className="text-brass-600" aria-hidden="true" />
             <h2 className="text-sm font-serif font-semibold text-sepia-700 uppercase tracking-wider">Sprint Stats</h2>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -107,9 +111,9 @@ export default function SprintsPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       {sprint.status === 'completed' ? (
-                        <Trophy size={14} className="text-forest-600" />
+                        <Trophy size={14} className="text-forest-600" aria-hidden="true" />
                       ) : (
-                        <Pen size={14} className="text-sepia-400" />
+                        <Pen size={14} className="text-sepia-400" aria-hidden="true" />
                       )}
                       <div>
                         <span className="text-sm font-medium text-sepia-800">{config.name}</span>

@@ -50,25 +50,28 @@ vi.mock('next/navigation', () => ({
   usePathname: () => '/',
 }));
 
-import { useGamification } from '@/hooks/use-gamification';
+import { useGamification, GamificationProvider } from '@/hooks/use-gamification';
+
+const wrapper = ({ children }: { children: React.ReactNode }) =>
+  React.createElement(GamificationProvider, null, children);
 
 describe('useGamification', () => {
   it('initializes with default state', () => {
-    const { result } = renderHook(() => useGamification());
+    const { result } = renderHook(() => useGamification(), { wrapper });
     expect(result.current.gamification.xp.totalXP).toBe(0);
     expect(result.current.gamification.xp.level).toBe(1);
     expect(result.current.streak.currentStreak).toBe(0);
   });
 
   it('exposes xpProgress', () => {
-    const { result } = renderHook(() => useGamification());
+    const { result } = renderHook(() => useGamification(), { wrapper });
     expect(result.current.xpProgress).toHaveProperty('current');
     expect(result.current.xpProgress).toHaveProperty('needed');
     expect(result.current.xpProgress).toHaveProperty('progress');
   });
 
   it('awards XP', () => {
-    const { result } = renderHook(() => useGamification());
+    const { result } = renderHook(() => useGamification(), { wrapper });
     act(() => {
       result.current.awardXP('test', 50);
     });
@@ -76,12 +79,12 @@ describe('useGamification', () => {
   });
 
   it('generates daily quests on mount', () => {
-    const { result } = renderHook(() => useGamification());
+    const { result } = renderHook(() => useGamification(), { wrapper });
     expect(result.current.quests).toHaveLength(3);
   });
 
   it('completes a quest and awards XP', () => {
-    const { result } = renderHook(() => useGamification());
+    const { result } = renderHook(() => useGamification(), { wrapper });
     const questId = result.current.quests[0]?.id;
     if (questId) {
       act(() => {
@@ -94,7 +97,7 @@ describe('useGamification', () => {
   });
 
   it('starts and abandons a sprint', () => {
-    const { result } = renderHook(() => useGamification());
+    const { result } = renderHook(() => useGamification(), { wrapper });
     act(() => {
       result.current.startSprint('quick-focus', 1000);
     });
@@ -107,14 +110,14 @@ describe('useGamification', () => {
   });
 
   it('exposes finishing engine state', () => {
-    const { result } = renderHook(() => useGamification());
+    const { result } = renderHook(() => useGamification(), { wrapper });
     expect(result.current.finishing).toHaveProperty('currentPhase');
     expect(result.current.finishing).toHaveProperty('overallProgress');
     expect(result.current.finishing).toHaveProperty('milestones');
   });
 
   it('persists state to localStorage', () => {
-    const { result } = renderHook(() => useGamification());
+    const { result } = renderHook(() => useGamification(), { wrapper });
     act(() => {
       result.current.awardXP('test', 100);
     });

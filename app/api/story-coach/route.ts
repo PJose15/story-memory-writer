@@ -17,7 +17,8 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { chapterContent, chapterTitle, storyContext, focusLens, heteronymVoice } = body;
+    const { chapterContent, chapterTitle, storyContext, focusLens, heteronymVoice, language } = body;
+    const coachLanguage = typeof language === 'string' && language.trim() ? language.trim() : 'English';
 
     if (typeof chapterContent !== 'string' || chapterContent.trim().length < 50) {
       return NextResponse.json(
@@ -32,7 +33,7 @@ export async function POST(req: NextRequest) {
     }
 
     const ai = new GoogleGenAI({ apiKey });
-    const systemPrompt = buildStoryCoachPrompt('English', heteronymVoice);
+    const systemPrompt = buildStoryCoachPrompt(coachLanguage, heteronymVoice);
 
     const content = buildStoryCoachContent({
       chapterContent: chapterContent.slice(0, 15000), // Cap at ~15K chars

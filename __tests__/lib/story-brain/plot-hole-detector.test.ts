@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { detectPlotHoles, resetPlotHoleIdCounter } from '@/lib/story-brain/plot-hole-detector';
+import { detectPlotHoles } from '@/lib/story-brain/plot-hole-detector';
 import { analyzeStoryState } from '@/lib/story-brain/analyzer';
 import type { StoryState } from '@/lib/store';
 
@@ -23,10 +23,6 @@ function makeChapters(count: number, charName?: string, appearsIn?: number[]): S
 }
 
 describe('detectPlotHoles', () => {
-  beforeEach(() => {
-    resetPlotHoleIdCounter();
-  });
-
   it('returns empty array with fewer than 2 chapters', () => {
     const state = makeEmptyState({
       chapters: [{ id: 'ch0', title: '', content: '', summary: '' }],

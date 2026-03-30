@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { ProgressRing } from '@/components/antiquarian';
 import { InkStampButton } from '@/components/antiquarian';
 import { getThemeConfig } from '@/lib/gamification/sprints';
@@ -14,9 +14,12 @@ interface SprintTimerProps {
 }
 
 export function SprintTimer({ sprint, currentWords, onEnd, onAbandon }: SprintTimerProps) {
-  // L18: Shared end-time computation
-  const computedEnd = new Date(sprint.startTime).getTime() + sprint.durationMinutes * 60_000;
+  // H10: Sync ref when sprint prop changes; M2: guard invalid dates
+  const rawStart = new Date(sprint.startTime).getTime();
+  const safeStart = Number.isFinite(rawStart) ? rawStart : 0;
+  const computedEnd = safeStart + sprint.durationMinutes * 60_000;
   const endTimeMs = useRef(computedEnd);
+  useEffect(() => { endTimeMs.current = computedEnd; }, [computedEnd]);
   const autoEndedRef = useRef(false);
 
   const [secondsLeft, setSecondsLeft] = useState(() =>
@@ -62,7 +65,6 @@ export function SprintTimer({ sprint, currentWords, onEnd, onAbandon }: SprintTi
       <ProgressRing value={timeProgress} size="lg" color={isExpired ? 'forest' : 'brass'}>
         <span
           className="text-xl font-mono font-bold text-sepia-800"
-          aria-live="polite"
           aria-atomic="true"
           role="timer"
         >

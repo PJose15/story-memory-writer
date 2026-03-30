@@ -155,7 +155,9 @@ function useGamificationInternal(): GamificationAPI {
     const current = readGamification();
     const { newState, result } = endSprintFn(current.sprints, wordsEnd);
     if (!result) return null;
-    const updatedXP = awardXP(current.xp, 'sprint', 75, `Sprint: ${result.wordsWritten} words`);
+    // H9: Scale XP by completion — full XP if target met, proportional otherwise
+    const xpAmount = result.targetMet ? 75 : Math.max(5, Math.round(75 * (result.percentOfTarget / 100)));
+    const updatedXP = awardXP(current.xp, 'sprint', xpAmount, `Sprint: ${result.wordsWritten} words`);
     const next = { ...current, sprints: newState, xp: updatedXP };
     persist(next);
     return result;
@@ -215,9 +217,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
 export function useGamification(): GamificationAPI {
   const ctx = useContext(GamificationContext);
   if (!ctx) {
-    // Fallback: no provider in tree — create standalone instance (backwards compat)
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    return useGamificationInternal();
+    throw new Error('useGamification must be used within a GamificationProvider');
   }
   return ctx;
 }

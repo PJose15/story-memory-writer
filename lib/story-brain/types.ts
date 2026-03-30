@@ -44,7 +44,8 @@ export type InconsistencyType =
   | 'character_gap'
   | 'relationship_asymmetry'
   | 'orphaned_reference'
-  | 'unresolved_tension';
+  | 'unresolved_tension'
+  | 'plot_hole';
 
 export interface Inconsistency {
   id: string;

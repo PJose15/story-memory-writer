@@ -49,10 +49,10 @@ export function SprintResults({ result, onDismiss }: SprintResultsProps) {
           </div>
         </div>
 
-        {/* L7: Zap icon aria-hidden */}
+        {/* L7: Zap icon aria-hidden; M11: Compute XP based on target performance */}
         <div className="flex items-center justify-center gap-1.5 text-sm text-brass-600 font-medium mb-4">
           <Zap size={14} aria-hidden="true" />
-          <span>+{XP_RATES.SPRINT_COMPLETE} XP earned</span>
+          <span>+{result.targetMet ? 75 : Math.max(5, Math.round(75 * (result.percentOfTarget / 100)))} XP earned</span>
         </div>
 
         <BrassButton onClick={onDismiss}>Done</BrassButton>

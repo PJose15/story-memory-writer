@@ -24,7 +24,7 @@ vi.mock('@/lib/store', () => ({
 
 // Mock writing-session module
 const mockAddSession = vi.fn();
-const mockReadWipSession = vi.fn(() => null);
+const mockReadWipSession = vi.fn((): { id: string; projectId: string; projectName: string; startedAt: string; wordsStart: number; currentWords: number; heteronymId?: string | null; heteronymName?: string | null } | null => null);
 const mockSaveWipSession = vi.fn();
 const mockClearWipSession = vi.fn();
 const mockGetProjectId = vi.fn(() => 'proj-1');
@@ -38,7 +38,7 @@ vi.mock('@/lib/types/writing-session', () => ({
 }));
 
 // Mock heteronym module
-const mockGetActiveHeteronymId = vi.fn(() => 'het-1');
+const mockGetActiveHeteronymId = vi.fn((): string | null => 'het-1');
 const mockReadHeteronyms = vi.fn(() => [
   { id: 'het-1', name: 'Dark Poet', bio: '', styleNote: '', avatarColor: '#000', avatarEmoji: '🖊️', createdAt: '', isDefault: true },
 ]);

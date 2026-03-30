@@ -3,8 +3,8 @@
 import { useMemo, useState, useCallback } from 'react';
 import { useStory } from '@/lib/store';
 import { analyzeStoryState } from '@/lib/story-brain/analyzer';
-import { detectInconsistencies, resetIdCounter } from '@/lib/story-brain/inconsistency-detector';
-import { detectPlotHoles, resetPlotHoleIdCounter } from '@/lib/story-brain/plot-hole-detector';
+import { detectInconsistencies } from '@/lib/story-brain/inconsistency-detector';
+import { detectPlotHoles } from '@/lib/story-brain/plot-hole-detector';
 import {
   getResolutions,
   resolveInconsistency,
@@ -29,22 +29,13 @@ export function useStoryBrain(): UseStoryBrainReturn {
   const [resolutions, setResolutions] = useState(() => getResolutions());
 
   // Memoize analysis — only recompute when story state changes
-  const analysis = useMemo(() => {
-    resetIdCounter();
-    return analyzeStoryState(state);
-  }, [state]);
+  const analysis = useMemo(() => analyzeStoryState(state), [state]);
 
-  // Memoize inconsistencies
-  const inconsistencies = useMemo(() => {
-    resetIdCounter();
-    return detectInconsistencies(state, analysis);
-  }, [state, analysis]);
+  // Memoize inconsistencies — IDs are now deterministic from data
+  const inconsistencies = useMemo(() => detectInconsistencies(state, analysis), [state, analysis]);
 
-  // Memoize plot holes
-  const plotHoles = useMemo(() => {
-    resetPlotHoleIdCounter();
-    return detectPlotHoles(state, analysis);
-  }, [state, analysis]);
+  // Memoize plot holes — IDs are now deterministic from data
+  const plotHoles = useMemo(() => detectPlotHoles(state, analysis), [state, analysis]);
 
   // Filter out resolved items
   const resolvedIds = useMemo(

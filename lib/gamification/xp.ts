@@ -27,7 +27,7 @@ export function xpForLevel(level: number): number {
 export function calculateLevel(totalXP: number): number {
   if (!Number.isFinite(totalXP) || totalXP < 0) return 1;
   let level = 1;
-  while (xpForLevel(level) <= totalXP) {
+  while (level <= 1000 && xpForLevel(level) <= totalXP) {
     level++;
   }
   return level - 1 || 1;
@@ -75,7 +75,7 @@ export function awardXP(
     timestamp: new Date().toISOString(),
   };
 
-  const newTotalXP = xpState.totalXP + amount;
+  const newTotalXP = Math.min(xpState.totalXP + amount, 50_050_000);
   const newLevel = calculateLevel(newTotalXP);
 
   // Append event, prune to MAX_EVENTS

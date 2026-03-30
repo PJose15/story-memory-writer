@@ -62,10 +62,12 @@ export default function StoryBrainPage() {
       </div>
 
       {/* Tab Bar */}
-      <div className="flex gap-1 border-b border-sepia-300/30 pb-0">
+      <div className="flex gap-1 border-b border-sepia-300/30 pb-0" role="tablist">
         {tabs.map(tab => (
           <button
             key={tab.id}
+            role="tab"
+            aria-selected={activeTab === tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors relative ${
               activeTab === tab.id
@@ -88,7 +90,7 @@ export default function StoryBrainPage() {
       </div>
 
       {/* Tab Content */}
-      <div>
+      <div role="tabpanel">
         {activeTab === 'entities' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className={selectedEntity ? 'lg:col-span-2' : 'lg:col-span-3'}>

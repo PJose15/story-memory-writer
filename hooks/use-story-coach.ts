@@ -11,8 +11,16 @@ interface UseStoryCoachReturn {
   dismissInsight: (insightId: string) => void;
 }
 
-// Per-chapter cache
+// Per-chapter cache with LRU eviction (max 10 entries)
+const MAX_CACHE_SIZE = 10;
 const sessionCache = new Map<string, CoachingSession>();
+function cacheSet(key: string, value: CoachingSession) {
+  if (sessionCache.size >= MAX_CACHE_SIZE) {
+    const oldest = sessionCache.keys().next().value;
+    if (oldest !== undefined) sessionCache.delete(oldest);
+  }
+  sessionCache.set(key, value);
+}
 
 export function useStoryCoach(): UseStoryCoachReturn {
   const [insights, setInsights] = useState<CoachingInsight[]>([]);
@@ -76,7 +84,7 @@ export function useStoryCoach(): UseStoryCoachReturn {
           insights: parsed,
           fetchedAt: new Date().toISOString(),
         };
-        sessionCache.set(chapterId, session);
+        cacheSet(chapterId, session);
 
         // Filter dismissed
         const filtered = parsed.filter(i => !dismissedRef.current.has(i.id));

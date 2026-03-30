@@ -479,7 +479,7 @@ export function FlowEditor({ chapterId, onExit }: FlowEditorProps) {
                   chapterContent: content,
                   chapterTitle: chapter?.title,
                   storyContext: storyContext.synopsis ?? '',
-                  heteronymVoice: activeHeteronym?.voice,
+                  heteronymVoice: activeHeteronym ? { name: activeHeteronym.name, voice: activeHeteronym.voice, styleNote: activeHeteronym.styleNote } : undefined,
                 });
               }
             }}

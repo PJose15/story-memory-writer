@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { HeteronymVoice, VoiceTone, VoiceVocabulary, VoicePacing } from '@/lib/heteronym-voice';
 import { TONE_LABELS, VOCABULARY_LABELS, PACING_LABELS } from '@/lib/heteronym-voice';
 
@@ -21,7 +21,12 @@ export function VoiceToneEditor({ initialVoice, styleNote, onVoiceChange, onStyl
   const [pacing, setPacing] = useState<VoicePacing>(initialVoice?.pacing || 'measured');
   const [freeformNote, setFreeformNote] = useState(initialVoice?.freeformNote || '');
 
+  const isFirstRender = useRef(true);
   useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
     onVoiceChange({ tone, vocabulary, pacing, freeformNote });
   }, [tone, vocabulary, pacing, freeformNote, onVoiceChange]);
 

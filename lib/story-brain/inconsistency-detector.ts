@@ -1,14 +1,14 @@
 import type { StoryState } from '@/lib/store';
 import type { StoryBrainAnalysis, Inconsistency, InconsistencyType, InconsistencySeverity } from './types';
 
-let idCounter = 0;
-function nextId(): string {
-  return `inc_${++idCounter}`;
-}
-
-/** Reset ID counter (for testing) */
-export function resetIdCounter(): void {
-  idCounter = 0;
+/** Generate a deterministic ID from type + entity IDs + title to avoid collisions */
+function deterministicId(type: string, entityIds: string[], title: string): string {
+  const raw = `${type}:${entityIds.sort().join(',')}:${title}`;
+  let hash = 0;
+  for (let i = 0; i < raw.length; i++) {
+    hash = ((hash << 5) - hash + raw.charCodeAt(i)) | 0;
+  }
+  return `inc_${(hash >>> 0).toString(36)}`;
 }
 
 /**
@@ -94,6 +94,11 @@ function detectCharacterGaps(
   const totalChapters = state.chapters.length;
   if (totalChapters < 3) return results;
 
+  // H3: Build once, reuse for all characters
+  const chapterTexts = state.chapters.map(ch =>
+    `${ch.title} ${ch.content} ${ch.summary}`.toLowerCase()
+  );
+
   for (const entity of analysis.entities) {
     if (entity.type !== 'character') continue;
     if (entity.firstAppearanceChapter === -1) continue;
@@ -102,9 +107,6 @@ function detectCharacterGaps(
     const char = state.characters.find(c => c.id === entity.id);
     if (!char || char.canonStatus === 'discarded') continue;
 
-    const chapterTexts = state.chapters.map(ch =>
-      `${ch.title} ${ch.content} ${ch.summary}`.toLowerCase()
-    );
     const nameLower = entity.name.toLowerCase();
 
     let maxGap = 0;
@@ -184,7 +186,7 @@ function detectRelationshipAsymmetry(state: StoryState): Inconsistency[] {
   // Deduplicate (A→B and B→A produce the same alert)
   const seen = new Set<string>();
   return results.filter(r => {
-    const key = [...r.relatedEntityIds].sort().join(':') + r.title;
+    const key = [...r.relatedEntityIds].sort().join(':') + r.type;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
@@ -279,7 +281,7 @@ function makeInconsistency(
   chapterIds: string[]
 ): Inconsistency {
   return {
-    id: nextId(),
+    id: deterministicId(type, relatedEntityIds, title),
     type,
     severity,
     title,

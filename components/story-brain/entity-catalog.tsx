@@ -65,12 +65,14 @@ export function EntityCatalog({ entities, onSelect }: EntityCatalogProps) {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search entities..."
+            aria-label="Search entities"
             className="w-full pl-9 pr-3 py-2 bg-parchment-200 border border-sepia-300/40 rounded-lg text-sm text-sepia-900 focus:outline-none focus:border-brass-500/60"
           />
         </div>
         <div className="flex gap-1">
           <button
             onClick={() => setFilterType('all')}
+            aria-pressed={filterType === 'all'}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
               filterType === 'all' ? 'bg-brass-500 text-cream-50' : 'text-sepia-600 hover:bg-parchment-200'
             }`}
@@ -83,6 +85,7 @@ export function EntityCatalog({ entities, onSelect }: EntityCatalogProps) {
               <button
                 key={type}
                 onClick={() => setFilterType(type)}
+                aria-pressed={filterType === type}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1 ${
                   filterType === type ? 'bg-brass-500 text-cream-50' : 'text-sepia-600 hover:bg-parchment-200'
                 }`}

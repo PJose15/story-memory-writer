@@ -108,7 +108,7 @@ describe('isGamificationState', () => {
 
   it('rejects object with non-array events', () => {
     const state = defaultGamificationState();
-    (state.xp as Record<string, unknown>).events = 'not-array';
+    (state.xp as unknown as Record<string, unknown>).events = 'not-array';
     expect(isGamificationState(state)).toBe(false);
   });
 });

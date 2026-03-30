@@ -59,16 +59,11 @@ describe('VoiceToneEditor', () => {
     expect(screen.getByText('Languid')).toBeDefined();
   });
 
-  it('calls onVoiceChange on initial render with defaults', () => {
+  it('does not call onVoiceChange on initial render (skips first render)', () => {
     const onVoiceChange = vi.fn();
     render(<VoiceToneEditor {...defaultProps} onVoiceChange={onVoiceChange} />);
-    // useEffect fires on mount with default values
-    expect(onVoiceChange).toHaveBeenCalledWith({
-      tone: 'casual',
-      vocabulary: 'mixed',
-      pacing: 'measured',
-      freeformNote: '',
-    });
+    // isFirstRender ref skips the initial useEffect call
+    expect(onVoiceChange).not.toHaveBeenCalled();
   });
 
   it('calls onVoiceChange with updated tone when tone button clicked', () => {
@@ -135,7 +130,7 @@ describe('VoiceToneEditor', () => {
     expect(onStyleNoteChange).toHaveBeenCalledWith('Short bursts');
   });
 
-  it('initializes with provided initialVoice values', () => {
+  it('initializes with provided initialVoice values (no call on mount)', () => {
     const voice: HeteronymVoice = {
       tone: 'raw',
       vocabulary: 'slang',
@@ -145,12 +140,8 @@ describe('VoiceToneEditor', () => {
     const onVoiceChange = vi.fn();
     render(<VoiceToneEditor {...defaultProps} initialVoice={voice} onVoiceChange={onVoiceChange} />);
 
-    expect(onVoiceChange).toHaveBeenCalledWith({
-      tone: 'raw',
-      vocabulary: 'slang',
-      pacing: 'breathless',
-      freeformNote: 'No filters',
-    });
+    // isFirstRender ref skips the initial useEffect — no call on mount
+    expect(onVoiceChange).not.toHaveBeenCalled();
   });
 
   it('displays the provided styleNote', () => {

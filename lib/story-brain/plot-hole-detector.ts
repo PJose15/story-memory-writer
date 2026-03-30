@@ -3,14 +3,14 @@ import type { StoryBrainAnalysis } from './types';
 import type { PlotHole, PlotHoleType } from './plot-hole-types';
 import { PLOT_HOLE_SEVERITY } from './plot-hole-types';
 
-let idCounter = 0;
-function nextPlotHoleId(): string {
-  return `ph_${++idCounter}`;
-}
-
-/** Reset ID counter (for testing) */
-export function resetPlotHoleIdCounter(): void {
-  idCounter = 0;
+/** Generate a deterministic ID from plot hole type + entity IDs + title */
+function deterministicPlotHoleId(phType: string, entityIds: string[], title: string): string {
+  const raw = `${phType}:${entityIds.sort().join(',')}:${title}`;
+  let hash = 0;
+  for (let i = 0; i < raw.length; i++) {
+    hash = ((hash << 5) - hash + raw.charCodeAt(i)) | 0;
+  }
+  return `ph_${(hash >>> 0).toString(36)}`;
 }
 
 /**
@@ -45,6 +45,11 @@ function detectCharacterDisappearance(
   const results: PlotHole[] = [];
   const threshold = 0.4; // Absent for >40% of chapters after appearing
 
+  // H3: Build once, reuse for all characters
+  const chapterTexts = state.chapters.map(ch =>
+    `${ch.title} ${ch.content} ${ch.summary}`.toLowerCase()
+  );
+
   for (const entity of analysis.entities) {
     if (entity.type !== 'character') continue;
     if (entity.firstAppearanceChapter === -1) continue;
@@ -52,10 +57,6 @@ function detectCharacterDisappearance(
     const char = state.characters.find(c => c.id === entity.id);
     if (!char || char.canonStatus === 'discarded') continue;
 
-    // Count chapters where character appears
-    const chapterTexts = state.chapters.map(ch =>
-      `${ch.title} ${ch.content} ${ch.summary}`.toLowerCase()
-    );
     const nameLower = entity.name.toLowerCase();
 
     let chaptersPresent = 0;
@@ -228,8 +229,8 @@ function makePlotHole(
   narrativeImpact: number
 ): PlotHole {
   return {
-    id: nextPlotHoleId(),
-    type: 'unresolved_tension', // Base inconsistency type
+    id: deterministicPlotHoleId(plotHoleType, relatedEntityIds, title),
+    type: 'plot_hole' as const, // H5: Distinct type for plot holes
     severity: PLOT_HOLE_SEVERITY[plotHoleType],
     title,
     description,

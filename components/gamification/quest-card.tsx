@@ -27,12 +27,15 @@ export function QuestCard({ quest, onComplete }: QuestCardProps) {
   const Icon = questIcons[quest.type] ?? BookOpen; // M9-adjacent: fallback for unknown type
   const isCompleted = quest.status === 'completed';
   const [completing, setCompleting] = useState(false);
+  const [showDone, setShowDone] = useState(false);
 
-  // M13: Prevent double-click
+  // M13: Prevent double-click; M7: Brief visual confirmation
   const handleComplete = useCallback(() => {
     if (completing) return;
     setCompleting(true);
     onComplete(quest.id);
+    setShowDone(true);
+    setTimeout(() => setShowDone(false), 1000);
   }, [completing, onComplete, quest.id]);
 
   return (
@@ -63,7 +66,7 @@ export function QuestCard({ quest, onComplete }: QuestCardProps) {
               onClick={handleComplete}
               disabled={completing}
             >
-              {completing ? 'Completing...' : 'Complete'}
+              {showDone ? 'Done!' : completing ? 'Completing...' : 'Complete'}
             </BrassButton>
           )}
         </div>

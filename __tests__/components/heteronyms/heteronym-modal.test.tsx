@@ -91,7 +91,7 @@ describe('HeteronymModal', () => {
       styleNote: '',
       avatarColor: '#E74C3C',
       avatarEmoji: '✍️',
-      voice: { tone: 'casual', vocabulary: 'mixed', pacing: 'measured', freeformNote: '' },
+      voice: undefined,
     });
   });
 
