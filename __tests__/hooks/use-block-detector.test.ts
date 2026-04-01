@@ -212,6 +212,26 @@ describe('useBlockDetector', () => {
     expect(saved.endedAt).not.toBeNull();
   });
 
+  it('endDetour with empty string produces wordCount 0', async () => {
+    const { saveDetourSession } = await import('@/lib/scenery-change/detour-history') as any;
+    const now = Date.now();
+    const { collectorRef, lastKeystrokeRef } = createRefs(blockedMetrics);
+    lastKeystrokeRef.current = now - 50_000;
+
+    const { result } = renderHook(() =>
+      useBlockDetector(collectorRef, now - 120_000, lastKeystrokeRef, storyContext)
+    );
+
+    act(() => { vi.advanceTimersByTime(15_000); });
+    act(() => { result.current.startDetour(result.current.suggestions[0]); });
+
+    act(() => { result.current.endDetour(''); });
+
+    expect(result.current.activeDetour).toBeNull();
+    const lastCall = saveDetourSession.mock.calls[saveDetourSession.mock.calls.length - 1][0];
+    expect(lastCall.wordCount).toBe(0);
+  });
+
   it('endDetour is a no-op when no active detour', () => {
     const { collectorRef, lastKeystrokeRef } = createRefs(healthyMetrics);
 

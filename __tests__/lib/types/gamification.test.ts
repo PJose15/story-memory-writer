@@ -111,6 +111,42 @@ describe('isGamificationState', () => {
     (state.xp as unknown as Record<string, unknown>).events = 'not-array';
     expect(isGamificationState(state)).toBe(false);
   });
+
+  it('rejects xp.totalXP as Infinity', () => {
+    const state = defaultGamificationState();
+    (state.xp as unknown as Record<string, unknown>).totalXP = Infinity;
+    expect(isGamificationState(state)).toBe(false);
+  });
+
+  it('rejects xp.totalXP as NaN', () => {
+    const state = defaultGamificationState();
+    (state.xp as unknown as Record<string, unknown>).totalXP = NaN;
+    expect(isGamificationState(state)).toBe(false);
+  });
+
+  it('rejects streak.todayQualified as non-boolean', () => {
+    const state = defaultGamificationState();
+    (state.streak as unknown as Record<string, unknown>).todayQualified = 'yes';
+    expect(isGamificationState(state)).toBe(false);
+  });
+
+  it('rejects quests.currentDate as non-string', () => {
+    const state = defaultGamificationState();
+    (state.quests as unknown as Record<string, unknown>).currentDate = 123;
+    expect(isGamificationState(state)).toBe(false);
+  });
+
+  it('rejects finishing.currentPhase as invalid string', () => {
+    const state = defaultGamificationState();
+    (state.finishing as unknown as Record<string, unknown>).currentPhase = 'not-a-phase';
+    expect(isGamificationState(state)).toBe(false);
+  });
+
+  it('rejects finishing.milestones as non-array', () => {
+    const state = defaultGamificationState();
+    (state.finishing as unknown as Record<string, unknown>).milestones = 'not-array';
+    expect(isGamificationState(state)).toBe(false);
+  });
 });
 
 describe('readGamification', () => {
@@ -142,6 +178,16 @@ describe('readGamification', () => {
     expect(state.version).toBe(1);
   });
 
+  it('returns defaults on version mismatch (version: 999)', () => {
+    const saved = defaultGamificationState();
+    saved.xp.totalXP = 5000;
+    (saved as any).version = 999;
+    store['zagafy_gamification'] = JSON.stringify(saved);
+    const state = readGamification();
+    expect(state.version).toBe(1);
+    expect(state.xp.totalXP).toBe(0);
+  });
+
   it('deep-merges missing nested keys with defaults', () => {
     // Simulate stored state missing 'finishing' sub-keys and 'streak.streakHistory'
     const partial = defaultGamificationState();
@@ -166,5 +212,20 @@ describe('writeGamification', () => {
     expect(store['zagafy_gamification']).toBeDefined();
     const parsed = JSON.parse(store['zagafy_gamification']);
     expect(parsed.xp.totalXP).toBe(100);
+  });
+
+  it('returns true on success', () => {
+    const state = defaultGamificationState();
+    expect(writeGamification(state)).toBe(true);
+  });
+
+  it('returns false when setItem throws', () => {
+    vi.stubGlobal('localStorage', {
+      getItem: () => null,
+      setItem: () => { throw new Error('QuotaExceeded'); },
+      removeItem: () => {},
+    });
+    const state = defaultGamificationState();
+    expect(writeGamification(state)).toBe(false);
   });
 });

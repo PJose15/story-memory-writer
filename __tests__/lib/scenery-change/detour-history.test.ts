@@ -150,6 +150,15 @@ describe('getDetourStats', () => {
     expect(stats.favoriteType).toBe('dialogue_sprint');
   });
 
+  it('tie for favorite type returns first iterated', () => {
+    saveDetourSession(makeSession({ id: 's1', type: 'dialogue_sprint' }));
+    saveDetourSession(makeSession({ id: 's2', type: 'alternate_pov' }));
+    const stats = getDetourStats();
+    // Both have count 1 — should return whichever comes first in iteration
+    expect(stats.favoriteType).not.toBeNull();
+    expect(['dialogue_sprint', 'alternate_pov']).toContain(stats.favoriteType);
+  });
+
   it('returns a single session type as favorite when only one session', () => {
     saveDetourSession(makeSession({ id: 's1', type: 'sensory_snapshot' }));
     const stats = getDetourStats();

@@ -84,6 +84,24 @@ describe('getDetourSuggestions', () => {
     }
   });
 
+  it('alternate_pov falls back to characterNames[0] with only 1 character', () => {
+    const signal = makeSignal(['high_deletion']);
+    const suggestions = getDetourSuggestions(signal, {
+      characterNames: ['Solo'],
+    });
+    const altPov = suggestions.find(s => s.type === 'alternate_pov');
+    expect(altPov).toBeDefined();
+    // With only 1 character, should use characterNames[0] as fallback
+    expect(altPov!.prompt).toContain('Solo');
+  });
+
+  it('both idle+high_deletion: reframing sort dominates', () => {
+    const suggestions = getDetourSuggestions(makeSignal(['idle', 'high_deletion']), {});
+    // high_deletion prioritizes creative reframing types
+    const preferred = ['alternate_pov', 'sensory_snapshot', 'flash_forward'];
+    expect(preferred).toContain(suggestions[0].type);
+  });
+
   it('uses second character name for alternate_pov when available', () => {
     const signal = makeSignal(['high_deletion']);
     const suggestions = getDetourSuggestions(signal, {

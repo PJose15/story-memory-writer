@@ -76,6 +76,7 @@ export async function POST(req: NextRequest) {
       if (Array.isArray(parsed)) {
         insights = parsed
           .filter(isValidInsight)
+          // Cap observation/suggestion at 500 chars to guard against LLM over-generation, not a UX limit
           .map((item, i) => ({
             id: `coach_${Date.now()}_${i}`,
             lens: item.lens as CoachingLens,

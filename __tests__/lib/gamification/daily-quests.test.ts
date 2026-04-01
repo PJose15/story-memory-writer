@@ -146,3 +146,31 @@ describe('completeQuest', () => {
     expect(result.quests.every((q) => q.status === 'active')).toBe(true);
   });
 });
+
+describe('generateDailyQuests edge cases', () => {
+  it('falls back to 1970-01-01 for invalid dateKey', () => {
+    const quests = generateDailyQuests('not-a-date', mockStory);
+    expect(quests).toHaveLength(3);
+    expect(quests[0].dateKey).toBe('1970-01-01');
+  });
+  it('falls back for empty dateKey', () => {
+    const quests = generateDailyQuests('', mockStory);
+    expect(quests[0].dateKey).toBe('1970-01-01');
+  });
+  it('falls back for partial dateKey', () => {
+    const quests = generateDailyQuests('2025-1-5', mockStory);
+    expect(quests[0].dateKey).toBe('1970-01-01');
+  });
+});
+
+describe('refreshQuests edge cases', () => {
+  it('caps quest history', () => {
+    const bigHistory = Array.from({ length: 100 }, (_, i) => ({
+      id: `old-${i}`, type: 'dialogue' as const, title: 'Old', description: 'Old quest',
+      xpReward: 50, status: 'expired' as const, dateKey: '2025-01-01',
+    }));
+    const state: QuestsState = { currentDate: '2025-01-01', quests: [], questHistory: bigHistory };
+    const result = refreshQuests(state, mockStory, '2025-01-02');
+    expect(result.questHistory.length).toBeLessThanOrEqual(90);
+  });
+});

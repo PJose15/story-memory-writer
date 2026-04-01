@@ -119,6 +119,16 @@ describe('resolutions (localStorage CRUD)', () => {
     expect(date.getTime()).not.toBeNaN();
   });
 
+  it('clearAllResolutions handles removeItem throwing', () => {
+    resolveInconsistency('inc_1', 'ignore');
+    vi.spyOn(localStorage, 'removeItem').mockImplementation(() => {
+      throw new Error('Storage error');
+    });
+    // Should not throw
+    expect(() => clearAllResolutions()).not.toThrow();
+    vi.restoreAllMocks();
+  });
+
   it('survives localStorage.setItem throwing (quota exceeded)', () => {
     const originalSetItem = localStorage.setItem.bind(localStorage);
     vi.spyOn(localStorage, 'setItem').mockImplementation(() => {

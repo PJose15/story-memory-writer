@@ -80,9 +80,15 @@ export function CoachPanel({ insights, isLoading, error, onRefresh, onDismiss, o
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {isLoading && sorted.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-12 gap-2">
-              <RefreshCw size={20} className="animate-spin text-brass-500" />
-              <span className="text-sm text-sepia-500">Analyzing your chapter...</span>
+            <div className="space-y-3" aria-label="Loading insights">
+              {[0, 1, 2].map(i => (
+                <div key={i} className="rounded-lg border border-sepia-300/20 p-3 space-y-2">
+                  <div className="h-3 w-24 rounded bg-sepia-200/60 animate-pulse" />
+                  <div className="h-2.5 w-full rounded bg-sepia-200/40 animate-pulse" />
+                  <div className="h-2.5 w-3/4 rounded bg-sepia-200/40 animate-pulse" />
+                </div>
+              ))}
+              <p className="text-center text-sm text-sepia-500 pt-1">Analyzing your chapter...</p>
             </div>
           )}
 

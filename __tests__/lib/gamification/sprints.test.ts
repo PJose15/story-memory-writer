@@ -169,3 +169,82 @@ describe('getSprintStats', () => {
     expect(stats.targetMetRate).toBe(50);
   });
 });
+
+describe('startSprint edge cases', () => {
+  it('clamps NaN wordsStart to 0', () => {
+    const result = startSprint(emptyState, 'quick-focus', NaN);
+    expect(result.activeSprint!.wordsStart).toBe(0);
+  });
+  it('clamps negative wordsStart to 0', () => {
+    const result = startSprint(emptyState, 'quick-focus', -100);
+    expect(result.activeSprint!.wordsStart).toBe(0);
+  });
+  it('clamps Infinity wordsStart to 0', () => {
+    const result = startSprint(emptyState, 'quick-focus', Infinity);
+    expect(result.activeSprint!.wordsStart).toBe(0);
+  });
+});
+
+describe('endSprint edge cases', () => {
+  it('clamps NaN wordsEnd to 0', () => {
+    const withActive = startSprint(emptyState, 'quick-focus', 1000);
+    const { result } = endSprint(withActive, NaN);
+    expect(result!.wordsWritten).toBe(0);
+  });
+  it('clamps negative wordsEnd to 0', () => {
+    const withActive = startSprint(emptyState, 'quick-focus', 1000);
+    const { result } = endSprint(withActive, -500);
+    expect(result!.wordsWritten).toBe(0);
+  });
+  it('trims history to MAX_HISTORY (50)', () => {
+    let state: SprintsState = { activeSprint: null, sprintHistory: Array(50).fill(null).map((_, i) => ({
+      id: `old-${i}`, theme: 'quick-focus' as const, prompt: '', durationMinutes: 15,
+      startTime: '2025-01-01T00:00:00Z', endTime: '2025-01-01T00:15:00Z',
+      wordsStart: 0, wordsEnd: 100, wordsWritten: 100, status: 'completed' as const, targetWords: 250,
+    })) };
+    state = startSprint(state, 'quick-focus', 0);
+    const { newState } = endSprint(state, 100);
+    expect(newState.sprintHistory).toHaveLength(50);
+  });
+});
+
+describe('abandonSprint edge cases', () => {
+  it('sets wordsEnd and wordsWritten to null', () => {
+    const withActive = startSprint(emptyState, 'quick-focus', 1000);
+    const result = abandonSprint(withActive);
+    expect(result.sprintHistory[0].wordsEnd).toBeNull();
+    expect(result.sprintHistory[0].wordsWritten).toBeNull();
+  });
+});
+
+describe('getSprintStats edge cases', () => {
+  it('handles sprint with invalid dates', () => {
+    const history: WritingSprint[] = [{
+      id: '1', theme: 'quick-focus', prompt: '', durationMinutes: 15,
+      startTime: 'invalid', endTime: 'also-invalid',
+      wordsStart: 0, wordsEnd: 100, wordsWritten: 100, status: 'completed', targetWords: 250,
+    }];
+    const stats = getSprintStats(history);
+    expect(stats.totalMinutes).toBe(0);
+    expect(stats.totalWordsWritten).toBe(100);
+  });
+  it('handles sprint with null endTime (totalMinutes finite)', () => {
+    const history: WritingSprint[] = [{
+      id: '1', theme: 'quick-focus', prompt: '', durationMinutes: 15,
+      startTime: '2025-01-01T10:00:00Z', endTime: null,
+      wordsStart: 0, wordsEnd: 100, wordsWritten: 100, status: 'completed', targetWords: 250,
+    }];
+    const stats = getSprintStats(history);
+    expect(Number.isFinite(stats.totalMinutes)).toBe(true);
+    expect(stats.totalMinutes).toBe(0);
+  });
+  it('handles sprint with null wordsWritten', () => {
+    const history: WritingSprint[] = [{
+      id: '1', theme: 'quick-focus', prompt: '', durationMinutes: 15,
+      startTime: '2025-01-01T10:00:00Z', endTime: '2025-01-01T10:15:00Z',
+      wordsStart: 0, wordsEnd: null, wordsWritten: null, status: 'completed', targetWords: 250,
+    }];
+    const stats = getSprintStats(history);
+    expect(stats.totalWordsWritten).toBe(0);
+  });
+});

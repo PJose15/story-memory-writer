@@ -158,6 +158,20 @@ export function setGuestHeteronymId(id: string | null): void {
   }
 }
 
+/**
+ * Subscribe to heteronym changes from other tabs via the `storage` event.
+ * Returns an unsubscribe function. Call in useEffect cleanup.
+ */
+export function onHeteronymChange(callback: (heteronyms: Heteronym[]) => void): () => void {
+  const handler = (e: StorageEvent) => {
+    if (e.key === HETERONYMS_KEY) {
+      callback(readHeteronyms());
+    }
+  };
+  window.addEventListener('storage', handler);
+  return () => window.removeEventListener('storage', handler);
+}
+
 export function isAtLimit(): boolean {
   return readHeteronyms().length >= MAX_HETERONYMS;
 }

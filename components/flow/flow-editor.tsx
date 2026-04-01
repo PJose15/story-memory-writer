@@ -71,6 +71,12 @@ export function FlowEditor({ chapterId, onExit }: FlowEditorProps) {
   const lastKeystrokeTimeRef = useRef<number>(Date.now());
   const sessionStartTimeRef = useRef<number>(Date.now());
 
+  // L3: Reset keystroke timing when switching chapters so block detector starts fresh
+  useEffect(() => {
+    lastKeystrokeTimeRef.current = Date.now();
+    sessionStartTimeRef.current = Date.now();
+  }, [chapterId]);
+
   // Heteronym state
   const [heteronyms] = useState(() => readHeteronyms());
   const [activeHeteronymId, setActiveHId] = useState(() => getActiveHeteronymId());

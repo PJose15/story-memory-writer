@@ -25,6 +25,18 @@ describe('xpForLevel', () => {
   it('returns 5500 for level 10', () => {
     expect(xpForLevel(10)).toBe(5500);
   });
+
+  it('xpForLevel(1001) === xpForLevel(1000) (cap at 1000)', () => {
+    expect(xpForLevel(1001)).toBe(xpForLevel(1000));
+  });
+
+  it('xpForLevel(999) < xpForLevel(1000)', () => {
+    expect(xpForLevel(999)).toBeLessThan(xpForLevel(1000));
+  });
+
+  it('xpForLevel(1000) === 50050000', () => {
+    expect(xpForLevel(1000)).toBe(50050000);
+  });
 });
 
 describe('calculateLevel', () => {

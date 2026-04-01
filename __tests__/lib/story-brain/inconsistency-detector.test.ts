@@ -218,6 +218,134 @@ describe('detectInconsistencies', () => {
     expect(results.filter(r => r.type === 'unresolved_tension')).toHaveLength(0);
   });
 
+  // ── Additional Timeline Conflict Coverage ──
+
+  it('detects peace vs war timeline conflict', () => {
+    const state = makeEmptyState({
+      timeline_events: [
+        { id: 'e1', date: '2024-03-15', description: 'Treaty ceremony', impact: 'The kingdom is at peace' },
+        { id: 'e2', date: '2024-03-15', description: 'Battle erupts', impact: 'The kingdom is at war' },
+      ],
+    });
+    const analysis = analyzeStoryState(state);
+    const results = detectInconsistencies(state, analysis);
+    const timeline = results.filter(r => r.type === 'timeline_conflict');
+    expect(timeline.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('detects safe vs danger timeline conflict', () => {
+    const state = makeEmptyState({
+      timeline_events: [
+        { id: 'e1', date: '2024-05-01', description: 'Evacuation complete', impact: 'Everyone is safe' },
+        { id: 'e2', date: '2024-05-01', description: 'Explosion at the base', impact: 'People are in danger' },
+      ],
+    });
+    const analysis = analyzeStoryState(state);
+    const results = detectInconsistencies(state, analysis);
+    expect(results.filter(r => r.type === 'timeline_conflict').length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('does not flag non-contradictory same-date events', () => {
+    const state = makeEmptyState({
+      timeline_events: [
+        { id: 'e1', date: '2024-01-01', description: 'Morning assembly', impact: 'Characters gather' },
+        { id: 'e2', date: '2024-01-01', description: 'Evening feast', impact: 'Characters celebrate' },
+      ],
+    });
+    const analysis = analyzeStoryState(state);
+    const results = detectInconsistencies(state, analysis);
+    expect(results.filter(r => r.type === 'timeline_conflict')).toHaveLength(0);
+  });
+
+  it('does not flag events without impact field', () => {
+    const state = makeEmptyState({
+      timeline_events: [
+        { id: 'e1', date: '2024-01-01', description: 'Event A' },
+        { id: 'e2', date: '2024-01-01', description: 'Event B' },
+      ],
+    });
+    const analysis = analyzeStoryState(state);
+    const results = detectInconsistencies(state, analysis);
+    expect(results.filter(r => r.type === 'timeline_conflict')).toHaveLength(0);
+  });
+
+  // ── Additional Relationship Asymmetry Coverage ──
+
+  it('detects tension asymmetry > 40 (severity low, distinct from trust)', () => {
+    const state = makeEmptyState({
+      characters: [
+        {
+          id: 'c1', name: 'Alice', role: '', description: '', relationships: '',
+          dynamicRelationships: [{ targetId: 'c2', trustLevel: 50, tensionLevel: 90, dynamics: '' }],
+        },
+        {
+          id: 'c2', name: 'Bob', role: '', description: '', relationships: '',
+          dynamicRelationships: [{ targetId: 'c1', trustLevel: 50, tensionLevel: 20, dynamics: '' }],
+        },
+      ],
+    });
+    const analysis = analyzeStoryState(state);
+    const results = detectInconsistencies(state, analysis);
+    const tensionAsym = results.filter(r => r.title.includes('Tension asymmetry'));
+    expect(tensionAsym.length).toBeGreaterThanOrEqual(1);
+    expect(tensionAsym[0].severity).toBe('low');
+  });
+
+  it('skips character_gap check for discarded characters', () => {
+    const chapters = Array.from({ length: 10 }, (_, i) => ({
+      id: `ch${i}`, title: '', summary: '',
+      content: i === 0 || i === 9 ? 'Phantom spoke.' : 'Nothing happened.',
+    }));
+    const state = makeEmptyState({
+      chapters,
+      characters: [{ id: 'c1', name: 'Phantom', role: '', description: '', relationships: '', canonStatus: 'discarded' }],
+    });
+    const analysis = analyzeStoryState(state);
+    const results = detectInconsistencies(state, analysis);
+    expect(results.filter(r => r.type === 'character_gap')).toHaveLength(0);
+  });
+
+  it('skips relationship_asymmetry when both characters are discarded', () => {
+    const state = makeEmptyState({
+      characters: [
+        {
+          id: 'c1', name: 'Alice', role: '', description: '', relationships: '', canonStatus: 'discarded',
+          dynamicRelationships: [{ targetId: 'c2', trustLevel: 90, tensionLevel: 10, dynamics: '' }],
+        },
+        {
+          id: 'c2', name: 'Bob', role: '', description: '', relationships: '', canonStatus: 'discarded',
+          dynamicRelationships: [{ targetId: 'c1', trustLevel: 30, tensionLevel: 10, dynamics: '' }],
+        },
+      ],
+    });
+    const analysis = analyzeStoryState(state);
+    const results = detectInconsistencies(state, analysis);
+    expect(results.filter(r => r.type === 'relationship_asymmetry')).toHaveLength(0);
+  });
+
+  it('does not flag unresolved tension when conflict description matches character name', () => {
+    const state = makeEmptyState({
+      characters: [
+        {
+          id: 'c1', name: 'Dante', role: '', description: '', relationships: '',
+          currentState: {
+            emotionalState: 'angry', visibleGoal: '', hiddenNeed: '', currentFear: '',
+            dominantBelief: '', emotionalWound: '', pressureLevel: 'Critical',
+            currentKnowledge: '', indicator: 'under pressure',
+          },
+          dynamicRelationships: [{ targetId: 'c2', trustLevel: 10, tensionLevel: 90, dynamics: '' }],
+        },
+        { id: 'c2', name: 'Eve', role: '', description: '', relationships: '' },
+      ],
+      active_conflicts: [
+        { id: 'cf1', title: 'Internal Struggle', description: 'Dante battles his inner demons', status: 'active' },
+      ],
+    });
+    const analysis = analyzeStoryState(state);
+    const results = detectInconsistencies(state, analysis);
+    expect(results.filter(r => r.type === 'unresolved_tension')).toHaveLength(0);
+  });
+
   it('assigns unique incrementing IDs to each inconsistency', () => {
     const state = makeEmptyState({
       chapters: [{ id: 'ch1', title: '', content: '', summary: '' }],

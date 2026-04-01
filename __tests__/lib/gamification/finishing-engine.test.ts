@@ -232,3 +232,91 @@ describe('analyzeStory', () => {
     expect(result.nextSuggestion).toContain('complete');
   });
 });
+
+describe('phaseFromProgress edge cases', () => {
+  it('handles NaN → setup', () => expect(phaseFromProgress(NaN)).toBe('setup'));
+  it('handles Infinity → setup (non-finite clamps to 0)', () => expect(phaseFromProgress(Infinity)).toBe('setup'));
+  it('handles -Infinity → setup', () => expect(phaseFromProgress(-Infinity)).toBe('setup'));
+  it('handles negative → setup', () => expect(phaseFromProgress(-10)).toBe('setup'));
+  it('handles 14 → setup (boundary)', () => expect(phaseFromProgress(14)).toBe('setup'));
+  it('handles 34 → rising-action (boundary)', () => expect(phaseFromProgress(34)).toBe('rising-action'));
+  it('handles 54 → midpoint (boundary)', () => expect(phaseFromProgress(54)).toBe('midpoint'));
+  it('handles 74 → climax (boundary)', () => expect(phaseFromProgress(74)).toBe('climax'));
+  it('handles 89 → falling-action (boundary)', () => expect(phaseFromProgress(89)).toBe('falling-action'));
+  it('handles >100 → resolution (clamp)', () => expect(phaseFromProgress(200)).toBe('resolution'));
+});
+
+describe('totalWords edge cases', () => {
+  it('returns 0 when chapters is not an array', () => {
+    expect(totalWords(makeStory({ chapters: null as any }))).toBe(0);
+  });
+  it('returns 0 for chapters with empty content', () => {
+    expect(totalWords(makeStory({ chapters: [{ id: '1', title: '', content: '', summary: '' }] }))).toBe(0);
+  });
+  it('handles undefined content', () => {
+    expect(totalWords(makeStory({ chapters: [{ id: '1', title: '', content: undefined as any, summary: '' }] }))).toBe(0);
+  });
+});
+
+describe('analyzeStory milestone edge cases', () => {
+  it('preserves previously completed milestones', () => {
+    const emptyStory = makeStory();
+    const prevMilestones = [{ id: 'synopsis-written', phase: 'setup', description: 'x', weight: 8, completed: true }];
+    const result = analyzeStory(emptyStory, prevMilestones as any);
+    expect(result.milestones.find(m => m.id === 'synopsis-written')?.completed).toBe(true);
+  });
+
+  it('retains previously completed milestone when condition no longer met', () => {
+    // First analyze with synopsis present
+    const storyWithSynopsis = makeStory({ synopsis: 'A great adventure' });
+    const firstResult = analyzeStory(storyWithSynopsis);
+    expect(firstResult.milestones.find(m => m.id === 'synopsis-written')?.completed).toBe(true);
+
+    // Now analyze without synopsis but pass previous milestones
+    const storyWithout = makeStory({ synopsis: '' });
+    const result = analyzeStory(storyWithout, firstResult.milestones);
+    expect(result.milestones.find(m => m.id === 'synopsis-written')?.completed).toBe(true);
+  });
+
+  it('handles null active_conflicts for conflict milestone', () => {
+    const story = makeStory({ active_conflicts: null as any });
+    const result = analyzeStory(story);
+    expect(result.milestones.find(m => m.id === 'active-conflict')?.completed).toBe(false);
+  });
+
+  it('handles null open_loops for loop milestone', () => {
+    const story = makeStory({ open_loops: null as any });
+    const result = analyzeStory(story);
+    expect(result.milestones.find(m => m.id === 'three-open-loops')?.completed).toBe(false);
+  });
+
+  it('handles null foreshadowing_elements', () => {
+    const story = makeStory({ foreshadowing_elements: null as any });
+    const result = analyzeStory(story);
+    expect(result.milestones.find(m => m.id === 'foreshadowing-planted')?.completed).toBe(false);
+  });
+
+  it('conflict resolution requires ≥50%', () => {
+    const story = makeStory({
+      active_conflicts: [
+        { id: '1', title: 'A', status: 'resolved' },
+        { id: '2', title: 'B', status: 'active' },
+        { id: '3', title: 'C', status: 'active' },
+      ] as any,
+    });
+    const result = analyzeStory(story);
+    expect(result.milestones.find(m => m.id === 'half-conflicts-resolved')?.completed).toBe(false);
+  });
+
+  it('loop closure requires ≥50%', () => {
+    const story = makeStory({
+      open_loops: [
+        { id: '1', description: 'a', status: 'closed' },
+        { id: '2', description: 'b', status: 'open' },
+        { id: '3', description: 'c', status: 'open' },
+      ] as any,
+    });
+    const result = analyzeStory(story);
+    expect(result.milestones.find(m => m.id === 'half-loops-closed')?.completed).toBe(false);
+  });
+});

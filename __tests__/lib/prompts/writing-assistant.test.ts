@@ -87,6 +87,21 @@ describe('buildWritingAssistantPrompt', () => {
     expect(result).toContain('TOO VAGUE');
   });
 
+  it('unknown blockType falls to NEUTRAL', () => {
+    const result = buildWritingAssistantPrompt('English', 'unknown_block_type');
+    expect(result).toContain('WRITER STATE: NEUTRAL');
+  });
+
+  it('uppercase FEAR blockType works', () => {
+    const result = buildWritingAssistantPrompt('English', 'FEAR');
+    expect(result).toContain('WRITER STATE: FEAR');
+  });
+
+  it('mixed case Fear blockType works', () => {
+    const result = buildWritingAssistantPrompt('English', 'Fear');
+    expect(result).toContain('WRITER STATE: FEAR');
+  });
+
   it('includes default NEUTRAL writer state when blockType is null', () => {
     const result = buildWritingAssistantPrompt('English', null);
     expect(result).toContain('Writer Emotional State');

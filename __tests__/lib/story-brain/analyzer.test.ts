@@ -251,7 +251,60 @@ describe('analyzeStoryState', () => {
     expect(result.entities[0].canonStatus).toBe('confirmed');
     expect(result.entities[0].source).toBe('manuscript');
   });
-});
+
+  it('findEntityScenes matches via scene title alone', () => {
+    const state = makeEmptyState({
+      chapters: [{ id: 'ch1', title: '', content: 'No mention here.', summary: '' }],
+      scenes: [
+        { id: 's1', chapterId: 'ch1', title: 'Elena Arrives', content: 'The room was empty.', summary: '' },
+      ],
+      characters: [
+        { id: 'c1', name: 'Elena', role: '', description: '', relationships: '' },
+      ],
+    });
+    const result = analyzeStoryState(state);
+    const elena = result.entities[0];
+    expect(elena.sceneIds).toContain('s1');
+  });
+
+  it('findEntityScenes matches via scene summary alone', () => {
+    const state = makeEmptyState({
+      chapters: [{ id: 'ch1', title: '', content: 'No mention here.', summary: '' }],
+      scenes: [
+        { id: 's1', chapterId: 'ch1', title: 'Unknown', content: 'Empty.', summary: 'Marco enters the room.' },
+      ],
+      characters: [
+        { id: 'c1', name: 'Marco', role: '', description: '', relationships: '' },
+      ],
+    });
+    const result = analyzeStoryState(state);
+    expect(result.entities[0].sceneIds).toContain('s1');
+  });
+
+  it('dynamicRelationship with nonexistent target is skipped silently', () => {
+    const state = makeEmptyState({
+      characters: [
+        {
+          id: 'c1', name: 'Alice', role: '', description: '', relationships: '',
+          dynamicRelationships: [{ targetId: 'nonexistent', trustLevel: 50, tensionLevel: 50, dynamics: 'friends' }],
+        },
+      ],
+    });
+    const result = analyzeStoryState(state);
+    expect(result.relationships).toHaveLength(0);
+  });
+
+  it('event name is truncated at 60 chars', () => {
+    const longDesc = 'A'.repeat(100);
+    const state = makeEmptyState({
+      timeline_events: [{ id: 'te1', date: '2025-01-01', description: longDesc, impact: '' }],
+    });
+    const result = analyzeStoryState(state);
+    const event = result.entities.find(e => e.type === 'event');
+    expect(event).toBeDefined();
+    expect(event!.name).toHaveLength(60);
+  });
+});  // end analyzeStoryState
 
 describe('getCharacterById', () => {
   it('returns the character when found', () => {
