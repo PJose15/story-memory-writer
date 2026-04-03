@@ -179,9 +179,9 @@ describe('buildContext', () => {
   it('includes timeline temporal ordering markers', () => {
     const state = makeState({
       timeline_events: [
-        { id: 't1', date: '2024-03-01', description: 'Event B happens', canonStatus: 'confirmed' },
-        { id: 't2', date: '2024-01-15', description: 'Event A happens', canonStatus: 'confirmed' },
-        { id: 't3', date: '2024-06-20', description: 'Event C happens', canonStatus: 'confirmed' },
+        { id: 't1', date: '2024-03-01', description: 'Event B happens', impact: 'moderate', canonStatus: 'confirmed' },
+        { id: 't2', date: '2024-01-15', description: 'Event A happens', impact: 'major', canonStatus: 'confirmed' },
+        { id: 't3', date: '2024-06-20', description: 'Event C happens', impact: 'minor', canonStatus: 'confirmed' },
       ],
     });
     const { context } = buildContext(state, { userInput: 'test', isBlockedMode: false });

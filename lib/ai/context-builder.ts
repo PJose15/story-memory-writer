@@ -18,7 +18,7 @@ interface BuildContextOptions {
  * Returns both the context string and a list of known entities for validation.
  */
 export function buildContext(state: StoryState, options: BuildContextOptions): ContextResult {
-  const { userInput, isBlockedMode, writerBlockType, maxLength = 120000 } = options;
+  const { userInput, isBlockedMode, writerBlockType, maxLength = 500000 } = options;
   const inputLower = userInput.toLowerCase();
 
   const notDiscarded = <T extends { canonStatus?: string }>(items: T[]) =>
@@ -176,7 +176,7 @@ IMPORTANT: The above counts are the COMPLETE data available. If you cannot find 
 ${integrityNotes.length ? `\nDATA INTEGRITY NOTES:\n${integrityNotes.map(n => `- ${n}`).join('\n')}\n` : ''}`;
 
   // Latest chapter content — limit to 4K for focused questions, 8K for blocked mode
-  const latestChapterContentLimit = isBlockedMode ? 8000 : 4000;
+  const latestChapterContentLimit = isBlockedMode ? 16000 : 8000;
 
   const header = `${inventory}
 STORY BIBLE:

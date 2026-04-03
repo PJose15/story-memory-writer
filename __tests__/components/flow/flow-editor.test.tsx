@@ -203,7 +203,7 @@ describe('FlowEditor', () => {
   it('history button calls openHistory when clicked', () => {
     const mockBraindump = vi.mocked(useBraindump);
     const openHistory = vi.fn();
-    const current = mockBraindump.mock.results[0]?.value || mockBraindump();
+    const current = mockBraindump.mock.results[0]?.value ?? {};
     mockBraindump.mockReturnValue({
       ...current,
       openHistory,

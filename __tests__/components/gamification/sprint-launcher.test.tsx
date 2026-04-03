@@ -11,8 +11,8 @@ vi.mock('lucide-react', () => ({
 }));
 
 vi.mock('@/components/antiquarian', () => ({
-  ParchmentCard: ({ children, ...props }: any) => <div data-testid="parchment-card" {...props}>{children}</div>,
-  BrassButton: ({ children, onClick, disabled, ...props }: any) => <button onClick={onClick} disabled={disabled} {...props}>{children}</button>,
+  ParchmentCard: ({ children, hover, tornEdge, variant, padding, ...props }: any) => <div data-testid="parchment-card" {...props}>{children}</div>,
+  BrassButton: ({ children, onClick, disabled, size, ...props }: any) => <button onClick={onClick} disabled={disabled} {...props}>{children}</button>,
 }));
 
 import { SprintLauncher } from '@/components/gamification/sprint-launcher';
@@ -33,9 +33,11 @@ describe('SprintLauncher', () => {
   it('shows theme name, duration, and target words', () => {
     render(<SprintLauncher onStart={vi.fn()} />);
 
-    // Quick Focus: 15m, 250w
-    expect(screen.getByText(/15m/)).toBeDefined();
-    expect(screen.getByText(/250w/)).toBeDefined();
+    // Quick Focus + Conflict Burst both have 15m/250w, so use getAllByText
+    expect(screen.getAllByText(/15m/).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(/250w/).length).toBeGreaterThanOrEqual(1);
+    // Deep Dive: 20m/400w (unique)
+    expect(screen.getByText(/400w/)).toBeDefined();
   });
 
   it('calls onStart with theme when Begin clicked', () => {

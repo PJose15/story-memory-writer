@@ -8,7 +8,7 @@ const SCENE_CHANGE_KEY = 'zagafy_scene_change_state';
 const SCENE_CHANGE_RETURN_KEY = 'zagafy_scene_change_return';
 
 function makeChapter(id: string, content = 'some words here'): Chapter {
-  return { id, title: `Chapter ${id}`, content, summary: '', canonStatus: 'canon' };
+  return { id, title: `Chapter ${id}`, content, summary: '', canonStatus: 'confirmed' as const };
 }
 
 function makeState(overrides: Partial<SceneChangeState> = {}): SceneChangeState {

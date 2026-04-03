@@ -83,7 +83,7 @@ export function FlowScoreModal({ sessionId, onSubmit, onDismiss }: FlowScoreModa
               key={score}
               onClick={() => onSubmit(sessionId, score)}
               aria-label={`${label} — ${score} out of 5`}
-              className="flex flex-col items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-parchment-200 transition-colors focus:outline-none focus:ring-2 focus:ring-brass-400 focus:ring-offset-1 focus:ring-offset-parchment-100"
+              className="flex flex-col items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-parchment-200 transition-colors focus:outline-none focus:ring-2 focus:ring-brass-400 focus:outline-offset-1"
             >
               <span className="text-2xl" role="img" aria-hidden="true">
                 {emoji}

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { CarvedHeader, ParchmentCard } from '@/components/antiquarian';
+import { CarvedHeader, ParchmentCard, FeatureErrorBoundary } from '@/components/antiquarian';
 import { readSessions } from '@/lib/types/writing-session';
 import { CalendarHeatmap } from '@/components/writing-map/calendar-heatmap';
 import { WordsByHour } from '@/components/writing-map/words-by-hour';
@@ -29,6 +29,7 @@ export default function WritingMapPage() {
   }, [sessions]);
 
   return (
+    <FeatureErrorBoundary title="Writing Map">
     <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-8">
       <CarvedHeader
         title="Writing Map"
@@ -106,5 +107,6 @@ export default function WritingMapPage() {
         </ParchmentCard>
       </section>
     </div>
+    </FeatureErrorBoundary>
   );
 }

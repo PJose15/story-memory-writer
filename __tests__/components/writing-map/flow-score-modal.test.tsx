@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, act, cleanup } from '@testing-library/react';
 import React from 'react';
 import { FlowScoreModal } from '@/components/writing-map/flow-score-modal';
+import type { FlowScore } from '@/lib/types/writing-session';
 
 // Mock motion/react to avoid animation complexity in tests
 vi.mock('motion/react', () => ({
@@ -23,13 +24,13 @@ vi.mock('lucide-react', () => ({
 }));
 
 describe('FlowScoreModal', () => {
-  let onSubmit: ReturnType<typeof vi.fn>;
-  let onDismiss: ReturnType<typeof vi.fn>;
+  let onSubmit: ReturnType<typeof vi.fn<(sessionId: string, score: FlowScore) => void>>;
+  let onDismiss: ReturnType<typeof vi.fn<() => void>>;
 
   beforeEach(() => {
     vi.useFakeTimers();
-    onSubmit = vi.fn();
-    onDismiss = vi.fn();
+    onSubmit = vi.fn<(sessionId: string, score: FlowScore) => void>();
+    onDismiss = vi.fn<() => void>();
     cleanup();
   });
 

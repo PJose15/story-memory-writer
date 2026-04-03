@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback } from 'react';
 import type { MicroPromptStoryContext } from '@/lib/prompts/micro-prompt';
 import type { Heteronym } from '@/lib/types/heteronym';
+import { getLocalMicroPrompt } from '@/lib/prompts/micro-prompt-bank';
 
 interface MicroPromptOptions {
   recentText: string;
@@ -55,7 +56,8 @@ export function useMicroPrompt(): UseMicroPromptReturn {
           if (controller.signal.aborted) return;
           if (err instanceof DOMException && err.name === 'AbortError') return;
           console.error('Micro-prompt fetch error:', err);
-          setPrompt(null);
+          // Fallback to local prompt bank instead of showing nothing
+          setPrompt(getLocalMicroPrompt(options.blockType));
         })
         .finally(() => {
           if (!controller.signal.aborted) {

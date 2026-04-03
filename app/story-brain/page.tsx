@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useDeferredValue } from 'react';
-import { CarvedHeader, ParchmentCard } from '@/components/antiquarian';
+import { CarvedHeader, ParchmentCard, FeatureErrorBoundary } from '@/components/antiquarian';
 import { useStoryBrain } from '@/hooks/use-story-brain';
 import { EntityCatalog } from '@/components/story-brain/entity-catalog';
 import { EntityDetailCard } from '@/components/story-brain/entity-detail-card';
@@ -98,10 +98,12 @@ export default function StoryBrainPage() {
         {activeTab === 'entities' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className={selectedEntity ? 'lg:col-span-2' : 'lg:col-span-3'}>
-              <EntityCatalog
-                entities={deferredAnalysis.entities}
-                onSelect={setSelectedEntity}
-              />
+              <FeatureErrorBoundary title="Entity Catalog">
+                <EntityCatalog
+                  entities={deferredAnalysis.entities}
+                  onSelect={setSelectedEntity}
+                />
+              </FeatureErrorBoundary>
             </div>
             {selectedEntity && (
               <div>
@@ -140,12 +142,14 @@ export default function StoryBrainPage() {
         )}
 
         {activeTab === 'plot-holes' && (
+          <FeatureErrorBoundary title="Plot Holes">
           <PlotHolePanel
             plotHoles={plotHoles}
             resolutions={resolutions}
             onResolve={resolve}
             onUnresolve={unresolve}
           />
+          </FeatureErrorBoundary>
         )}
       </div>
     </div>

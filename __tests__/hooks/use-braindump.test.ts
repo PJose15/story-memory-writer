@@ -940,7 +940,7 @@ describe('useBraindump', () => {
 
       // Panel is not open, so beforeunload should NOT be registered
       const beforeunloadCalls = addEventSpy.mock.calls.filter(
-        ([event]) => event === 'beforeunload'
+        ([event]: [string, ...unknown[]]) => event === 'beforeunload'
       );
       expect(beforeunloadCalls).toHaveLength(0);
     });
@@ -965,7 +965,7 @@ describe('useBraindump', () => {
 
       // Fewer than 20 words while recording — guard should not be set
       const beforeunloadCalls = addEventSpy.mock.calls.filter(
-        ([event]) => event === 'beforeunload'
+        ([event]: [string, ...unknown[]]) => event === 'beforeunload'
       );
       expect(beforeunloadCalls).toHaveLength(0);
     });
@@ -985,7 +985,7 @@ describe('useBraindump', () => {
       await act(async () => { await result.current.openPanel(); });
 
       const beforeunloadCalls = addEventSpy.mock.calls.filter(
-        ([event]) => event === 'beforeunload'
+        ([event]: [string, ...unknown[]]) => event === 'beforeunload'
       );
       expect(beforeunloadCalls.length).toBeGreaterThan(0);
     });
@@ -1006,7 +1006,7 @@ describe('useBraindump', () => {
       unmount();
 
       const removeBeforeunloadCalls = removeEventSpy.mock.calls.filter(
-        ([event]) => event === 'beforeunload'
+        ([event]: [string, ...unknown[]]) => event === 'beforeunload'
       );
       expect(removeBeforeunloadCalls.length).toBeGreaterThan(0);
     });

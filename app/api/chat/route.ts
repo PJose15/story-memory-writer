@@ -4,6 +4,7 @@ import { buildWritingAssistantPrompt } from '@/lib/prompts/writing-assistant';
 import { rateLimit } from '@/lib/rate-limit';
 import { AI_MODEL, SAFETY_SETTINGS, AI_CONFIG } from '@/lib/ai-config';
 import { getErrorStatus } from '@/lib/api-error';
+import { safeParseGeminiResponse } from '@/lib/ai/safe-json-parse';
 import {
   NORMAL_RESPONSE_SCHEMA,
   BLOCKED_RESPONSE_SCHEMA,
@@ -95,11 +96,17 @@ export async function POST(req: NextRequest) {
     const rawText = response.text || '';
 
     // Parse structured JSON response
-    let parsed: ChatResponseNormal | ChatResponseBlocked;
-    try {
-      parsed = JSON.parse(rawText);
-    } catch {
-      // Fallback: return raw text as legacy format
+    const fallbackShape = isBlocked
+      ? { currentState: '', diagnosis: '', nextPaths: [], bestRecommendation: '', sceneStarter: '' }
+      : { contextUsed: [], informationGaps: [], conflictsDetected: [], recommendation: '', alternatives: [], generatedText: rawText, confidenceNotes: [] };
+
+    const parsed = safeParseGeminiResponse<ChatResponseNormal | ChatResponseBlocked>(
+      rawText,
+      fallbackShape as ChatResponseNormal | ChatResponseBlocked
+    );
+
+    // If parsing fell back to fallback and there's raw text, use legacy format
+    if (parsed === fallbackShape && rawText) {
       let text = rawText;
       if (finishReason === FinishReason.MAX_TOKENS && text) {
         text += '\n\n---\n*Response was truncated due to length. Ask me to continue if needed.*';

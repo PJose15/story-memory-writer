@@ -83,7 +83,9 @@ describe('useMicroPrompt', () => {
       });
     });
 
-    expect(result.current.prompt).toBeNull();
+    // After P10: errors now return a local fallback prompt instead of null
+    expect(result.current.prompt).toBeTruthy();
+    expect(typeof result.current.prompt).toBe('string');
     expect(result.current.isLoading).toBe(false);
   });
 });

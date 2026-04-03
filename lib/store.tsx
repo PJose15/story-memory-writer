@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
+import { StoreSkeleton } from '@/components/antiquarian/StoreSkeleton';
 
 export type CanonStatus = 'confirmed' | 'flexible' | 'draft' | 'discarded';
 export type DataSource = 'manuscript' | 'ai-inferred' | 'user-entered';
@@ -263,14 +264,7 @@ export function StoryProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   if (!isLoaded) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-zinc-950">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-2 border-zinc-700 border-t-indigo-400 rounded-full animate-spin" />
-          <span className="text-sm text-zinc-500">Loading project...</span>
-        </div>
-      </div>
-    );
+    return <StoreSkeleton />;
   }
 
   return (

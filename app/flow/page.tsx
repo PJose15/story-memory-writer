@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useSession } from '@/lib/session';
 import { ChapterSelectModal } from '@/components/flow/chapter-select-modal';
 import { FlowEditor } from '@/components/flow/flow-editor';
+import { FeatureErrorBoundary } from '@/components/antiquarian';
 import { useRouter } from 'next/navigation';
 
 export default function FlowPage() {
@@ -40,5 +41,9 @@ export default function FlowPage() {
     );
   }
 
-  return <FlowEditor chapterId={session.flowChapterId} onExit={handleExit} />;
+  return (
+    <FeatureErrorBoundary title="Flow Editor">
+      <FlowEditor chapterId={session.flowChapterId} onExit={handleExit} />
+    </FeatureErrorBoundary>
+  );
 }

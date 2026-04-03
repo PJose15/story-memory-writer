@@ -173,7 +173,7 @@ export function HeteronymModal({ heteronym, onSave, onClose }: HeteronymModalPro
                     type="button"
                     onClick={() => setAvatarColor(color)}
                     className={`w-8 h-8 rounded-full transition-all ${
-                      avatarColor === color ? 'ring-2 ring-white ring-offset-2 ring-offset-parchment-100 scale-110' : 'hover:scale-105'
+                      avatarColor === color ? 'ring-2 ring-white outline-offset-2 scale-110' : 'hover:scale-105'
                     }`}
                     style={{ backgroundColor: color }}
                     aria-label={`Color ${color}`}

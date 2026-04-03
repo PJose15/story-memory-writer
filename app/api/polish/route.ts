@@ -27,6 +27,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (transcript.length > 100000) {
+      return NextResponse.json({ error: 'Transcript too large (max 100KB)' }, { status: 413 });
+    }
+
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
       return NextResponse.json({ error: 'Anthropic API key not configured' }, { status: 500 });

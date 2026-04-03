@@ -11,7 +11,7 @@ import { useConfirm } from '@/components/confirm-dialog';
 import { buildContext } from '@/lib/ai/context-builder';
 import { isBlockedResponse, isNormalResponse, type ChatResponseNormal, type ChatResponseBlocked } from '@/lib/types/chat-response';
 import { StructuredNormalResponse, StructuredBlockedResponse } from '@/components/assistant/structured-response';
-import { CarvedHeader, ParchmentCard, BrassButton, InkStampButton, DecorativeDivider } from '@/components/antiquarian';
+import { CarvedHeader, ParchmentCard, BrassButton, InkStampButton, DecorativeDivider, FeatureErrorBoundary } from '@/components/antiquarian';
 import { springs, fadeUp } from '@/lib/animations';
 
 interface Message {
@@ -299,6 +299,7 @@ export default function AssistantPage() {
   };
 
   return (
+    <FeatureErrorBoundary title="Narrative Assistant">
     <div className="flex flex-col h-full max-w-5xl mx-auto p-4 md:p-8">
       {/* ─── Header ─── */}
       <div className="mb-4 shrink-0">
@@ -559,5 +560,6 @@ export default function AssistantPage() {
         </ParchmentCard>
       </div>
     </div>
+    </FeatureErrorBoundary>
   );
 }

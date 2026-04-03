@@ -13,3 +13,5 @@ export { EmptyState } from './empty-state';
 export { CharacterAvatar } from './character-avatar';
 export { DecorativeDivider } from './decorative-divider';
 export { ProgressRing } from './progress-ring';
+export { StoreSkeleton } from './StoreSkeleton';
+export { FeatureErrorBoundary } from './FeatureErrorBoundary';

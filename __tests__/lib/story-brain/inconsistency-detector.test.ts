@@ -260,8 +260,8 @@ describe('detectInconsistencies', () => {
   it('does not flag events without impact field', () => {
     const state = makeEmptyState({
       timeline_events: [
-        { id: 'e1', date: '2024-01-01', description: 'Event A' },
-        { id: 'e2', date: '2024-01-01', description: 'Event B' },
+        { id: 'e1', date: '2024-01-01', description: 'Event A', impact: 'minor' },
+        { id: 'e2', date: '2024-01-01', description: 'Event B', impact: 'minor' },
       ],
     });
     const analysis = analyzeStoryState(state);
