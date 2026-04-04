@@ -32,7 +32,10 @@ import { useBraindump } from '@/hooks/use-braindump';
 import { BraindumpPanel } from './braindump-panel';
 import { BraindumpHistoryDrawer } from './braindump-history-drawer';
 import { BraindumpToolbarMessage } from './braindump-toolbar-message';
-import { Theater, Shuffle, Mic, ClipboardList, BookCopy, Lightbulb } from 'lucide-react';
+import { Theater, Shuffle, Mic, ClipboardList, BookCopy, Lightbulb, Shield } from 'lucide-react';
+import { shouldBlockKey } from '@/lib/no-retreat-handler';
+import { NoRetreatToggle } from './no-retreat-toggle';
+import { NoRetreatEndModal } from './no-retreat-end-modal';
 import { createMetricsCollector } from '@/lib/flow-metrics';
 import type { MetricsCollector } from '@/lib/flow-metrics';
 import { useChapterVersions } from '@/hooks/use-chapter-versions';
@@ -43,6 +46,8 @@ import { useStoryCoach } from '@/hooks/use-story-coach';
 import { SceneryChangePrompt } from './scenery-change-prompt';
 import { DetourEditor } from './detour-editor';
 import { CoachPanel } from '@/components/story-coach/coach-panel';
+import { getAdaptiveConfig } from '@/lib/adaptive-experience';
+import { ClosingRitual } from './closing-ritual';
 
 const PAUSE_TIMEOUT = 30000; // 30 seconds
 const MOMENTUM_DECAY_INTERVAL = 100; // ms
@@ -117,6 +122,13 @@ export function FlowEditor({ chapterId, onExit }: FlowEditorProps) {
   const [versionPanelOpen, setVersionPanelOpen] = useState(false);
   const [compareOpen, setCompareOpen] = useState(false);
 
+  // No-Retreat Mode state
+  const [noRetreatMode, setNoRetreatMode] = useState(false);
+  const [noRetreatEndOpen, setNoRetreatEndOpen] = useState(false);
+  const sessionStartOffsetRef = useRef<number>(initialContent.length);
+  const noRetreatStartTimeRef = useRef<number>(0);
+  const noRetreatStartWordCountRef = useRef<number>(0);
+
   // Block detector
   const blockDetectorContext = useMemo(() => ({
     characterNames: state.characters.filter(c => c.canonStatus !== 'discarded').map(c => c.name),
@@ -134,6 +146,21 @@ export function FlowEditor({ chapterId, onExit }: FlowEditorProps) {
   // Story coach
   const storyCoach = useStoryCoach();
   const [coachPanelOpen, setCoachPanelOpen] = useState(false);
+
+  // Closing ritual state
+  const [closingRitualOpen, setClosingRitualOpen] = useState(false);
+
+  // Adaptive config: auto-enable noRetreat for perfectionism block
+  useEffect(() => {
+    const config = getAdaptiveConfig(session.blockType);
+    if (config.noRetreat && !noRetreatMode) {
+      sessionStartOffsetRef.current = content.length;
+      noRetreatStartTimeRef.current = Date.now();
+      noRetreatStartWordCountRef.current = wordCount;
+      setNoRetreatMode(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // On mount: check for pending return data (cursor restore + toast)
   useEffect(() => {
@@ -236,8 +263,12 @@ export function FlowEditor({ chapterId, onExit }: FlowEditorProps) {
       if (!confirmed) return;
       sceneChange.cancelSceneChange();
     }
+    if (wordCount > 0) {
+      setClosingRitualOpen(true);
+      return;
+    }
     onExit();
-  }, [braindump, sceneChange, confirm, onExit]);
+  }, [braindump, sceneChange, confirm, onExit, wordCount]);
 
   const handleSelectActive = useCallback((id: string) => {
     setActiveHeteronymId(id);
@@ -253,6 +284,33 @@ export function FlowEditor({ chapterId, onExit }: FlowEditorProps) {
     setGuestHeteronymId(null);
     setGuestHId(null);
   }, []);
+
+  const handleNoRetreatToggle = useCallback(() => {
+    if (noRetreatMode) {
+      // Turning off — show end modal with stats
+      setNoRetreatEndOpen(true);
+    } else {
+      // Turning on — capture session start
+      sessionStartOffsetRef.current = content.length;
+      noRetreatStartTimeRef.current = Date.now();
+      noRetreatStartWordCountRef.current = wordCount;
+      setNoRetreatMode(true);
+    }
+  }, [noRetreatMode, content.length, wordCount]);
+
+  const handleNoRetreatSave = useCallback(() => {
+    setNoRetreatMode(false);
+    setNoRetreatEndOpen(false);
+  }, []);
+
+  const handleNoRetreatBurn = useCallback(() => {
+    // Revert to content at session start
+    const originalContent = content.slice(0, sessionStartOffsetRef.current);
+    setContent(originalContent);
+    scheduleAutosave(originalContent);
+    setNoRetreatMode(false);
+    setNoRetreatEndOpen(false);
+  }, [content, scheduleAutosave]);
 
   const genre = state.genre.join(', ');
   const protagonist = state.characters.find(c => c.role === 'protagonist' || c.role === 'Protagonist');
@@ -367,20 +425,38 @@ export function FlowEditor({ chapterId, onExit }: FlowEditorProps) {
   }, []);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // Block destructive keys
-    if (
+    // Block destructive keys — default always-block OR smart no-retreat
+    const isDestructive =
       e.key === 'Backspace' ||
       e.key === 'Delete' ||
-      (e.ctrlKey && e.key === 'z') ||
-      (e.metaKey && e.key === 'z') ||
-      (e.ctrlKey && e.key === 'x') ||
-      (e.metaKey && e.key === 'x') ||
+      ((e.ctrlKey || e.metaKey) && e.key === 'z') ||
+      ((e.ctrlKey || e.metaKey) && e.key === 'x') ||
       (e.ctrlKey && e.key === 'Backspace') ||
-      (e.ctrlKey && e.key === 'Delete')
-    ) {
-      e.preventDefault();
-      metricsCollectorRef.current.recordDeletionAttempt();
-      return;
+      (e.ctrlKey && e.key === 'Delete');
+
+    if (isDestructive) {
+      if (noRetreatMode) {
+        // Smart blocking — use shouldBlockKey
+        const blocked = shouldBlockKey({
+          key: e.key,
+          ctrlKey: e.ctrlKey,
+          metaKey: e.metaKey,
+          cursorPos: e.currentTarget.selectionStart,
+          selectionStart: e.currentTarget.selectionStart,
+          selectionEnd: e.currentTarget.selectionEnd,
+          sessionStartOffset: sessionStartOffsetRef.current,
+        });
+        if (blocked) {
+          e.preventDefault();
+          metricsCollectorRef.current.recordDeletionAttempt();
+          return;
+        }
+      } else {
+        // Default: always block all destructive keys
+        e.preventDefault();
+        metricsCollectorRef.current.recordDeletionAttempt();
+        return;
+      }
     }
 
     // Resume writing - clear prompt
@@ -497,6 +573,7 @@ export function FlowEditor({ chapterId, onExit }: FlowEditorProps) {
           >
             <Lightbulb size={16} />
           </button>
+          <NoRetreatToggle active={noRetreatMode} onToggle={handleNoRetreatToggle} />
           {heteronyms.length > 1 && (
             <button
               onClick={() => setVoiceSwitchOpen(true)}
@@ -655,6 +732,17 @@ export function FlowEditor({ chapterId, onExit }: FlowEditorProps) {
         />
       )}
 
+      {/* No-Retreat end modal */}
+      <NoRetreatEndModal
+        open={noRetreatEndOpen}
+        stats={{
+          wordsWritten: Math.max(0, wordCount - noRetreatStartWordCountRef.current),
+          sessionDurationMs: noRetreatStartTimeRef.current > 0 ? Date.now() - noRetreatStartTimeRef.current : 0,
+        }}
+        onSave={handleNoRetreatSave}
+        onBurn={handleNoRetreatBurn}
+      />
+
       {/* Story coach panel */}
       {coachPanelOpen && (
         <CoachPanel
@@ -671,6 +759,20 @@ export function FlowEditor({ chapterId, onExit }: FlowEditorProps) {
           onClose={() => setCoachPanelOpen(false)}
         />
       )}
+
+      {/* Closing ritual */}
+      <ClosingRitual
+        open={closingRitualOpen}
+        stats={{
+          wordsWritten: wordCount,
+          sessionDurationMs: Date.now() - sessionStartTimeRef.current,
+          content,
+        }}
+        onClose={() => {
+          setClosingRitualOpen(false);
+          onExit();
+        }}
+      />
     </div>
   );
 }

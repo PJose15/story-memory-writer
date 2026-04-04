@@ -34,4 +34,8 @@ export const AI_CONFIG = {
     temperature: 0.3,       // Analytical coaching
     maxOutputTokens: 4096,
   },
+  characterChat: {
+    temperature: 0.6,       // In-character creative responses
+    maxOutputTokens: 2048,
+  },
 } as const;

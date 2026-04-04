@@ -5,6 +5,7 @@ import { useSession } from '@/lib/session';
 import { incrementStreak, getStreak } from '@/lib/diagnostic-streak';
 import { BlockCard, blockCards } from './block-card';
 import type { BlockType } from '@/lib/session';
+import { getAdaptiveConfig } from '@/lib/adaptive-experience';
 import { useState } from 'react';
 
 export function DiagnosticOverlay() {
@@ -16,12 +17,20 @@ export function DiagnosticOverlay() {
     }
     return 0;
   });
+  const [preparationMessage, setPreparationMessage] = useState<string | null>(null);
 
   const handleSelect = (type: Exclude<BlockType, null>) => {
     setBlockType(type);
     const newStreak = incrementStreak();
     setStreak(newStreak);
-    completeDiagnostic(false);
+
+    // Show preparation message for 3 seconds
+    const config = getAdaptiveConfig(type);
+    setPreparationMessage(config.preparationMessage);
+    setTimeout(() => {
+      setPreparationMessage(null);
+      completeDiagnostic(false);
+    }, 3000);
   };
 
   const handleSkip = () => {
@@ -29,6 +38,29 @@ export function DiagnosticOverlay() {
     setStreak(newStreak);
     completeDiagnostic(true);
   };
+
+  if (preparationMessage) {
+    return (
+      <AnimatePresence>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[200] bg-parchment-200 flex items-center justify-center p-4"
+          role="status"
+          aria-live="polite"
+        >
+          <motion.p
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="text-2xl font-serif text-sepia-800 text-center max-w-md preparation-breathe"
+          >
+            {preparationMessage}
+          </motion.p>
+        </motion.div>
+      </AnimatePresence>
+    );
+  }
 
   return (
     <AnimatePresence>

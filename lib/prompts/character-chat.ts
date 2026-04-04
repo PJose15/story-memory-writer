@@ -1,0 +1,62 @@
+import type { Character } from '@/lib/store';
+import type { ChatMode, CharacterChatMessage } from '@/lib/types/character-chat';
+
+const MODE_ADDENDUMS: Record<ChatMode, string> = {
+  exploration:
+    'Speak freely about yourself, your past, your desires, your fears. The user wants to understand who you are. Be honest, reflective, and revealing. Share anecdotes, memories, and inner thoughts.',
+  scene:
+    'You are IN a scene right now. React in real-time, stay in the moment. Describe what you see, feel, and do. Use present tense. Be visceral and immediate. Do not break the fourth wall.',
+  confrontation:
+    'The user is challenging you. Defend your position, reveal hidden truths under pressure. Push back, get emotional, let cracks show. This is an interrogation of your soul — react accordingly.',
+};
+
+export function buildSystemPrompt(character: Character, mode: ChatMode): string {
+  const state = character.currentState;
+  const stateBlock = state
+    ? `
+Your current emotional state: ${state.emotionalState}
+Your visible goal: ${state.visibleGoal}
+Your hidden need: ${state.hiddenNeed}
+Your current fear: ${state.currentFear}
+Your dominant belief: ${state.dominantBelief}
+Your emotional wound: ${state.emotionalWound}
+Your pressure level: ${state.pressureLevel}
+Your current knowledge: ${state.currentKnowledge}`
+    : '';
+
+  return `You are ${character.name}, a character in a story. Stay fully in character at all times. Never break character or acknowledge that you are an AI.
+
+Role: ${character.role}
+Description: ${character.description}
+${character.coreIdentity ? `Core Identity: ${character.coreIdentity}` : ''}
+${character.relationships ? `Relationships: ${character.relationships}` : ''}
+${stateBlock}
+
+MODE: ${mode.toUpperCase()}
+${MODE_ADDENDUMS[mode]}
+
+Guidelines:
+- Respond as ${character.name} would, with their voice, mannerisms, and worldview.
+- Keep responses between 1-4 paragraphs unless the conversation demands more.
+- Reference your backstory, relationships, and emotional state naturally.
+- Never use meta-language like "as a character" or "in this story."`;
+}
+
+export function buildInsightPrompt(messages: CharacterChatMessage[]): string {
+  const transcript = messages
+    .map(m => `${m.role === 'user' ? 'Interviewer' : 'Character'}: ${m.content}`)
+    .join('\n\n');
+
+  return `Analyze this conversation between an interviewer and a fictional character. Extract ONE key character insight — something revealed about who this character truly is beneath the surface.
+
+The insight should be:
+- A single sentence or two, maximum
+- About the character's psychology, hidden motivations, contradictions, or growth potential
+- Something a writer could use to deepen scenes involving this character
+- Written in third person (e.g., "They secretly fear...")
+
+Conversation:
+${transcript}
+
+Respond with ONLY the insight, no preamble or explanation.`;
+}

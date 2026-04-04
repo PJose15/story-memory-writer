@@ -15,6 +15,7 @@ import {
   DecorativeDivider,
 } from '@/components/antiquarian';
 import { DashboardGamification } from '@/components/gamification/dashboard-gamification';
+import { GenesisGuard } from '@/components/genesis/genesis-guard';
 
 const blockMessages: Record<string, { headline: string; nudge: string }> = {
   fear: {
@@ -185,6 +186,7 @@ export default function Dashboard() {
   const blockMsg = session.blockType ? blockMessages[session.blockType] : null;
 
   return (
+    <GenesisGuard>
     <div className="p-8 max-w-6xl mx-auto space-y-8">
       <CarvedHeader
         title={state.title || 'Untitled Project'}
@@ -398,5 +400,6 @@ export default function Dashboard() {
         </div>
       </div>
     </div>
+    </GenesisGuard>
   );
 }

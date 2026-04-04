@@ -229,6 +229,37 @@
   50% { opacity: 0; }
 }
 
+/* ─── No-Retreat Mode ─── */
+@keyframes burn-consume {
+  0% { transform: scaleY(1); filter: brightness(1); }
+  30% { filter: brightness(1.5) saturate(1.5); }
+  100% { transform: scaleY(0); filter: brightness(2) saturate(2); opacity: 0; }
+}
+
+@keyframes ember-rise {
+  0% { transform: translateY(0) scale(1); opacity: 1; }
+  100% { transform: translateY(-20px) scale(0.5); opacity: 0; }
+}
+
+.no-retreat-pulse {
+  animation: no-retreat-glow 2s ease-in-out infinite;
+}
+
+@keyframes no-retreat-glow {
+  0%, 100% { filter: drop-shadow(0 0 2px var(--color-wax-500)); }
+  50% { filter: drop-shadow(0 0 6px var(--color-wax-500)); }
+}
+
+/* ─── Preparation Breathe ─── */
+@keyframes preparation-breathe {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.02); }
+}
+
+.preparation-breathe {
+  animation: preparation-breathe 3s ease-in-out infinite;
+}
+
 /* ─── Scrollbar Styling ─── */
 ::-webkit-scrollbar {
   width: 10px;

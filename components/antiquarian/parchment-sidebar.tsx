@@ -21,6 +21,7 @@ import {
   BookOpenCheck,
   BrainCircuit,
   Timer,
+  MessageCircle,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useStory } from '@/lib/store';
@@ -34,6 +35,7 @@ const navItems = [
   { name: 'Flow Mode', href: '/flow', icon: Zap },
   { name: 'Story Bible', href: '/bible', icon: BookOpen },
   { name: 'Characters', href: '/characters', icon: Users },
+  { name: 'Character Chat', href: '/character-chat', icon: MessageCircle },
   { name: 'Timeline', href: '/timeline', icon: Clock },
   { name: 'Conflicts', href: '/conflicts', icon: Swords },
   { name: 'Canon Lock', href: '/canon', icon: Lock },
