@@ -45,7 +45,7 @@ export function CoachPanel({ insights, isLoading, error, onRefresh, onDismiss, o
         animate={{ x: 0 }}
         exit={{ x: '100%' }}
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-        className="fixed top-0 right-0 bottom-0 w-96 max-w-full bg-parchment-100 border-l border-sepia-300/40 shadow-xl z-[155] flex flex-col"
+        className="fixed top-0 right-0 bottom-0 w-full md:w-96 bg-parchment-100 border-l border-sepia-300/40 shadow-xl z-[155] flex flex-col"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-sepia-300/30">

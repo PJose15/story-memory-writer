@@ -53,7 +53,7 @@ export function BraindumpHistoryDrawer({ braindump }: BraindumpHistoryDrawerProp
   return (
     <div
       ref={drawerRef}
-      className="absolute top-0 right-0 bottom-0 w-[360px] z-[170] bg-parchment-200/95 backdrop-blur-lg border-l border-sepia-300/30 flex flex-col"
+      className="absolute top-0 right-0 bottom-0 max-w-[360px] w-full z-[170] bg-parchment-200/95 backdrop-blur-lg border-l border-sepia-300/30 flex flex-col"
       role="dialog"
       aria-label="Braindump history"
     >

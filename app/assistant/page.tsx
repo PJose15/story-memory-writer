@@ -324,7 +324,7 @@ export default function AssistantPage() {
       {/* ─── Messages ─── */}
       <div className="flex-1 overflow-y-auto space-y-5 pr-2 pb-4 scrollbar-thin">
         <AnimatePresence initial={false}>
-          {messages.map((msg) => (
+          {messages.slice(-200).map((msg) => (
             <motion.div
               key={msg.id}
               initial={{ opacity: 0, y: 12 }}
