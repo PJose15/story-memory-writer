@@ -1,5 +1,18 @@
 import type { FinishingEngineState, Milestone, NarrativePhase } from '@/lib/types/gamification';
-import type { StoryState } from '@/lib/store';
+import type { StoryState, Chapter } from '@/lib/store';
+import type { WritingSession } from '@/lib/types/writing-session';
+
+// ─── Novel Completion Types ───
+
+export interface NovelCompletionStats {
+  title: string;
+  totalWords: number;
+  totalChapters: number;
+  totalSessions: number;
+  totalDays: number;
+  totalHoursWriting: number;
+  completedAt: string;
+}
 
 // ─── Milestone Definitions ───
 
@@ -186,6 +199,56 @@ function findNextIncomplete(milestones: Milestone[]): Milestone | null {
     if (incomplete) return incomplete;
   }
   return null;
+}
+
+// ─── Novel Completion Detection ───
+
+export function checkNovelCompletion(
+  current: FinishingEngineState,
+  previous: FinishingEngineState | null,
+): boolean {
+  if (current.overallProgress !== 100) return false;
+  if (!previous) return true;
+  return previous.overallProgress < 100;
+}
+
+export function generateNovelStats(
+  sessions: WritingSession[],
+  chapters: Chapter[],
+  title: string,
+): NovelCompletionStats {
+  const safeTitle = title.trim() || 'Mi Novela';
+  const safeChapters = Array.isArray(chapters) ? chapters : [];
+  const safeSessions = Array.isArray(sessions) ? sessions : [];
+
+  const words = safeChapters.reduce(
+    (sum, ch) => sum + (ch.content ? ch.content.split(/\s+/).filter(Boolean).length : 0),
+    0,
+  );
+
+  // Count unique days from session start dates
+  const daySet = new Set<string>();
+  let totalMs = 0;
+
+  for (const s of safeSessions) {
+    const start = new Date(s.startedAt);
+    const end = new Date(s.endedAt);
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) continue;
+    const dateKey = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-${String(start.getDate()).padStart(2, '0')}`;
+    daySet.add(dateKey);
+    const diff = end.getTime() - start.getTime();
+    if (diff > 0) totalMs += diff;
+  }
+
+  return {
+    title: safeTitle,
+    totalWords: words,
+    totalChapters: safeChapters.length,
+    totalSessions: safeSessions.length,
+    totalDays: daySet.size,
+    totalHoursWriting: Math.round((totalMs / 3_600_000) * 10) / 10,
+    completedAt: new Date().toISOString(),
+  };
 }
 
 // ─── Exports for testing ───

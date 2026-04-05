@@ -16,6 +16,9 @@ import {
 } from '@/components/antiquarian';
 import { DashboardGamification } from '@/components/gamification/dashboard-gamification';
 import { GenesisGuard } from '@/components/genesis/genesis-guard';
+import { useGamification } from '@/hooks/use-gamification';
+import { useNovelCompletion } from '@/hooks/use-novel-completion';
+import NovelCompletionRitual from '@/components/completion/NovelCompletionRitual';
 
 const blockMessages: Record<string, { headline: string; nudge: string }> = {
   fear: {
@@ -175,6 +178,8 @@ const canonColors: Record<string, string> = {
 export default function Dashboard() {
   const { state } = useStory();
   const { session } = useSession();
+  const { finishing, isLoaded } = useGamification();
+  const { novelJustCompleted, completionStats, dismissCompletion } = useNovelCompletion(finishing, isLoaded);
 
   const totalWords = state.chapters.reduce(
     (sum, ch) => sum + (ch.content ? ch.content.split(/\s+/).filter(Boolean).length : 0),
@@ -400,6 +405,9 @@ export default function Dashboard() {
         </div>
       </div>
     </div>
+    {novelJustCompleted && completionStats && (
+      <NovelCompletionRitual stats={completionStats} onDismiss={dismissCompletion} />
+    )}
     </GenesisGuard>
   );
 }
