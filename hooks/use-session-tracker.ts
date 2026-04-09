@@ -115,7 +115,7 @@ export function useSessionTracker(options?: SessionTrackerOptions): SessionTrack
       flowMoments: flowMoments && flowMoments.length > 0 ? flowMoments : null,
     };
 
-    addSession(session);
+    addSession(session).catch(() => { /* best effort */ });
 
     // Award gamification XP for words and session completion
     try {
@@ -242,7 +242,7 @@ export function useSessionTracker(options?: SessionTrackerOptions): SessionTrack
           autoFlowScore: null,
           flowMoments: null,
         };
-        addSession(recovered);
+        addSession(recovered).catch(() => { /* best effort */ });
       }
       clearWipSession();
     }

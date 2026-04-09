@@ -23,6 +23,7 @@ function makeStory(overrides: Partial<StoryState> = {}): StoryState {
     canon_items: [],
     ambiguities: [],
     chat_messages: [],
+    world_bible: [],
     ...overrides,
   } as StoryState;
 }

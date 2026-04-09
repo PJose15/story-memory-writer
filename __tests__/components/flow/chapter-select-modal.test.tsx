@@ -1,6 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, cleanup, waitFor } from '@testing-library/react';
 import React from 'react';
+
+vi.mock('@/lib/storage/dexie-db', () => ({
+  migrateFromLocalStorage: vi.fn().mockResolvedValue(undefined),
+  getAllChapterContents: vi.fn().mockResolvedValue(new Map()),
+  putChapterContent: vi.fn().mockResolvedValue(undefined),
+  getChapterContent: vi.fn().mockResolvedValue(undefined),
+  deleteChapterContent: vi.fn().mockResolvedValue(undefined),
+}));
+
 import { StoryProvider } from '@/lib/store';
 import type { Chapter, StoryState } from '@/lib/store';
 

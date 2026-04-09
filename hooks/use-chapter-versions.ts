@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   readVersions,
   addVersion,
@@ -8,14 +8,13 @@ import {
   deleteVersion,
   renameVersion,
   ensureInitialVersion,
-  getCanonicalVersion,
 } from '@/lib/types/chapter-version';
 import type { ChapterVersion, VersionSource } from '@/lib/types/chapter-version';
 
 interface UseChapterVersionsReturn {
   versions: ChapterVersion[];
   activeVersion: ChapterVersion | null;
-  createVersion: (content: string, label: string, source: VersionSource) => ChapterVersion;
+  createVersion: (content: string, label: string, source: VersionSource) => void;
   switchVersion: (versionId: string) => ChapterVersion | null;
   markCanonical: (versionId: string) => void;
   rename: (versionId: string, newLabel: string) => void;
@@ -25,22 +24,25 @@ interface UseChapterVersionsReturn {
 }
 
 export function useChapterVersions(chapterId: string, currentContent: string): UseChapterVersionsReturn {
-  const [versions, setVersions] = useState<ChapterVersion[]>(() =>
-    ensureInitialVersion(chapterId, currentContent)
-  );
+  const [versions, setVersions] = useState<ChapterVersion[]>([]);
+
+  // Load versions on mount / chapterId change
+  useEffect(() => {
+    ensureInitialVersion(chapterId, currentContent).then(setVersions);
+  }, [chapterId, currentContent]);
 
   const activeVersion = useMemo(() => {
     return versions.find(v => v.isCanonical) ?? versions[0] ?? null;
   }, [versions]);
 
   const refresh = useCallback(() => {
-    setVersions(readVersions(chapterId));
+    readVersions(chapterId).then(setVersions);
   }, [chapterId]);
 
-  const createVersion = useCallback((content: string, label: string, source: VersionSource): ChapterVersion => {
-    const version = addVersion(chapterId, content, label, source, false);
-    setVersions(readVersions(chapterId));
-    return version;
+  const createVersion = useCallback((content: string, label: string, source: VersionSource): void => {
+    addVersion(chapterId, content, label, source, false).then(() => {
+      readVersions(chapterId).then(setVersions);
+    });
   }, [chapterId]);
 
   const switchVersion = useCallback((versionId: string): ChapterVersion | null => {
@@ -49,18 +51,21 @@ export function useChapterVersions(chapterId: string, currentContent: string): U
   }, [versions]);
 
   const markCanonical = useCallback((versionId: string) => {
-    setCanonical(versionId);
-    setVersions(readVersions(chapterId));
+    setCanonical(versionId).then(() => {
+      readVersions(chapterId).then(setVersions);
+    });
   }, [chapterId]);
 
   const rename = useCallback((versionId: string, newLabel: string) => {
-    renameVersion(versionId, newLabel);
-    setVersions(readVersions(chapterId));
+    renameVersion(versionId, newLabel).then(() => {
+      readVersions(chapterId).then(setVersions);
+    });
   }, [chapterId]);
 
   const remove = useCallback((versionId: string) => {
-    deleteVersion(versionId);
-    setVersions(readVersions(chapterId));
+    deleteVersion(versionId).then(() => {
+      readVersions(chapterId).then(setVersions);
+    });
   }, [chapterId]);
 
   return {

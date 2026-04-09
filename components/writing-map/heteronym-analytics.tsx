@@ -1,14 +1,15 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { ParchmentCard } from '@/components/antiquarian';
 import { readSessions, type WritingSession } from '@/lib/types/writing-session';
 import { readHeteronyms, type Heteronym } from '@/lib/types/heteronym';
 import { AvatarCircle } from '@/components/heteronyms/avatar-circle';
 
 export function HeteronymAnalytics() {
-  const [sessions] = useState<WritingSession[]>(() => readSessions());
+  const [sessions, setSessions] = useState<WritingSession[]>([]);
   const [heteronyms] = useState<Heteronym[]>(() => readHeteronyms());
+  useEffect(() => { readSessions().then(setSessions); }, []);
   const [selectedId, setSelectedId] = useState<string | 'all'>('all');
 
   const stats = useMemo(() => {

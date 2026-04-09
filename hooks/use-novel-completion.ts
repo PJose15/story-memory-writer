@@ -37,16 +37,17 @@ export function useNovelCompletion(
     prevFinishingRef.current = finishing;
 
     if (checkNovelCompletion(finishing, previous)) {
-      const sessions = readSessions();
-      const stats = generateNovelStats(sessions, state.chapters, state.title);
+      readSessions().then(sessions => {
+        const stats = generateNovelStats(sessions, state.chapters, state.title);
 
-      // Persist stats
-      try {
-        localStorage.setItem(STATS_KEY, JSON.stringify(stats));
-      } catch { /* ignore */ }
+        // Persist stats
+        try {
+          localStorage.setItem(STATS_KEY, JSON.stringify(stats));
+        } catch { /* ignore */ }
 
-      setCompletionStats(stats);
-      setNovelJustCompleted(true);
+        setCompletionStats(stats);
+        setNovelJustCompleted(true);
+      });
     }
   }, [finishing, isLoaded, state.chapters, state.title]);
 

@@ -34,7 +34,7 @@ function LibraryShellInner({ children }: { children: React.ReactNode }) {
   const { pendingFlowScore, dismissFlowScore } = useSessionTracker();
 
   const handleFlowSubmit = useCallback((sessionId: string, score: FlowScore) => {
-    updateSessionFlowScore(sessionId, score);
+    updateSessionFlowScore(sessionId, score).catch(() => { /* best effort */ });
     dismissFlowScore();
   }, [dismissFlowScore]);
 

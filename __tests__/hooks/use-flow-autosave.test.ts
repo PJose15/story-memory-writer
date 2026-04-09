@@ -1,6 +1,15 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
+import { renderHook, act, waitFor } from '@testing-library/react';
 import React from 'react';
+
+vi.mock('@/lib/storage/dexie-db', () => ({
+  migrateFromLocalStorage: vi.fn().mockResolvedValue(undefined),
+  getAllChapterContents: vi.fn().mockResolvedValue(new Map()),
+  putChapterContent: vi.fn().mockResolvedValue(undefined),
+  getChapterContent: vi.fn().mockResolvedValue(undefined),
+  deleteChapterContent: vi.fn().mockResolvedValue(undefined),
+}));
+
 import { StoryProvider, useStory } from '@/lib/store';
 import type { Chapter, StoryState } from '@/lib/store';
 import { useFlowAutosave } from '@/hooks/use-flow-autosave';
@@ -31,21 +40,28 @@ describe('useFlowAutosave', () => {
     vi.useRealTimers();
   });
 
-  it('returns initial content for the given chapter', () => {
+  it('returns initial content for the given chapter', async () => {
     setupLocalStorage([testChapter]);
 
     const { result } = renderHook(() => useFlowAutosave('ch-1'), { wrapper });
+    // Wait for async StoryProvider load to complete
+    await act(async () => {
+      await vi.runAllTimersAsync();
+    });
     expect(result.current.initialContent).toBe('Once upon a time...');
   });
 
-  it('returns empty string for unknown chapter ID', () => {
+  it('returns empty string for unknown chapter ID', async () => {
     setupLocalStorage([testChapter]);
 
     const { result } = renderHook(() => useFlowAutosave('unknown-id'), { wrapper });
+    await act(async () => {
+      await vi.runAllTimersAsync();
+    });
     expect(result.current.initialContent).toBe('');
   });
 
-  it('scheduleAutosave debounces saves', () => {
+  it('scheduleAutosave debounces saves', async () => {
     setupLocalStorage([testChapter]);
 
     const { result } = renderHook(
@@ -56,6 +72,11 @@ describe('useFlowAutosave', () => {
       },
       { wrapper }
     );
+
+    // Wait for async StoryProvider load
+    await act(async () => {
+      await vi.runAllTimersAsync();
+    });
 
     // Schedule multiple saves quickly
     act(() => {

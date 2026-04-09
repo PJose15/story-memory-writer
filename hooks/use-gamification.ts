@@ -55,25 +55,27 @@ function useGamificationInternal(): GamificationAPI {
     initializedRef.current = true;
 
     const stored = readGamification();
-    // Auto-refresh quests and finishing engine
-    const sessions = readSessions();
-    const now = new Date();
-    const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
-    const updatedStreak = updateStreak(stored.streak, sessions);
-    const updatedQuests = refreshQuests(stored.quests, storyState, todayKey);
-    const updatedFinishing = analyzeStory(storyState, stored.finishing.milestones);
+    // readSessions is async (Dexie-backed)
+    readSessions().then(sessions => {
+      const now = new Date();
+      const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
-    const updated: GamificationState = {
-      ...stored,
-      streak: updatedStreak,
-      quests: updatedQuests,
-      finishing: updatedFinishing,
-    };
+      const updatedStreak = updateStreak(stored.streak, sessions);
+      const updatedQuests = refreshQuests(stored.quests, storyState, todayKey);
+      const updatedFinishing = analyzeStory(storyState, stored.finishing.milestones);
 
-    setGamification(updated);
-    writeGamification(updated);
-    setIsLoaded(true);
+      const updated: GamificationState = {
+        ...stored,
+        streak: updatedStreak,
+        quests: updatedQuests,
+        finishing: updatedFinishing,
+      };
+
+      setGamification(updated);
+      writeGamification(updated);
+      setIsLoaded(true);
+    });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

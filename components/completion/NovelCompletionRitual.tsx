@@ -24,7 +24,13 @@ function CountUp({ end, duration = 2000 }: { end: number; duration?: number }) {
   const rafRef = useRef<number>(0);
 
   useEffect(() => {
-    if (end === 0) { setValue(0); return; }
+    if (end === 0) {
+      // Use rAF to avoid synchronous setState in effect body
+      rafRef.current = requestAnimationFrame(() => setValue(0));
+      return () => cancelAnimationFrame(rafRef.current);
+    }
+
+    startTime.current = null;
 
     function step(timestamp: number) {
       if (!startTime.current) startTime.current = timestamp;

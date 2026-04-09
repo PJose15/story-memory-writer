@@ -24,7 +24,7 @@ vi.mock('@/lib/store', () => ({
 }));
 
 // Mock writing-session module
-const mockAddSession = vi.fn();
+const mockAddSession = vi.fn(() => Promise.resolve());
 const mockReadWipSession = vi.fn((): { id: string; projectId: string; projectName: string; startedAt: string; wordsStart: number; currentWords: number; heteronymId?: string | null; heteronymName?: string | null } | null => null);
 const mockSaveWipSession = vi.fn();
 const mockClearWipSession = vi.fn();

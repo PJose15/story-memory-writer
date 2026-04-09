@@ -7,7 +7,7 @@ function makeEmptyState(overrides: Partial<StoryState> = {}): StoryState {
     language: 'en', title: 'Test', genre: [], synopsis: '', author_intent: '',
     chapters: [], scenes: [], characters: [], timeline_events: [], open_loops: [],
     world_rules: [], style_profile: '', active_conflicts: [], foreshadowing_elements: [],
-    locations: [], themes: [], canon_items: [], ambiguities: [], chat_messages: [],
+    locations: [], themes: [], canon_items: [], ambiguities: [], chat_messages: [], world_bible: [],
     ...overrides,
   };
 }

@@ -1,4 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+
+// Mock dexie-db to force localStorage fallback in all tests
+vi.mock('@/lib/storage/dexie-db', () => ({
+  getSessions: vi.fn().mockRejectedValue(new Error('Dexie unavailable')),
+  putSession: vi.fn().mockRejectedValue(new Error('Dexie unavailable')),
+  putAllSessions: vi.fn().mockRejectedValue(new Error('Dexie unavailable')),
+}));
+
 import {
   readSessions,
   writeSessions,
@@ -52,336 +60,311 @@ describe('writing-session STRESS', () => {
 
   afterEach(() => { vi.unstubAllGlobals(); });
 
-  // ──────────────────────────────────────────────────────
-  // TYPE GUARD — FLOW SCORE EDGE CASES
-  // ──────────────────────────────────────────────────────
   describe('type guard — flowScore edge cases', () => {
-    it('rejects flowScore = 0', () => {
+    it('rejects flowScore = 0', async () => {
       const bad = { ...makeSession(), flowScore: 0 };
       storage[SESSIONS_KEY] = JSON.stringify([bad]);
-      expect(readSessions()).toEqual([]);
+      expect(await readSessions()).toEqual([]);
     });
 
-    it('rejects flowScore = 0.5 (non-integer)', () => {
+    it('rejects flowScore = 0.5 (non-integer)', async () => {
       const bad = { ...makeSession(), flowScore: 0.5 };
       storage[SESSIONS_KEY] = JSON.stringify([bad]);
-      expect(readSessions()).toEqual([]);
+      expect(await readSessions()).toEqual([]);
     });
 
-    it('rejects flowScore = 1.5', () => {
+    it('rejects flowScore = 1.5', async () => {
       const bad = { ...makeSession(), flowScore: 1.5 };
       storage[SESSIONS_KEY] = JSON.stringify([bad]);
-      expect(readSessions()).toEqual([]);
+      expect(await readSessions()).toEqual([]);
     });
 
-    it('rejects flowScore = -1', () => {
+    it('rejects flowScore = -1', async () => {
       const bad = { ...makeSession(), flowScore: -1 };
       storage[SESSIONS_KEY] = JSON.stringify([bad]);
-      expect(readSessions()).toEqual([]);
+      expect(await readSessions()).toEqual([]);
     });
 
-    it('rejects flowScore = 6', () => {
+    it('rejects flowScore = 6', async () => {
       const bad = { ...makeSession(), flowScore: 6 };
       storage[SESSIONS_KEY] = JSON.stringify([bad]);
-      expect(readSessions()).toEqual([]);
+      expect(await readSessions()).toEqual([]);
     });
 
-    it('NaN flowScore becomes null after JSON serialization, accepted as null', () => {
-      // JSON.stringify(NaN) → null, so this is effectively flowScore: null
+    it('NaN flowScore becomes null after JSON serialization, accepted as null', async () => {
       const bad = { ...makeSession(), flowScore: NaN };
       storage[SESSIONS_KEY] = JSON.stringify([bad]);
-      const result = readSessions();
+      const result = await readSessions();
       expect(result).toHaveLength(1);
       expect(result[0].flowScore).toBeNull();
     });
 
-    it('rejects flowScore = Infinity', () => {
-      // JSON.stringify(Infinity) → null
+    it('rejects flowScore = Infinity', async () => {
       const raw = JSON.stringify([makeSession()]).replace('"flowScore":4', '"flowScore":999999');
       storage[SESSIONS_KEY] = raw;
-      expect(readSessions()).toEqual([]);
+      expect(await readSessions()).toEqual([]);
     });
 
-    it('accepts flowScore = 1 (min)', () => {
+    it('accepts flowScore = 1 (min)', async () => {
       const sess = makeSession({ flowScore: 1 });
       storage[SESSIONS_KEY] = JSON.stringify([sess]);
-      expect(readSessions()).toHaveLength(1);
+      expect(await readSessions()).toHaveLength(1);
     });
 
-    it('accepts flowScore = 5 (max)', () => {
+    it('accepts flowScore = 5 (max)', async () => {
       const sess = makeSession({ flowScore: 5 });
       storage[SESSIONS_KEY] = JSON.stringify([sess]);
-      expect(readSessions()).toHaveLength(1);
+      expect(await readSessions()).toHaveLength(1);
     });
 
-    it('rejects flowScore = "3" (string)', () => {
+    it('rejects flowScore = "3" (string)', async () => {
       const bad = { ...makeSession(), flowScore: '3' };
       storage[SESSIONS_KEY] = JSON.stringify([bad]);
-      expect(readSessions()).toEqual([]);
+      expect(await readSessions()).toEqual([]);
     });
 
-    it('rejects flowScore = true', () => {
+    it('rejects flowScore = true', async () => {
       const bad = { ...makeSession(), flowScore: true };
       storage[SESSIONS_KEY] = JSON.stringify([bad]);
-      expect(readSessions()).toEqual([]);
+      expect(await readSessions()).toEqual([]);
     });
   });
 
-  // ──────────────────────────────────────────────────────
-  // TYPE GUARD — HETERONYM FIELD COMBINATIONS
-  // ──────────────────────────────────────────────────────
   describe('type guard — heteronym field combinations', () => {
-    it('accepts heteronymId present, heteronymName null', () => {
+    it('accepts heteronymId present, heteronymName null', async () => {
       const sess = makeSession({ heteronymId: 'het-1', heteronymName: null });
       storage[SESSIONS_KEY] = JSON.stringify([sess]);
-      expect(readSessions()).toHaveLength(1);
+      expect(await readSessions()).toHaveLength(1);
     });
 
-    it('accepts heteronymId null, heteronymName present', () => {
+    it('accepts heteronymId null, heteronymName present', async () => {
       const sess = makeSession({ heteronymId: null, heteronymName: 'Dark Poet' });
       storage[SESSIONS_KEY] = JSON.stringify([sess]);
-      expect(readSessions()).toHaveLength(1);
+      expect(await readSessions()).toHaveLength(1);
     });
 
-    it('accepts both heteronym fields as empty strings', () => {
+    it('accepts both heteronym fields as empty strings', async () => {
       const sess = makeSession({ heteronymId: '', heteronymName: '' });
       storage[SESSIONS_KEY] = JSON.stringify([sess]);
-      expect(readSessions()).toHaveLength(1);
+      expect(await readSessions()).toHaveLength(1);
     });
 
-    it('accepts both heteronym fields present', () => {
+    it('accepts both heteronym fields present', async () => {
       const sess = makeSession({ heteronymId: 'het-1', heteronymName: 'Dark Poet' });
       storage[SESSIONS_KEY] = JSON.stringify([sess]);
-      const result = readSessions();
+      const result = await readSessions();
       expect(result).toHaveLength(1);
       expect(result[0].heteronymId).toBe('het-1');
       expect(result[0].heteronymName).toBe('Dark Poet');
     });
 
-    it('rejects heteronymId = 123 (number)', () => {
+    it('rejects heteronymId = 123 (number)', async () => {
       const bad = { ...makeSession(), heteronymId: 123 };
       storage[SESSIONS_KEY] = JSON.stringify([bad]);
-      expect(readSessions()).toEqual([]);
+      expect(await readSessions()).toEqual([]);
     });
 
-    it('rejects heteronymName = true (boolean)', () => {
+    it('rejects heteronymName = true (boolean)', async () => {
       const bad = { ...makeSession(), heteronymName: true };
       storage[SESSIONS_KEY] = JSON.stringify([bad]);
-      expect(readSessions()).toEqual([]);
+      expect(await readSessions()).toEqual([]);
     });
 
-    it('rejects heteronymId = [] (array)', () => {
+    it('rejects heteronymId = [] (array)', async () => {
       const bad = { ...makeSession(), heteronymId: [] };
       storage[SESSIONS_KEY] = JSON.stringify([bad]);
-      expect(readSessions()).toEqual([]);
+      expect(await readSessions()).toEqual([]);
     });
 
-    it('rejects heteronymName = {} (object)', () => {
+    it('rejects heteronymName = {} (object)', async () => {
       const bad = { ...makeSession(), heteronymName: {} };
       storage[SESSIONS_KEY] = JSON.stringify([bad]);
-      expect(readSessions()).toEqual([]);
+      expect(await readSessions()).toEqual([]);
     });
 
-    it('normalizes undefined heteronymId to null (backward compat)', () => {
+    it('normalizes undefined heteronymId to null (backward compat)', async () => {
       const legacy = {
         id: 'x', projectId: 'p', projectName: 'n',
         startedAt: '2026-01-01T00:00:00Z', endedAt: '2026-01-01T01:00:00Z',
         wordsStart: 0, wordsEnd: 10, wordsAdded: 10, flowScore: 3,
-        // heteronymId and heteronymName completely absent
       };
       storage[SESSIONS_KEY] = JSON.stringify([legacy]);
-      const result = readSessions();
+      const result = await readSessions();
       expect(result).toHaveLength(1);
       expect(result[0].heteronymId).toBeNull();
       expect(result[0].heteronymName).toBeNull();
     });
 
-    it('normalizes explicit undefined heteronymId to null', () => {
-      // JSON.stringify drops undefined, so this is effectively absent
+    it('normalizes explicit undefined heteronymId to null', async () => {
       const data = { ...makeSession(), heteronymId: undefined, heteronymName: undefined };
       storage[SESSIONS_KEY] = JSON.stringify([data]);
-      const result = readSessions();
+      const result = await readSessions();
       expect(result).toHaveLength(1);
       expect(result[0].heteronymId).toBeNull();
     });
   });
 
-  // ──────────────────────────────────────────────────────
-  // TYPE GUARD — FIELD TYPE REJECTION
-  // ──────────────────────────────────────────────────────
   describe('type guard — field type rejection', () => {
     const required = ['id', 'projectId', 'projectName', 'startedAt', 'endedAt'];
     for (const field of required) {
-      it(`rejects ${field} = null`, () => {
+      it(`rejects ${field} = null`, async () => {
         const bad = { ...makeSession(), [field]: null };
         storage[SESSIONS_KEY] = JSON.stringify([bad]);
-        expect(readSessions()).toEqual([]);
+        expect(await readSessions()).toEqual([]);
       });
 
-      it(`rejects ${field} = 123 (number)`, () => {
+      it(`rejects ${field} = 123 (number)`, async () => {
         const bad = { ...makeSession(), [field]: 123 };
         storage[SESSIONS_KEY] = JSON.stringify([bad]);
-        expect(readSessions()).toEqual([]);
+        expect(await readSessions()).toEqual([]);
       });
     }
 
     const numeric = ['wordsStart', 'wordsEnd', 'wordsAdded'];
     for (const field of numeric) {
-      it(`rejects ${field} = "100" (string)`, () => {
+      it(`rejects ${field} = "100" (string)`, async () => {
         const bad = { ...makeSession(), [field]: '100' };
         storage[SESSIONS_KEY] = JSON.stringify([bad]);
-        expect(readSessions()).toEqual([]);
+        expect(await readSessions()).toEqual([]);
       });
 
-      it(`rejects ${field} = null`, () => {
+      it(`rejects ${field} = null`, async () => {
         const bad = { ...makeSession(), [field]: null };
         storage[SESSIONS_KEY] = JSON.stringify([bad]);
-        expect(readSessions()).toEqual([]);
+        expect(await readSessions()).toEqual([]);
       });
     }
 
-    it('rejects primitive instead of object', () => {
+    it('rejects primitive instead of object', async () => {
       storage[SESSIONS_KEY] = JSON.stringify([42]);
-      expect(readSessions()).toEqual([]);
+      expect(await readSessions()).toEqual([]);
     });
 
-    it('rejects nested arrays', () => {
+    it('rejects nested arrays', async () => {
       storage[SESSIONS_KEY] = JSON.stringify([[]]);
-      expect(readSessions()).toEqual([]);
+      expect(await readSessions()).toEqual([]);
     });
   });
 
-  // ──────────────────────────────────────────────────────
-  // EXTREME VALUES
-  // ──────────────────────────────────────────────────────
   describe('extreme values', () => {
-    it('accepts wordsAdded = 0', () => {
+    it('accepts wordsAdded = 0', async () => {
       const sess = makeSession({ wordsAdded: 0, wordsEnd: 100 });
       storage[SESSIONS_KEY] = JSON.stringify([sess]);
-      expect(readSessions()).toHaveLength(1);
+      expect(await readSessions()).toHaveLength(1);
     });
 
-    it('accepts negative wordsAdded (no validation beyond type)', () => {
+    it('accepts negative wordsAdded (no validation beyond type)', async () => {
       const sess = makeSession({ wordsAdded: -50 });
       storage[SESSIONS_KEY] = JSON.stringify([sess]);
-      expect(readSessions()).toHaveLength(1);
+      expect(await readSessions()).toHaveLength(1);
     });
 
-    it('accepts very large wordsAdded', () => {
+    it('accepts very large wordsAdded', async () => {
       const sess = makeSession({ wordsAdded: 999_999 });
       storage[SESSIONS_KEY] = JSON.stringify([sess]);
-      expect(readSessions()).toHaveLength(1);
+      expect(await readSessions()).toHaveLength(1);
     });
 
-    it('accepts empty string projectName', () => {
+    it('accepts empty string projectName', async () => {
       const sess = makeSession({ projectName: '' });
       storage[SESSIONS_KEY] = JSON.stringify([sess]);
-      expect(readSessions()).toHaveLength(1);
+      expect(await readSessions()).toHaveLength(1);
     });
 
-    it('accepts unicode emoji in projectName', () => {
+    it('accepts unicode emoji in projectName', async () => {
       const sess = makeSession({ projectName: '🔥📖 My Épic Növel 日本語' });
       storage[SESSIONS_KEY] = JSON.stringify([sess]);
-      const result = readSessions();
+      const result = await readSessions();
       expect(result).toHaveLength(1);
       expect(result[0].projectName).toBe('🔥📖 My Épic Növel 日本語');
     });
 
-    it('accepts 10000-char projectName', () => {
+    it('accepts 10000-char projectName', async () => {
       const longName = 'x'.repeat(10_000);
       const sess = makeSession({ projectName: longName });
       storage[SESSIONS_KEY] = JSON.stringify([sess]);
-      const result = readSessions();
+      const result = await readSessions();
       expect(result).toHaveLength(1);
       expect(result[0].projectName).toHaveLength(10_000);
     });
   });
 
-  // ──────────────────────────────────────────────────────
-  // MASS DATA (1000+ sessions)
-  // ──────────────────────────────────────────────────────
   describe('mass data', () => {
-    it('reads 1000 sessions without error', () => {
+    it('reads 1000 sessions without error', async () => {
       const sessions = Array.from({ length: 1000 }, (_, i) =>
         makeSession({ id: `s-${i}`, wordsAdded: i })
       );
       storage[SESSIONS_KEY] = JSON.stringify(sessions);
-      const result = readSessions();
+      const result = await readSessions();
       expect(result).toHaveLength(1000);
     });
 
-    it('writes and re-reads 500 sessions', () => {
+    it('writes and re-reads 500 sessions', async () => {
       const sessions = Array.from({ length: 500 }, (_, i) =>
         makeSession({ id: `s-${i}` })
       );
-      writeSessions(sessions);
-      expect(readSessions()).toHaveLength(500);
+      await writeSessions(sessions);
+      expect(await readSessions()).toHaveLength(500);
     });
 
-    it('addSession to 999 existing sessions', () => {
+    it('addSession to 999 existing sessions', async () => {
       const sessions = Array.from({ length: 999 }, (_, i) =>
         makeSession({ id: `s-${i}` })
       );
       storage[SESSIONS_KEY] = JSON.stringify(sessions);
-      addSession(makeSession({ id: 's-999' }));
-      expect(readSessions()).toHaveLength(1000);
+      await addSession(makeSession({ id: 's-999' }));
+      expect(await readSessions()).toHaveLength(1000);
     });
 
-    it('updateSessionFlowScore among 500 sessions', () => {
+    it('updateSessionFlowScore among 500 sessions', async () => {
       const sessions = Array.from({ length: 500 }, (_, i) =>
         makeSession({ id: `s-${i}`, flowScore: null })
       );
       storage[SESSIONS_KEY] = JSON.stringify(sessions);
-      updateSessionFlowScore('s-250', 5);
-      const result = readSessions();
+      await updateSessionFlowScore('s-250', 5);
+      const result = await readSessions();
       expect(result.find(s => s.id === 's-250')?.flowScore).toBe(5);
       expect(result.find(s => s.id === 's-0')?.flowScore).toBeNull();
     });
 
-    it('filters 50 invalid out of 200 mixed entries', () => {
+    it('filters 50 invalid out of 200 mixed entries', async () => {
       const valid = Array.from({ length: 150 }, (_, i) => makeSession({ id: `v-${i}` }));
       const invalid = Array.from({ length: 50 }, (_, i) => ({
         id: `bad-${i}`, wordsStart: 'not-a-number',
       }));
       const mixed = [...valid, ...invalid];
       storage[SESSIONS_KEY] = JSON.stringify(mixed);
-      expect(readSessions()).toHaveLength(150);
+      expect(await readSessions()).toHaveLength(150);
     });
   });
 
-  // ──────────────────────────────────────────────────────
-  // STORAGE EDGE CASES
-  // ──────────────────────────────────────────────────────
   describe('storage edge cases', () => {
-    it('handles localStorage.getItem returning empty string', () => {
+    it('handles localStorage.getItem returning empty string', async () => {
       storage[SESSIONS_KEY] = '';
-      expect(readSessions()).toEqual([]);
+      expect(await readSessions()).toEqual([]);
     });
 
-    it('handles localStorage with "null" string', () => {
+    it('handles localStorage with "null" string', async () => {
       storage[SESSIONS_KEY] = 'null';
-      expect(readSessions()).toEqual([]);
+      expect(await readSessions()).toEqual([]);
     });
 
-    it('handles localStorage with "undefined" string', () => {
+    it('handles localStorage with "undefined" string', async () => {
       storage[SESSIONS_KEY] = 'undefined';
-      expect(readSessions()).toEqual([]);
+      expect(await readSessions()).toEqual([]);
     });
 
-    it('handles localStorage with "[]" (empty array)', () => {
+    it('handles localStorage with "[]" (empty array)', async () => {
       storage[SESSIONS_KEY] = '[]';
-      expect(readSessions()).toEqual([]);
+      expect(await readSessions()).toEqual([]);
     });
 
-    it('handles localStorage with number string', () => {
+    it('handles localStorage with number string', async () => {
       storage[SESSIONS_KEY] = '42';
-      expect(readSessions()).toEqual([]);
+      expect(await readSessions()).toEqual([]);
     });
   });
 
-  // ──────────────────────────────────────────────────────
-  // WIP SESSION EDGE CASES
-  // ──────────────────────────────────────────────────────
   describe('WIP session stress', () => {
     it('handles WIP with heteronym fields', () => {
       saveWipSession({
@@ -395,7 +378,6 @@ describe('writing-session STRESS', () => {
     });
 
     it('normalizes WIP without heteronym fields to null', () => {
-      // Simulate legacy WIP data
       const legacy = {
         id: 'wip-1', projectId: 'p', projectName: 'n',
         startedAt: '2026-01-01T00:00:00Z', wordsStart: 0, currentWords: 100,
@@ -427,7 +409,6 @@ describe('writing-session STRESS', () => {
         heteronymId: null, heteronymName: null,
       });
       const result = readWipSession();
-      // Negative delta — no validation in WIP
       expect(result!.currentWords).toBe(50);
       expect(result!.wordsStart).toBe(100);
     });

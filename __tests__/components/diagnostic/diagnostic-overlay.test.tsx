@@ -13,11 +13,17 @@ vi.mock('motion/react', () => {
       return <div ref={ref as React.Ref<HTMLDivElement>} {...props as React.HTMLAttributes<HTMLDivElement>}>{children as React.ReactNode}</div>;
     }
   );
+  const MockMotionP = React.forwardRef<HTMLParagraphElement, Record<string, unknown>>(
+    function MockMotionP({ children, initial, animate, exit, transition, whileHover, whileTap, ...props }, ref) {
+      return <p ref={ref as React.Ref<HTMLParagraphElement>} {...props as React.HTMLAttributes<HTMLParagraphElement>}>{children as React.ReactNode}</p>;
+    }
+  );
   return {
     AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
     motion: {
       div: MockMotionDiv,
       button: MockMotionButton,
+      p: MockMotionP,
     },
   };
 });
@@ -82,6 +88,7 @@ describe('DiagnosticOverlay', () => {
   });
 
   it('clicking a card sets block type and completes diagnostic', () => {
+    vi.useFakeTimers();
     function TestHarness() {
       const { session } = useSession();
       return (
@@ -107,9 +114,16 @@ describe('DiagnosticOverlay', () => {
     });
 
     expect(screen.getByTestId('block-type').textContent).toBe('fear');
+    expect(mockIncrementStreak).toHaveBeenCalled();
+
+    // completeDiagnostic fires after 3s timeout
+    act(() => {
+      vi.advanceTimersByTime(3000);
+    });
+
     expect(screen.getByTestId('diagnostic-completed').textContent).toBe('true');
     expect(screen.getByTestId('diagnostic-skipped').textContent).toBe('false');
-    expect(mockIncrementStreak).toHaveBeenCalled();
+    vi.useRealTimers();
   });
 
   it('clicking skip completes diagnostic as skipped', () => {

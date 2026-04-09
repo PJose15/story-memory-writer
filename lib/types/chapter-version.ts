@@ -1,3 +1,10 @@
+import {
+  getAllVersions as dexieGetAll,
+  putAllVersions as dexiePutAll,
+  putVersion as dexiePut,
+  deleteVersionById as dexieDelete,
+} from '@/lib/storage/dexie-db';
+
 const VERSIONS_KEY = 'zagafy_chapter_versions';
 
 export type VersionSource = 'manual' | 'scene-change' | 'auto-snapshot';
@@ -36,7 +43,9 @@ function countWords(text: string): number {
   return text.trim().split(/\s+/).filter(Boolean).length;
 }
 
-export function readAllVersions(): ChapterVersion[] {
+// ─── localStorage fallback (sync) ───
+
+function readAllVersionsSync(): ChapterVersion[] {
   try {
     const raw = localStorage.getItem(VERSIONS_KEY);
     if (!raw) return [];
@@ -48,7 +57,7 @@ export function readAllVersions(): ChapterVersion[] {
   }
 }
 
-function writeAllVersions(versions: ChapterVersion[]): void {
+function writeAllVersionsSync(versions: ChapterVersion[]): void {
   try {
     localStorage.setItem(VERSIONS_KEY, JSON.stringify(versions));
   } catch {
@@ -56,18 +65,41 @@ function writeAllVersions(versions: ChapterVersion[]): void {
   }
 }
 
-export function readVersions(chapterId: string): ChapterVersion[] {
-  return readAllVersions().filter(v => v.chapterId === chapterId);
+// ─── Async Dexie-backed public API ───
+
+export async function readAllVersions(): Promise<ChapterVersion[]> {
+  try {
+    const rows = await dexieGetAll();
+    const versions = (rows as unknown[]).filter(isChapterVersion);
+    if (versions.length > 0) return versions;
+    // Fallback: read from localStorage if Dexie is empty (pre-migration)
+    return readAllVersionsSync();
+  } catch {
+    return readAllVersionsSync();
+  }
 }
 
-export function addVersion(
+async function writeAllVersions(versions: ChapterVersion[]): Promise<void> {
+  try {
+    await dexiePutAll(versions as unknown[] as Record<string, unknown>[]);
+  } catch {
+    writeAllVersionsSync(versions);
+  }
+}
+
+export async function readVersions(chapterId: string): Promise<ChapterVersion[]> {
+  const all = await readAllVersions();
+  return all.filter(v => v.chapterId === chapterId);
+}
+
+export async function addVersion(
   chapterId: string,
   content: string,
   label: string,
   source: VersionSource,
   isCanonical = false
-): ChapterVersion {
-  const all = readAllVersions();
+): Promise<ChapterVersion> {
+  const all = await readAllVersions();
 
   // If marking as canonical, unmark existing canonical for this chapter
   if (isCanonical) {
@@ -90,12 +122,12 @@ export function addVersion(
   };
 
   all.push(version);
-  writeAllVersions(all);
+  await writeAllVersions(all);
   return version;
 }
 
-export function setCanonical(versionId: string): void {
-  const all = readAllVersions();
+export async function setCanonical(versionId: string): Promise<void> {
+  const all = await readAllVersions();
   const target = all.find(v => v.id === versionId);
   if (!target) return;
 
@@ -104,21 +136,28 @@ export function setCanonical(versionId: string): void {
       v.isCanonical = v.id === versionId;
     }
   }
-  writeAllVersions(all);
+  await writeAllVersions(all);
 }
 
-export function deleteVersion(versionId: string): void {
-  const all = readAllVersions();
-  const filtered = all.filter(v => v.id !== versionId);
-  writeAllVersions(filtered);
+export async function deleteVersion(versionId: string): Promise<void> {
+  try {
+    const all = await readAllVersions();
+    const filtered = all.filter(v => v.id !== versionId);
+    await writeAllVersions(filtered);
+  } catch {
+    // Fallback: delete from localStorage
+    const all = readAllVersionsSync();
+    const filtered = all.filter(v => v.id !== versionId);
+    writeAllVersionsSync(filtered);
+  }
 }
 
-export function renameVersion(versionId: string, newLabel: string): void {
-  const all = readAllVersions();
+export async function renameVersion(versionId: string, newLabel: string): Promise<void> {
+  const all = await readAllVersions();
   const target = all.find(v => v.id === versionId);
   if (target) {
     target.label = newLabel;
-    writeAllVersions(all);
+    await writeAllVersions(all);
   }
 }
 
@@ -126,17 +165,17 @@ export function renameVersion(versionId: string, newLabel: string): void {
  * Auto-migrate: creates "Version A" from existing chapter content
  * if no versions exist for this chapter yet.
  */
-export function ensureInitialVersion(chapterId: string, currentContent: string): ChapterVersion[] {
-  const existing = readVersions(chapterId);
+export async function ensureInitialVersion(chapterId: string, currentContent: string): Promise<ChapterVersion[]> {
+  const existing = await readVersions(chapterId);
   if (existing.length > 0) return existing;
 
   if (currentContent.trim().length === 0) return [];
 
-  const version = addVersion(chapterId, currentContent, 'Version A', 'auto-snapshot', true);
+  const version = await addVersion(chapterId, currentContent, 'Version A', 'auto-snapshot', true);
   return [version];
 }
 
-export function getCanonicalVersion(chapterId: string): ChapterVersion | null {
-  const versions = readVersions(chapterId);
+export async function getCanonicalVersion(chapterId: string): Promise<ChapterVersion | null> {
+  const versions = await readVersions(chapterId);
   return versions.find(v => v.isCanonical) ?? null;
 }

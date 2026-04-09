@@ -38,4 +38,8 @@ export const AI_CONFIG = {
     temperature: 0.6,       // In-character creative responses
     maxOutputTokens: 2048,
   },
+  worldBible: {
+    temperature: 0.1,       // Precise extraction
+    maxOutputTokens: 8192,
+  },
 } as const;

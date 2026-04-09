@@ -151,19 +151,15 @@ export function useSceneChange(nonDiscardedChapterCount: number): UseSceneChange
         currentWordCount - (sceneState?.wordCountAtArrivalAlternate ?? 0)
       );
 
-      // Auto-snapshot alternate chapter content as a version
+      // Auto-snapshot alternate chapter content as a version (async, best-effort)
       if (alternateContent && sceneState?.alternateChapterId && wordsWritten > 0) {
-        const existing = readVersions(sceneState.alternateChapterId);
-        if (existing.length > 0) {
-          const dateStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-          addVersion(
-            sceneState.alternateChapterId,
-            alternateContent,
-            `Scene Change — ${dateStr}`,
-            'scene-change',
-            false
-          );
-        }
+        const altId = sceneState.alternateChapterId;
+        readVersions(altId).then(existing => {
+          if (existing.length > 0) {
+            const dateStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            addVersion(altId, alternateContent, `Scene Change — ${dateStr}`, 'scene-change', false);
+          }
+        });
       }
 
       const ret: SceneChangeReturn = {

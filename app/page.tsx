@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import { useStory } from '@/lib/store';
 import { useSession } from '@/lib/session';
 import { motion } from 'motion/react';
@@ -14,11 +14,12 @@ import {
   CharacterAvatar,
   DecorativeDivider,
 } from '@/components/antiquarian';
-import { DashboardGamification } from '@/components/gamification/dashboard-gamification';
 import { GenesisGuard } from '@/components/genesis/genesis-guard';
 import { useGamification } from '@/hooks/use-gamification';
 import { useNovelCompletion } from '@/hooks/use-novel-completion';
 import NovelCompletionRitual from '@/components/completion/NovelCompletionRitual';
+
+const DashboardGamification = React.lazy(() => import('@/components/gamification/dashboard-gamification').then(m => ({ default: m.DashboardGamification })));
 
 const blockMessages: Record<string, { headline: string; nudge: string }> = {
   fear: {
@@ -164,6 +165,24 @@ function StoryHealthCard() {
         </ParchmentCard>
       </motion.div>
     </Link>
+  );
+}
+
+// ─── Gamification Skeleton ───
+function GamificationSkeleton() {
+  return (
+    <ParchmentCard padding="lg">
+      <div className="animate-pulse space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-parchment-300/40" />
+          <div className="flex-1 space-y-2">
+            <div className="h-3 w-32 bg-parchment-300/40 rounded" />
+            <div className="h-2 w-48 bg-parchment-300/30 rounded" />
+          </div>
+        </div>
+        <div className="h-2 w-full bg-parchment-300/30 rounded-full" />
+      </div>
+    </ParchmentCard>
   );
 }
 
@@ -320,7 +339,9 @@ export default function Dashboard() {
       </div>
 
       {/* ── Gamification ── */}
-      <DashboardGamification />
+      <Suspense fallback={<GamificationSkeleton />}>
+        <DashboardGamification />
+      </Suspense>
 
       {/* ── Story Health ── */}
       <StoryHealthCard />

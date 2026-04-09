@@ -1,6 +1,15 @@
-import { describe, it, expect } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { renderHook, act, waitFor } from '@testing-library/react';
 import React from 'react';
+
+vi.mock('@/lib/storage/dexie-db', () => ({
+  migrateFromLocalStorage: vi.fn().mockResolvedValue(undefined),
+  getAllChapterContents: vi.fn().mockResolvedValue(new Map()),
+  putChapterContent: vi.fn().mockResolvedValue(undefined),
+  getChapterContent: vi.fn().mockResolvedValue(undefined),
+  deleteChapterContent: vi.fn().mockResolvedValue(undefined),
+}));
+
 import { StoryProvider, useStory, defaultState } from '@/lib/store';
 import type { StoryState } from '@/lib/store';
 
@@ -52,14 +61,20 @@ describe('useStory() inside StoryProvider', () => {
     return <StoryProvider>{children}</StoryProvider>;
   }
 
-  it('provides initial state matching defaultState', () => {
+  it('provides initial state matching defaultState', async () => {
     const { result } = renderHook(() => useStory(), { wrapper });
+    await waitFor(() => {
+      expect(result.current).not.toBeNull();
+    });
     expect(result.current.state.title).toBe(defaultState.title);
     expect(result.current.state.language).toBe(defaultState.language);
   });
 
-  it('updateField updates a specific field', () => {
+  it('updateField updates a specific field', async () => {
     const { result } = renderHook(() => useStory(), { wrapper });
+    await waitFor(() => {
+      expect(result.current).not.toBeNull();
+    });
 
     act(() => {
       result.current.updateField('title', 'My Novel');
@@ -70,8 +85,11 @@ describe('useStory() inside StoryProvider', () => {
     expect(result.current.state.language).toBe('English');
   });
 
-  it('updateField works with array fields', () => {
+  it('updateField works with array fields', async () => {
     const { result } = renderHook(() => useStory(), { wrapper });
+    await waitFor(() => {
+      expect(result.current).not.toBeNull();
+    });
 
     act(() => {
       result.current.updateField('genre', ['Fantasy', 'Adventure']);

@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
+import { renderHook, act, waitFor } from '@testing-library/react';
 
 vi.mock('@/lib/types/chapter-version', () => {
   let store: any[] = [];
   return {
-    readVersions: vi.fn((chapterId: string) => store.filter(v => v.chapterId === chapterId)),
-    addVersion: vi.fn((chapterId: string, content: string, label: string, source: string, isCanonical: boolean) => {
+    readVersions: vi.fn(async (chapterId: string) => store.filter(v => v.chapterId === chapterId)),
+    addVersion: vi.fn(async (chapterId: string, content: string, label: string, source: string, isCanonical: boolean) => {
       const v = {
         id: `v-${store.length}`,
         chapterId,
@@ -19,19 +19,19 @@ vi.mock('@/lib/types/chapter-version', () => {
       store.push(v);
       return v;
     }),
-    setCanonical: vi.fn((versionId: string) => {
+    setCanonical: vi.fn(async (versionId: string) => {
       for (const v of store) {
         v.isCanonical = v.id === versionId;
       }
     }),
-    deleteVersion: vi.fn((versionId: string) => {
+    deleteVersion: vi.fn(async (versionId: string) => {
       store = store.filter(v => v.id !== versionId);
     }),
-    renameVersion: vi.fn((versionId: string, newLabel: string) => {
+    renameVersion: vi.fn(async (versionId: string, newLabel: string) => {
       const v = store.find(v2 => v2.id === versionId);
       if (v) v.label = newLabel;
     }),
-    ensureInitialVersion: vi.fn((chapterId: string, content: string) => {
+    ensureInitialVersion: vi.fn(async (chapterId: string, content: string) => {
       if (store.some(v => v.chapterId === chapterId)) return store.filter(v => v.chapterId === chapterId);
       if (!content.trim()) return [];
       const v = {
@@ -68,7 +68,9 @@ describe('useChapterVersions', () => {
     const useChapterVersions = await importHook();
     const { result } = renderHook(() => useChapterVersions('ch-1', 'Hello world'));
 
-    expect(result.current.versions).toHaveLength(1);
+    await waitFor(() => {
+      expect(result.current.versions).toHaveLength(1);
+    });
     expect(result.current.versions[0].label).toBe('Version A');
     expect(result.current.versions[0].chapterId).toBe('ch-1');
     expect(result.current.versions[0].isCanonical).toBe(true);
@@ -78,24 +80,27 @@ describe('useChapterVersions', () => {
     const useChapterVersions = await importHook();
     const { result } = renderHook(() => useChapterVersions('ch-1', 'Some content here'));
 
+    await waitFor(() => {
+      expect(result.current.versionCount).toBe(1);
+    });
     expect(result.current.versionCount).toBe(result.current.versions.length);
-    expect(result.current.versionCount).toBe(1);
   });
 
   it('activeVersion returns canonical version', async () => {
     const useChapterVersions = await importHook();
     const { result } = renderHook(() => useChapterVersions('ch-1', 'Some content'));
 
-    expect(result.current.activeVersion).not.toBeNull();
+    await waitFor(() => {
+      expect(result.current.activeVersion).not.toBeNull();
+    });
     expect(result.current.activeVersion!.isCanonical).toBe(true);
     expect(result.current.activeVersion!.id).toBe(result.current.versions[0].id);
   });
 
   it('activeVersion returns first version when none is canonical', async () => {
     const mod = await import('@/lib/types/chapter-version') as any;
-    // Pre-populate store with a non-canonical version
     mod.__resetStore();
-    mod.ensureInitialVersion.mockImplementationOnce((chapterId: string, content: string) => {
+    mod.ensureInitialVersion.mockImplementationOnce(async (chapterId: string, content: string) => {
       const v = {
         id: 'v-non-canonical',
         chapterId,
@@ -112,8 +117,9 @@ describe('useChapterVersions', () => {
     const useChapterVersions = await importHook();
     const { result } = renderHook(() => useChapterVersions('ch-1', 'Some content'));
 
-    // No canonical, so falls back to first version
-    expect(result.current.activeVersion).not.toBeNull();
+    await waitFor(() => {
+      expect(result.current.activeVersion).not.toBeNull();
+    });
     expect(result.current.activeVersion!.id).toBe('v-non-canonical');
   });
 
@@ -122,22 +128,28 @@ describe('useChapterVersions', () => {
     const useChapterVersions = await importHook();
     const { result } = renderHook(() => useChapterVersions('ch-1', 'Initial content'));
 
-    expect(result.current.versionCount).toBe(1);
+    await waitFor(() => {
+      expect(result.current.versionCount).toBe(1);
+    });
 
-    act(() => {
-      const created = result.current.createVersion('Branch content', 'Version B', 'manual');
-      expect(created.label).toBe('Version B');
-      expect(created.content).toBe('Branch content');
+    await act(async () => {
+      result.current.createVersion('Branch content', 'Version B', 'manual');
     });
 
     expect(mod.addVersion).toHaveBeenCalledWith('ch-1', 'Branch content', 'Version B', 'manual', false);
     expect(mod.readVersions).toHaveBeenCalled();
-    expect(result.current.versionCount).toBe(2);
+    await waitFor(() => {
+      expect(result.current.versionCount).toBe(2);
+    });
   });
 
   it('switchVersion returns found version', async () => {
     const useChapterVersions = await importHook();
     const { result } = renderHook(() => useChapterVersions('ch-1', 'Some content'));
+
+    await waitFor(() => {
+      expect(result.current.versions).toHaveLength(1);
+    });
 
     const versionId = result.current.versions[0].id;
     let found: any;
@@ -153,6 +165,10 @@ describe('useChapterVersions', () => {
     const useChapterVersions = await importHook();
     const { result } = renderHook(() => useChapterVersions('ch-1', 'Some content'));
 
+    await waitFor(() => {
+      expect(result.current.versions).toHaveLength(1);
+    });
+
     let found: any;
     act(() => {
       found = result.current.switchVersion('nonexistent-id');
@@ -166,14 +182,21 @@ describe('useChapterVersions', () => {
     const useChapterVersions = await importHook();
     const { result } = renderHook(() => useChapterVersions('ch-1', 'Initial'));
 
-    // Create a second version first
-    act(() => {
+    await waitFor(() => {
+      expect(result.current.versionCount).toBe(1);
+    });
+
+    await act(async () => {
       result.current.createVersion('Alt content', 'Version B', 'manual');
+    });
+
+    await waitFor(() => {
+      expect(result.current.versionCount).toBe(2);
     });
 
     const secondVersionId = result.current.versions[1].id;
 
-    act(() => {
+    await act(async () => {
       result.current.markCanonical(secondVersionId);
     });
 
@@ -186,9 +209,13 @@ describe('useChapterVersions', () => {
     const useChapterVersions = await importHook();
     const { result } = renderHook(() => useChapterVersions('ch-1', 'Some content'));
 
+    await waitFor(() => {
+      expect(result.current.versions).toHaveLength(1);
+    });
+
     const versionId = result.current.versions[0].id;
 
-    act(() => {
+    await act(async () => {
       result.current.rename(versionId, 'Renamed Draft');
     });
 
@@ -201,21 +228,29 @@ describe('useChapterVersions', () => {
     const useChapterVersions = await importHook();
     const { result } = renderHook(() => useChapterVersions('ch-1', 'Some content'));
 
-    // Add a second version so we can remove the first
-    act(() => {
+    await waitFor(() => {
+      expect(result.current.versionCount).toBe(1);
+    });
+
+    await act(async () => {
       result.current.createVersion('Second version', 'Version B', 'manual');
     });
 
-    expect(result.current.versionCount).toBe(2);
+    await waitFor(() => {
+      expect(result.current.versionCount).toBe(2);
+    });
+
     const firstId = result.current.versions[0].id;
 
-    act(() => {
+    await act(async () => {
       result.current.remove(firstId);
     });
 
     expect(mod.deleteVersion).toHaveBeenCalledWith(firstId);
     expect(mod.readVersions).toHaveBeenCalled();
-    expect(result.current.versionCount).toBe(1);
+    await waitFor(() => {
+      expect(result.current.versionCount).toBe(1);
+    });
   });
 
   it('refresh re-reads versions from storage', async () => {
@@ -223,9 +258,13 @@ describe('useChapterVersions', () => {
     const useChapterVersions = await importHook();
     const { result } = renderHook(() => useChapterVersions('ch-1', 'Some content'));
 
+    await waitFor(() => {
+      expect(result.current.versions).toHaveLength(1);
+    });
+
     const callCountBefore = mod.readVersions.mock.calls.length;
 
-    act(() => {
+    await act(async () => {
       result.current.refresh();
     });
 
@@ -237,7 +276,9 @@ describe('useChapterVersions', () => {
     const useChapterVersions = await importHook();
     const { result } = renderHook(() => useChapterVersions('ch-1', ''));
 
-    expect(result.current.versions).toHaveLength(0);
+    await waitFor(() => {
+      expect(result.current.versions).toHaveLength(0);
+    });
     expect(result.current.activeVersion).toBeNull();
     expect(result.current.versionCount).toBe(0);
   });

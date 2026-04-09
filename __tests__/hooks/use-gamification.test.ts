@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
+import { renderHook, act, waitFor } from '@testing-library/react';
 import React from 'react';
 
 // Mock localStorage
@@ -31,6 +31,7 @@ const mockStoryState = {
   canon_items: [],
   ambiguities: [],
   chat_messages: [],
+  world_bible: [],
   genre: [],
   author_intent: '',
   style_profile: '',
@@ -48,6 +49,10 @@ vi.mock('@/lib/store', () => ({
 
 vi.mock('next/navigation', () => ({
   usePathname: () => '/',
+}));
+
+vi.mock('@/lib/types/writing-session', () => ({
+  readSessions: () => Promise.resolve([]),
 }));
 
 import { useGamification, GamificationProvider } from '@/hooks/use-gamification';
@@ -78,9 +83,11 @@ describe('useGamification', () => {
     expect(result.current.gamification.xp.totalXP).toBe(50);
   });
 
-  it('generates daily quests on mount', () => {
+  it('generates daily quests on mount', async () => {
     const { result } = renderHook(() => useGamification(), { wrapper });
-    expect(result.current.quests).toHaveLength(3);
+    await waitFor(() => {
+      expect(result.current.quests).toHaveLength(3);
+    });
   });
 
   it('completes a quest and awards XP', () => {

@@ -1,3 +1,9 @@
+import {
+  getSessions as dexieGetSessions,
+  putSession as dexiePutSession,
+  putAllSessions as dexiePutAllSessions,
+} from '@/lib/storage/dexie-db';
+
 const SESSIONS_KEY = 'zagafy_sessions';
 const WIP_KEY = 'zagafy_session_wip';
 const PROJECT_ID_KEY = 'zagafy_project_id';
@@ -91,7 +97,9 @@ function isWritingSession(v: unknown): v is WritingSession {
   return true;
 }
 
-export function readSessions(): WritingSession[] {
+// ─── localStorage fallback (sync) ───
+
+function readSessionsSync(): WritingSession[] {
   try {
     const raw = localStorage.getItem(SESSIONS_KEY);
     if (!raw) return [];
@@ -103,7 +111,7 @@ export function readSessions(): WritingSession[] {
   }
 }
 
-export function writeSessions(sessions: WritingSession[]): void {
+function writeSessionsSync(sessions: WritingSession[]): void {
   try {
     localStorage.setItem(SESSIONS_KEY, JSON.stringify(sessions));
   } catch {
@@ -111,18 +119,53 @@ export function writeSessions(sessions: WritingSession[]): void {
   }
 }
 
-export function addSession(session: WritingSession): void {
-  const sessions = readSessions();
-  sessions.push(session);
-  writeSessions(sessions);
+// ─── Async Dexie-backed public API ───
+
+export async function readSessions(): Promise<WritingSession[]> {
+  try {
+    const rows = await dexieGetSessions();
+    const sessions = (rows as unknown[]).filter(isWritingSession);
+    if (sessions.length > 0) return sessions;
+    return readSessionsSync();
+  } catch {
+    return readSessionsSync();
+  }
 }
 
-export function updateSessionFlowScore(sessionId: string, score: FlowScore): void {
-  const sessions = readSessions();
-  const idx = sessions.findIndex(s => s.id === sessionId);
-  if (idx === -1) return;
-  sessions[idx] = { ...sessions[idx], flowScore: score };
-  writeSessions(sessions);
+export async function writeSessions(sessions: WritingSession[]): Promise<void> {
+  try {
+    await dexiePutAllSessions(sessions as unknown as Record<string, unknown>[]);
+  } catch {
+    writeSessionsSync(sessions);
+  }
+}
+
+export async function addSession(session: WritingSession): Promise<void> {
+  try {
+    await dexiePutSession(session as unknown as Record<string, unknown>);
+  } catch {
+    // Fallback: add to localStorage
+    const sessions = readSessionsSync();
+    sessions.push(session);
+    writeSessionsSync(sessions);
+  }
+}
+
+export async function updateSessionFlowScore(sessionId: string, score: FlowScore): Promise<void> {
+  try {
+    const sessions = await readSessions();
+    const idx = sessions.findIndex(s => s.id === sessionId);
+    if (idx === -1) return;
+    sessions[idx] = { ...sessions[idx], flowScore: score };
+    await writeSessions(sessions);
+  } catch {
+    // Fallback: update in localStorage
+    const sessions = readSessionsSync();
+    const idx = sessions.findIndex(s => s.id === sessionId);
+    if (idx === -1) return;
+    sessions[idx] = { ...sessions[idx], flowScore: score };
+    writeSessionsSync(sessions);
+  }
 }
 
 export function getProjectId(): string {

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 import React from 'react';
 
 const { mockFetchPrompt, mockClearPrompt, mockScheduleAutosave, mockSaveNow } = vi.hoisted(() => ({
@@ -56,6 +56,14 @@ vi.mock('@/hooks/use-scene-change', () => ({
 vi.mock('@/lib/types/scene-change', () => ({
   readSceneChangeReturn: vi.fn().mockReturnValue(null),
   clearSceneChangeReturn: vi.fn(),
+}));
+
+vi.mock('@/lib/storage/dexie-db', () => ({
+  migrateFromLocalStorage: vi.fn().mockResolvedValue(undefined),
+  getAllChapterContents: vi.fn().mockResolvedValue(new Map()),
+  putChapterContent: vi.fn().mockResolvedValue(undefined),
+  getChapterContent: vi.fn().mockResolvedValue(undefined),
+  deleteChapterContent: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('@/hooks/use-braindump', () => ({
@@ -118,11 +126,15 @@ function wrapper({ children }: { children: React.ReactNode }) {
   );
 }
 
-function renderEditor(onExit = vi.fn()) {
-  return render(
+async function renderEditor(onExit = vi.fn()) {
+  const result = render(
     <FlowEditor chapterId="ch-1" onExit={onExit} />,
     { wrapper }
   );
+  await waitFor(() => {
+    expect(screen.getByPlaceholderText(/start writing/i)).toBeDefined();
+  });
+  return result;
 }
 
 describe('FlowEditor', () => {
@@ -131,76 +143,82 @@ describe('FlowEditor', () => {
     vi.clearAllMocks();
   });
 
-  it('renders textarea', () => {
-    renderEditor();
+  it('renders textarea', async () => {
+    await renderEditor();
     const textarea = screen.getByPlaceholderText(/start writing/i);
     expect(textarea).toBeDefined();
     expect(textarea.tagName).toBe('TEXTAREA');
   });
 
-  it('blocks Backspace key (preventDefault called)', () => {
-    renderEditor();
+  it('blocks Backspace key (preventDefault called)', async () => {
+    await renderEditor();
     const textarea = screen.getByPlaceholderText(/start writing/i);
     const prevented = fireEvent.keyDown(textarea, { key: 'Backspace' });
     expect(prevented).toBe(false);
   });
 
-  it('blocks Delete key', () => {
-    renderEditor();
+  it('blocks Delete key', async () => {
+    await renderEditor();
     const textarea = screen.getByPlaceholderText(/start writing/i);
     const prevented = fireEvent.keyDown(textarea, { key: 'Delete' });
     expect(prevented).toBe(false);
   });
 
-  it('blocks Ctrl+Z (undo)', () => {
-    renderEditor();
+  it('blocks Ctrl+Z (undo)', async () => {
+    await renderEditor();
     const textarea = screen.getByPlaceholderText(/start writing/i);
     const prevented = fireEvent.keyDown(textarea, { key: 'z', ctrlKey: true });
     expect(prevented).toBe(false);
   });
 
-  it('blocks Ctrl+X (cut)', () => {
-    renderEditor();
+  it('blocks Ctrl+X (cut)', async () => {
+    await renderEditor();
     const textarea = screen.getByPlaceholderText(/start writing/i);
     const prevented = fireEvent.keyDown(textarea, { key: 'x', ctrlKey: true });
     expect(prevented).toBe(false);
   });
 
-  it('allows normal character typing', () => {
-    renderEditor();
+  it('allows normal character typing', async () => {
+    await renderEditor();
     const textarea = screen.getByPlaceholderText(/start writing/i);
     const prevented = fireEvent.keyDown(textarea, { key: 'a' });
     expect(prevented).toBe(true);
   });
 
-  it('shows "Exit Flow" button', () => {
-    renderEditor();
+  it('shows "Exit Flow" button', async () => {
+    await renderEditor();
     expect(screen.getByText('Exit Flow')).toBeDefined();
   });
 
-  it('calls onExit when Exit Flow button is clicked', () => {
+  it('calls onExit when Exit Flow button is clicked (empty content)', async () => {
+    const { useFlowAutosave } = await import('@/hooks/use-flow-autosave');
+    vi.mocked(useFlowAutosave).mockReturnValueOnce({
+      scheduleAutosave: mockScheduleAutosave,
+      saveNow: mockSaveNow,
+      initialContent: '',
+    });
     const onExit = vi.fn();
-    renderEditor(onExit);
-    screen.getByText('Exit Flow').click();
+    await renderEditor(onExit);
+    fireEvent.click(screen.getByText('Exit Flow'));
     expect(onExit).toHaveBeenCalledTimes(1);
   });
 
-  it('shows word count', () => {
-    renderEditor();
+  it('shows word count', async () => {
+    await renderEditor();
     expect(screen.getByText('2 words')).toBeDefined();
   });
 
-  it('renders mic button for voice braindump', () => {
-    renderEditor();
+  it('renders mic button for voice braindump', async () => {
+    await renderEditor();
     expect(screen.getByLabelText('Voice braindump')).toBeDefined();
   });
 
-  it('renders history button for braindump history', () => {
-    renderEditor();
+  it('renders history button for braindump history', async () => {
+    await renderEditor();
     expect(screen.getByLabelText('Braindump history')).toBeDefined();
   });
 
-  it('history button calls openHistory when clicked', () => {
+  it('history button calls openHistory when clicked', async () => {
     const mockBraindump = vi.mocked(useBraindump);
     const openHistory = vi.fn();
     const current = mockBraindump.mock.results[0]?.value ?? {};
@@ -209,48 +227,48 @@ describe('FlowEditor', () => {
       openHistory,
     });
 
-    renderEditor();
+    await renderEditor();
     fireEvent.click(screen.getByLabelText('Braindump history'));
     expect(openHistory).toHaveBeenCalledTimes(1);
   });
 
-  it('blocks Ctrl+Backspace (delete word backwards)', () => {
-    renderEditor();
+  it('blocks Ctrl+Backspace (delete word backwards)', async () => {
+    await renderEditor();
     const textarea = screen.getByPlaceholderText(/start writing/i);
     const prevented = fireEvent.keyDown(textarea, { key: 'Backspace', ctrlKey: true });
     expect(prevented).toBe(false);
   });
 
-  it('blocks Ctrl+Delete (delete word forwards)', () => {
-    renderEditor();
+  it('blocks Ctrl+Delete (delete word forwards)', async () => {
+    await renderEditor();
     const textarea = screen.getByPlaceholderText(/start writing/i);
     const prevented = fireEvent.keyDown(textarea, { key: 'Delete', ctrlKey: true });
     expect(prevented).toBe(false);
   });
 
-  it('blocks Meta+Z (undo on Mac)', () => {
-    renderEditor();
+  it('blocks Meta+Z (undo on Mac)', async () => {
+    await renderEditor();
     const textarea = screen.getByPlaceholderText(/start writing/i);
     const prevented = fireEvent.keyDown(textarea, { key: 'z', metaKey: true });
     expect(prevented).toBe(false);
   });
 
-  it('blocks Meta+X (cut on Mac)', () => {
-    renderEditor();
+  it('blocks Meta+X (cut on Mac)', async () => {
+    await renderEditor();
     const textarea = screen.getByPlaceholderText(/start writing/i);
     const prevented = fireEvent.keyDown(textarea, { key: 'x', metaKey: true });
     expect(prevented).toBe(false);
   });
 
-  it('allows Enter key', () => {
-    renderEditor();
+  it('allows Enter key', async () => {
+    await renderEditor();
     const textarea = screen.getByPlaceholderText(/start writing/i);
     const prevented = fireEvent.keyDown(textarea, { key: 'Enter' });
     expect(prevented).toBe(true);
   });
 
-  it('allows space key', () => {
-    renderEditor();
+  it('allows space key', async () => {
+    await renderEditor();
     const textarea = screen.getByPlaceholderText(/start writing/i);
     const prevented = fireEvent.keyDown(textarea, { key: ' ' });
     expect(prevented).toBe(true);

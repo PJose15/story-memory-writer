@@ -2,6 +2,8 @@
 
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { StoreSkeleton } from '@/components/antiquarian/StoreSkeleton';
+import { migrateFromLocalStorage, getAllChapterContents, putChapterContent } from '@/lib/storage/dexie-db';
+import type { WorldBibleSection } from '@/lib/types/world-bible';
 
 export type CanonStatus = 'confirmed' | 'flexible' | 'draft' | 'discarded';
 export type DataSource = 'manuscript' | 'ai-inferred' | 'user-entered';
@@ -169,6 +171,7 @@ export interface StoryState {
   canon_items: CanonItem[];
   ambiguities: Ambiguity[];
   chat_messages: ChatMessage[];
+  world_bible: WorldBibleSection[];
 }
 
 export const defaultState: StoryState = {
@@ -191,6 +194,7 @@ export const defaultState: StoryState = {
   canon_items: [],
   ambiguities: [],
   chat_messages: [],
+  world_bible: [],
 };
 
 interface StoryContextType {
@@ -206,23 +210,48 @@ export function StoryProvider({ children }: { children: React.ReactNode }) {
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    // Migration: copy legacy key to new key if needed
-    if (!localStorage.getItem('zagafy_state') && localStorage.getItem('story_memory_state')) {
-      localStorage.setItem('zagafy_state', localStorage.getItem('story_memory_state')!);
-      localStorage.removeItem('story_memory_state');
+    async function loadState() {
+      // Run Dexie migration first (idempotent)
+      await migrateFromLocalStorage();
+
+      // Migration: copy legacy key to new key if needed
+      if (!localStorage.getItem('zagafy_state') && localStorage.getItem('story_memory_state')) {
+        localStorage.setItem('zagafy_state', localStorage.getItem('story_memory_state')!);
+        localStorage.removeItem('story_memory_state');
+      }
+
+      const saved = localStorage.getItem('zagafy_state');
+      let loadedState = defaultState;
+      if (saved) {
+        try {
+          loadedState = { ...defaultState, ...JSON.parse(saved) };
+        } catch (e) {
+          console.error('Failed to parse saved state', e);
+        }
+      }
+
+      // Load chapter contents from Dexie and merge back
+      try {
+        const contentMap = await getAllChapterContents();
+        if (contentMap.size > 0 && Array.isArray(loadedState.chapters)) {
+          loadedState = {
+            ...loadedState,
+            chapters: loadedState.chapters.map(ch => ({
+              ...ch,
+              content: contentMap.get(ch.id) ?? ch.content,
+            })),
+          };
+        }
+      } catch {
+        // Dexie unavailable — chapters keep whatever content they have from localStorage
+      }
+
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setState(loadedState);
+      setIsLoaded(true);
     }
 
-    const saved = localStorage.getItem('zagafy_state');
-    if (saved) {
-      try {
-        // Merge saved data with defaults so new fields added after save get their default values
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setState({ ...defaultState, ...JSON.parse(saved) });
-      } catch (e) {
-        console.error('Failed to parse saved state', e);
-      }
-    }
-    setIsLoaded(true);
+    loadState();
   }, []);
 
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -232,10 +261,22 @@ export function StoryProvider({ children }: { children: React.ReactNode }) {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
       saveTimerRef.current = setTimeout(() => {
         try {
-          localStorage.setItem('zagafy_state', JSON.stringify(state));
+          // Save to localStorage with chapter content stripped (stubs only)
+          const stateForLS = {
+            ...state,
+            chapters: state.chapters.map(ch => ({ ...ch, content: '' })),
+          };
+          localStorage.setItem('zagafy_state', JSON.stringify(stateForLS));
           if (saveError) setSaveError(false);
         } catch {
           if (!saveError) setSaveError(true);
+        }
+
+        // Save chapter contents to Dexie (async, best-effort)
+        for (const ch of state.chapters) {
+          putChapterContent(ch.id, ch.content, ch.title, ch.summary, ch.canonStatus, ch.source).catch(() => {
+            // Dexie write failed — content was already in memory, will retry on next save
+          });
         }
       }, 500);
     }
@@ -249,7 +290,19 @@ export function StoryProvider({ children }: { children: React.ReactNode }) {
     const handleStorage = (e: StorageEvent) => {
       if (e.key === 'zagafy_state' && e.newValue) {
         try {
-          setState({ ...defaultState, ...JSON.parse(e.newValue) });
+          const parsed = { ...defaultState, ...JSON.parse(e.newValue) };
+          // Re-hydrate chapter content from Dexie for cross-tab sync
+          getAllChapterContents().then(contentMap => {
+            if (contentMap.size > 0 && Array.isArray(parsed.chapters)) {
+              parsed.chapters = parsed.chapters.map((ch: Chapter) => ({
+                ...ch,
+                content: contentMap.get(ch.id) ?? ch.content,
+              }));
+            }
+            setState(parsed);
+          }).catch(() => {
+            setState(parsed);
+          });
         } catch {
           // Ignore parse errors from other tabs
         }

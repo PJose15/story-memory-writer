@@ -1,11 +1,36 @@
 'use client';
 
 import { useStory } from '@/lib/store';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useUnsavedChanges } from '@/hooks/use-unsaved-changes';
-import { Save, Book, Settings2 } from 'lucide-react';
+import {
+  Save, Book, Settings2, Plus, Globe, Scroll, Wand2,
+  Landmark, Church, Coins, Languages, CalendarDays,
+} from 'lucide-react';
 import { motion } from 'motion/react';
-import { InkStampButton, CarvedHeader, DecorativeDivider, ParchmentInput, ParchmentTextarea } from '@/components/antiquarian';
+import {
+  InkStampButton, CarvedHeader, DecorativeDivider,
+  ParchmentInput, ParchmentTextarea, ParchmentCard, FeatureErrorBoundary, EmptyState,
+} from '@/components/antiquarian';
+import { WorldBibleExtractButton } from '@/components/bible/WorldBibleExtractButton';
+import { WorldBibleSectionCard } from '@/components/bible/WorldBibleSectionCard';
+import { WorldBibleMergeModal } from '@/components/bible/WorldBibleMergeModal';
+import {
+  WORLD_BIBLE_CATEGORIES, CATEGORY_META,
+  type WorldBibleSection, type WorldBibleCategory,
+} from '@/lib/types/world-bible';
+import type { LucideIcon } from 'lucide-react';
+
+const CATEGORY_ICONS: Record<WorldBibleCategory, LucideIcon> = {
+  geography: Globe,
+  history: Scroll,
+  'magic-tech': Wand2,
+  politics: Landmark,
+  'religion-culture': Church,
+  economy: Coins,
+  languages: Languages,
+  calendar: CalendarDays,
+};
 
 export default function BiblePage() {
   const { state, updateField } = useStory();
@@ -14,7 +39,17 @@ export default function BiblePage() {
   const [styleProfile, setStyleProfile] = useState(state.style_profile);
   const [authorIntent, setAuthorIntent] = useState(state.author_intent);
   const [isSaving, setIsSaving] = useState(false);
-  useUnsavedChanges(title !== state.title || synopsis !== state.synopsis || styleProfile !== state.style_profile || authorIntent !== state.author_intent);
+
+  const [selectedCategory, setSelectedCategory] = useState<WorldBibleCategory>('geography');
+  const [mergeModalOpen, setMergeModalOpen] = useState(false);
+  const [incomingSections, setIncomingSections] = useState<WorldBibleSection[]>([]);
+
+  useUnsavedChanges(
+    title !== state.title ||
+    synopsis !== state.synopsis ||
+    styleProfile !== state.style_profile ||
+    authorIntent !== state.author_intent,
+  );
 
   const handleSave = () => {
     setIsSaving(true);
@@ -25,16 +60,77 @@ export default function BiblePage() {
     setTimeout(() => setIsSaving(false), 500);
   };
 
+  const handleExtract = useCallback(async (): Promise<number> => {
+    const res = await fetch('/api/extract-world-bible', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chapters: state.chapters.map((ch) => ({ title: ch.title, content: ch.content })),
+      }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Unknown error' }));
+      throw new Error(err.error || 'Extraction failed');
+    }
+    const data = await res.json();
+    const sections: WorldBibleSection[] = data.sections ?? [];
+    if (sections.length > 0) {
+      setIncomingSections(sections);
+      setMergeModalOpen(true);
+    }
+    return sections.length;
+  }, [state.chapters]);
+
+  const handleMergeConfirm = useCallback((selected: WorldBibleSection[]) => {
+    updateField('world_bible', [...state.world_bible, ...selected]);
+    setIncomingSections([]);
+  }, [state.world_bible, updateField]);
+
+  const handleUpdateSection = useCallback((updated: WorldBibleSection) => {
+    updateField(
+      'world_bible',
+      state.world_bible.map((s) => (s.id === updated.id ? updated : s)),
+    );
+  }, [state.world_bible, updateField]);
+
+  const handleDeleteSection = useCallback((id: string) => {
+    updateField('world_bible', state.world_bible.filter((s) => s.id !== id));
+  }, [state.world_bible, updateField]);
+
+  const handleAddSection = useCallback(() => {
+    const newSection: WorldBibleSection = {
+      id: crypto.randomUUID(),
+      category: selectedCategory,
+      title: 'New Section',
+      content: '',
+      source: 'user-written',
+      lastUpdated: new Date().toISOString(),
+      canonStatus: 'draft',
+    };
+    updateField('world_bible', [...state.world_bible, newSection]);
+  }, [selectedCategory, state.world_bible, updateField]);
+
+  const categorySections = state.world_bible.filter((s) => s.category === selectedCategory);
+
+  const categoryCount = (cat: WorldBibleCategory) =>
+    state.world_bible.filter((s) => s.category === cat).length;
+
   return (
-    <div className="p-8 max-w-4xl mx-auto space-y-10">
+    <div className="p-8 max-w-5xl mx-auto space-y-10">
       <CarvedHeader
         title="Story Bible"
         subtitle="The core foundation of your narrative universe."
         icon={<Book size={24} />}
         actions={
-          <InkStampButton onClick={handleSave} disabled={isSaving} icon={<Save size={18} />}>
-            {isSaving ? 'Saved!' : 'Save Changes'}
-          </InkStampButton>
+          <div className="flex items-center gap-3">
+            <WorldBibleExtractButton
+              onExtract={handleExtract}
+              chapterCount={state.chapters.length}
+            />
+            <InkStampButton onClick={handleSave} disabled={isSaving} icon={<Save size={18} />}>
+              {isSaving ? 'Saved!' : 'Save Changes'}
+            </InkStampButton>
+          </div>
         }
       />
 
@@ -43,6 +139,7 @@ export default function BiblePage() {
         animate={{ opacity: 1, y: 0 }}
         className="space-y-8"
       >
+        {/* Existing core fields */}
         <section className="space-y-4 border-l-4 border-l-brass-500 pl-5">
           <label className="block text-sm font-medium text-sepia-600 uppercase tracking-wider">
             Project Title
@@ -96,6 +193,95 @@ export default function BiblePage() {
           <p className="text-xs text-sepia-500">This guides the AI assistant with your current creative direction. Update it as your focus changes.</p>
         </section>
       </motion.div>
+
+      <DecorativeDivider variant="flourish" className="my-6" />
+
+      {/* World Bible Section */}
+      <FeatureErrorBoundary title="World Bible">
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+        >
+          <h2 className="text-xl font-serif font-semibold text-sepia-900 mb-4">World Bible</h2>
+
+          <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
+            {/* Category sidebar */}
+            <div className="space-y-1">
+              {WORLD_BIBLE_CATEGORIES.map((cat) => {
+                const Icon = CATEGORY_ICONS[cat];
+                const meta = CATEGORY_META[cat];
+                const count = categoryCount(cat);
+                const isActive = cat === selectedCategory;
+
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => setSelectedCategory(cat)}
+                    className={[
+                      'w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-left transition-all text-sm',
+                      isActive
+                        ? 'bg-parchment-200 border border-brass-500/40 text-sepia-900 font-semibold'
+                        : 'text-sepia-600 hover:bg-parchment-200/50 border border-transparent',
+                    ].join(' ')}
+                  >
+                    <Icon size={16} className={isActive ? 'text-brass-700' : 'text-sepia-400'} />
+                    <span className="flex-1">{meta.label}</span>
+                    {count > 0 && (
+                      <span className={[
+                        'text-xs px-1.5 py-0.5 rounded-full',
+                        isActive ? 'bg-brass-500/20 text-brass-800' : 'bg-sepia-300/30 text-sepia-500',
+                      ].join(' ')}>
+                        {count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Category content */}
+            <div className="space-y-4">
+              {categorySections.length === 0 ? (
+                <ParchmentCard padding="lg">
+                  <EmptyState
+                    variant="bible"
+                    title={`No ${CATEGORY_META[selectedCategory].label.toLowerCase()} entries yet`}
+                    subtitle="Extract from your manuscript or add a section manually."
+                  />
+                </ParchmentCard>
+              ) : (
+                categorySections.map((section) => (
+                  <WorldBibleSectionCard
+                    key={section.id}
+                    section={section}
+                    onUpdate={handleUpdateSection}
+                    onDelete={handleDeleteSection}
+                  />
+                ))
+              )}
+
+              <InkStampButton
+                variant="ghost"
+                size="sm"
+                icon={<Plus size={16} />}
+                onClick={handleAddSection}
+              >
+                Add Section
+              </InkStampButton>
+            </div>
+          </div>
+        </motion.div>
+      </FeatureErrorBoundary>
+
+      {/* Merge Modal */}
+      <WorldBibleMergeModal
+        open={mergeModalOpen}
+        onClose={() => setMergeModalOpen(false)}
+        incoming={incomingSections}
+        existing={state.world_bible}
+        onConfirm={handleMergeConfirm}
+      />
     </div>
   );
 }

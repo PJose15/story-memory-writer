@@ -1,13 +1,26 @@
 'use client';
 
 import { useStory, Chapter, CanonStatus } from '@/lib/store';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useUnsavedChanges } from '@/hooks/use-unsaved-changes';
 import { Plus, Trash2, Edit3, Save, X, BookOpen, ChevronUp, ChevronDown, BookCopy } from 'lucide-react';
 import { readVersions } from '@/lib/types/chapter-version';
 import { motion, AnimatePresence } from 'motion/react';
 import { useConfirm } from '@/components/confirm-dialog';
 import { BrassButton, CarvedHeader, EmptyState, ParchmentCard, ParchmentInput, ParchmentTextarea, ParchmentSelect, InkStampButton, WaxSealBadge } from '@/components/antiquarian';
+
+function VersionCount({ chapterId }: { chapterId: string }) {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    readVersions(chapterId).then(v => setCount(v.length));
+  }, [chapterId]);
+  if (count === 0) return null;
+  return (
+    <span className="inline-flex items-center gap-0.5 text-sepia-500">
+      <BookCopy size={10} /> {count} version{count !== 1 ? 's' : ''}
+    </span>
+  );
+}
 
 export default function ManuscriptPage() {
   const { state, updateField } = useStory();
@@ -203,14 +216,7 @@ export default function ManuscriptPage() {
                   </div>
                   <div className="mt-2 flex items-center gap-3 text-xs text-sepia-400 font-mono">
                     <span>{wordCount(chapter.content).toLocaleString()} words</span>
-                    {(() => {
-                      const vCount = readVersions(chapter.id).length;
-                      return vCount > 0 ? (
-                        <span className="inline-flex items-center gap-0.5 text-sepia-500">
-                          <BookCopy size={10} /> {vCount} version{vCount !== 1 ? 's' : ''}
-                        </span>
-                      ) : null;
-                    })()}
+                    <VersionCount chapterId={chapter.id} />
                   </div>
                   {chapter.summary && (
                     <div className="mt-6 pt-4 border-t border-sepia-300/50">

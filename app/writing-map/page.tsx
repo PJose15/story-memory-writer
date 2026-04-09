@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { CarvedHeader, ParchmentCard, FeatureErrorBoundary } from '@/components/antiquarian';
 import { readSessions } from '@/lib/types/writing-session';
 import { CalendarHeatmap } from '@/components/writing-map/calendar-heatmap';
@@ -16,7 +16,8 @@ import { XPBar } from '@/components/gamification/xp-bar';
 import { Flame, Zap } from 'lucide-react';
 
 export default function WritingMapPage() {
-  const [sessions] = useState<WritingSession[]>(() => readSessions());
+  const [sessions, setSessions] = useState<WritingSession[]>([]);
+  useEffect(() => { readSessions().then(setSessions); }, []);
   const { gamification, xpProgress, streak, streakWarning } = useGamification();
 
   const totalWords = sessions.reduce((sum, s) => sum + s.wordsAdded, 0);
