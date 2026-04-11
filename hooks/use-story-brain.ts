@@ -28,14 +28,48 @@ export function useStoryBrain(): UseStoryBrainReturn {
   const { state } = useStory();
   const [resolutions, setResolutions] = useState(() => getResolutions());
 
-  // Memoize analysis — only recompute when story state changes
-  const analysis = useMemo(() => analyzeStoryState(state), [state]);
+  // Memoize analysis — only recompute when story state changes.
+  // Wrap in try/catch so an analyzer crash on malformed state degrades to an
+  // empty analysis instead of unmounting the entire story-brain surface.
+  const analysis = useMemo<StoryBrainAnalysis>(() => {
+    try {
+      return analyzeStoryState(state);
+    } catch (err) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn('[useStoryBrain] analyzeStoryState threw:', err);
+      }
+      return {
+        entities: [],
+        relationships: [],
+        totalMentions: 0,
+        entityCountByType: { character: 0, location: 0, event: 0, conflict: 0 },
+      };
+    }
+  }, [state]);
 
   // Memoize inconsistencies — IDs are now deterministic from data
-  const inconsistencies = useMemo(() => detectInconsistencies(state, analysis), [state, analysis]);
+  const inconsistencies = useMemo<Inconsistency[]>(() => {
+    try {
+      return detectInconsistencies(state, analysis);
+    } catch (err) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn('[useStoryBrain] detectInconsistencies threw:', err);
+      }
+      return [];
+    }
+  }, [state, analysis]);
 
   // Memoize plot holes — IDs are now deterministic from data
-  const plotHoles = useMemo(() => detectPlotHoles(state, analysis), [state, analysis]);
+  const plotHoles = useMemo<PlotHole[]>(() => {
+    try {
+      return detectPlotHoles(state, analysis);
+    } catch (err) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn('[useStoryBrain] detectPlotHoles threw:', err);
+      }
+      return [];
+    }
+  }, [state, analysis]);
 
   // Filter out resolved items
   const resolvedIds = useMemo(
