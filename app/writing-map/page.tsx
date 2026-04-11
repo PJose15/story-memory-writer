@@ -1,10 +1,26 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { CarvedHeader, ParchmentCard, FeatureErrorBoundary } from '@/components/antiquarian';
 import { readSessions } from '@/lib/types/writing-session';
 import { CalendarHeatmap } from '@/components/writing-map/calendar-heatmap';
-import { WordsByHour } from '@/components/writing-map/words-by-hour';
+// Lazy-load WordsByHour (pulls in recharts, ~110 kB). Only needed when the
+// Words-by-Hour section is rendered, which happens below-the-fold.
+const WordsByHour = dynamic(
+  () => import('@/components/writing-map/words-by-hour').then(m => m.WordsByHour),
+  {
+    ssr: false,
+    loading: () => (
+      <div
+        className="h-48 flex items-center justify-center text-sepia-500 text-sm"
+        data-testid="words-by-hour-loading"
+      >
+        Loading hourly patterns…
+      </div>
+    ),
+  }
+);
 import { InsightCard } from '@/components/writing-map/insight-card';
 import { SessionsTable } from '@/components/writing-map/sessions-table';
 import { FlowTimeline } from '@/components/writing-map/flow-timeline';
