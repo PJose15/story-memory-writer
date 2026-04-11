@@ -82,8 +82,9 @@ export function buildContext(state: StoryState, options: BuildContextOptions): C
     }
     if (c.dynamicRelationships?.length) {
       const resolvedRels = c.dynamicRelationships.map(r => {
-        const target = state.characters.find(ch => ch.id === r.targetId)
-          || state.characters.find(ch => ch.name.toLowerCase() === r.targetId.toLowerCase());
+        // Strict ID match only — name fallback was unsafe (could match a
+        // character whose name happened to equal another character's id).
+        const target = state.characters.find(ch => ch.id === r.targetId);
         if (!target) {
           integrityNotes.push(`Orphaned relationship on "${c.name}": targetId "${r.targetId}" does not match any character`);
           return null;

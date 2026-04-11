@@ -84,7 +84,6 @@ export default function ImportPage() {
       setExtractedData(data.extractedData || {});
       setUploadStatus('review');
     } catch (error: unknown) {
-      console.error(error);
       toast(error instanceof Error ? error.message : 'An error occurred during ingestion.', 'error');
       setUploadStatus('idle');
     } finally {

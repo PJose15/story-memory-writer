@@ -147,15 +147,24 @@ export function analyzeStoryState(state: StoryState): StoryBrainAnalysis {
 
 // ─── Helpers ───
 
+// Escape regex metacharacters so searchTerm is matched literally.
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 function countMentions(chapterTexts: string[], searchTerm: string): number {
   if (!searchTerm || searchTerm.length < 2) return 0;
+  // Reject matches flanked by letters/digits so "Alex" isn't counted inside
+  // "Alexandria", while still allowing names that end in punctuation (e.g.
+  // "D.J." followed by whitespace or a sentence break).
+  const re = new RegExp(
+    `(?<![\\p{L}\\p{N}])${escapeRegExp(searchTerm)}(?![\\p{L}\\p{N}])`,
+    'giu'
+  );
   let count = 0;
   for (const text of chapterTexts) {
-    let idx = 0;
-    while ((idx = text.indexOf(searchTerm, idx)) !== -1) {
-      count++;
-      idx += searchTerm.length;
-    }
+    const matches = text.match(re);
+    if (matches) count += matches.length;
   }
   return count;
 }

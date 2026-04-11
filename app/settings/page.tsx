@@ -18,6 +18,56 @@ const ALLOWED_KEYS = new Set<keyof StoryState>([
   'ambiguities', 'chat_messages',
 ]);
 
+// DOS guards for imported payload
+const MAX_IMPORT_FILE_BYTES = 20 * 1024 * 1024; // 20 MB raw file
+const MAX_TITLE = 500;
+const MAX_STRING_FIELD = 10_000;
+const MAX_CHAPTER_COUNT = 1_000;
+const MAX_CHAPTER_CONTENT = 500_000;
+const MAX_ARRAY_ITEMS = 10_000;
+
+function isPlainObject(v: unknown): v is Record<string, unknown> {
+  return typeof v === 'object' && v !== null && !Array.isArray(v);
+}
+
+function validateImportShape(data: unknown): { ok: true } | { ok: false; reason: string } {
+  if (!isPlainObject(data)) return { ok: false, reason: 'root must be an object' };
+  if (typeof data.title !== 'string') return { ok: false, reason: 'title must be a string' };
+  if (data.title.length > MAX_TITLE) return { ok: false, reason: `title exceeds ${MAX_TITLE} characters` };
+  if (!Array.isArray(data.characters)) return { ok: false, reason: 'characters must be an array' };
+  if (!Array.isArray(data.chapters)) return { ok: false, reason: 'chapters must be an array' };
+  if (data.chapters.length > MAX_CHAPTER_COUNT) return { ok: false, reason: `too many chapters (max ${MAX_CHAPTER_COUNT})` };
+  if (data.characters.length > MAX_ARRAY_ITEMS) return { ok: false, reason: `too many characters (max ${MAX_ARRAY_ITEMS})` };
+  for (const ch of data.chapters) {
+    if (!isPlainObject(ch)) return { ok: false, reason: 'each chapter must be an object' };
+    if (typeof ch.content === 'string' && ch.content.length > MAX_CHAPTER_CONTENT) {
+      return { ok: false, reason: `a chapter exceeds ${MAX_CHAPTER_CONTENT} characters` };
+    }
+    if (typeof ch.title === 'string' && ch.title.length > MAX_STRING_FIELD) {
+      return { ok: false, reason: `a chapter title exceeds ${MAX_STRING_FIELD} characters` };
+    }
+  }
+  // Cap common scalar string fields
+  for (const k of ['genre', 'synopsis', 'author_intent', 'language'] as const) {
+    const v = data[k];
+    if (v !== undefined && (typeof v !== 'string' || v.length > MAX_STRING_FIELD)) {
+      return { ok: false, reason: `${k} must be a string under ${MAX_STRING_FIELD} chars` };
+    }
+  }
+  // Cap remaining arrays to prevent balloon state
+  for (const k of [
+    'scenes', 'timeline_events', 'open_loops', 'world_rules',
+    'active_conflicts', 'foreshadowing_elements', 'locations', 'themes',
+    'canon_items', 'ambiguities', 'chat_messages',
+  ] as const) {
+    const v = data[k];
+    if (v !== undefined && (!Array.isArray(v) || v.length > MAX_ARRAY_ITEMS)) {
+      return { ok: false, reason: `${k} must be an array with at most ${MAX_ARRAY_ITEMS} items` };
+    }
+  }
+  return { ok: true };
+}
+
 export default function SettingsPage() {
   const { state, setState, updateField } = useStory();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -27,18 +77,21 @@ export default function SettingsPage() {
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (file.size > MAX_IMPORT_FILE_BYTES) {
+      toast(`Import file is too large (max ${Math.round(MAX_IMPORT_FILE_BYTES / (1024 * 1024))} MB).`, 'error');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
     const reader = new FileReader();
     reader.onload = async (event) => {
       try {
-        const data = JSON.parse(event.target?.result as string);
-        if (
-          typeof data.title !== 'string' ||
-          !Array.isArray(data.characters) ||
-          !Array.isArray(data.chapters)
-        ) {
-          toast('Invalid file: missing or malformed required fields (title, characters, chapters).', 'error');
+        const data: unknown = JSON.parse(event.target?.result as string);
+        const check = validateImportShape(data);
+        if (!check.ok) {
+          toast(`Invalid file: ${check.reason}.`, 'error');
           return;
         }
+        const validated = data as Record<string, unknown>;
         const confirmed = await confirm({
           title: 'Replace project data?',
           message: 'This will replace ALL current project data with the imported file. A backup of your current data will be saved automatically.',
@@ -60,9 +113,9 @@ export default function SettingsPage() {
 
         // Whitelist keys to prevent arbitrary state injection
         const sanitized: Record<string, unknown> = {};
-        for (const key of Object.keys(data)) {
+        for (const key of Object.keys(validated)) {
           if (ALLOWED_KEYS.has(key as keyof StoryState)) {
-            sanitized[key] = data[key];
+            sanitized[key] = validated[key];
           }
         }
         setState((prev) => ({ ...prev, ...sanitized }));

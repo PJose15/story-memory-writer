@@ -230,6 +230,30 @@ describe('analyzeStoryState', () => {
     expect(result.entities[0].mentionCount).toBe(3);
   });
 
+  it('does not count substring matches (word-boundary enforcement)', () => {
+    // "Alex" should NOT be counted inside "Alexandria".
+    const state = makeEmptyState({
+      chapters: [
+        { id: 'ch1', title: '', content: 'Alexandria is a city. Alexander ruled it. Alex arrived late.', summary: '' },
+      ],
+      characters: [{ id: 'c1', name: 'Alex', role: '', description: '', relationships: '' }],
+    });
+    const result = analyzeStoryState(state);
+    // Only the standalone "Alex" should count — not "Alexandria" or "Alexander"
+    expect(result.entities[0].mentionCount).toBe(1);
+  });
+
+  it('escapes regex metacharacters in character names', () => {
+    // A name containing a regex metachar must not explode or over-match.
+    const state = makeEmptyState({
+      chapters: [{ id: 'ch1', title: '', content: 'D.J. arrived. DXJ did not.', summary: '' }],
+      characters: [{ id: 'c1', name: 'D.J.', role: '', description: '', relationships: '' }],
+    });
+    const result = analyzeStoryState(state);
+    // Only literal "D.J." should match, not "DXJ" (which would match if `.` was a regex wildcard).
+    expect(result.entities[0].mentionCount).toBe(1);
+  });
+
   it('handles very short names (< 2 chars) by returning 0 mentions', () => {
     const state = makeEmptyState({
       chapters: [{ id: 'ch1', title: '', content: 'I am here.', summary: '' }],

@@ -207,8 +207,7 @@ export default function AssistantPage() {
       const result = await res.json();
       setPendingAudit({ request: input, result });
 
-    } catch (error) {
-      console.error('Audit error:', error);
+    } catch {
       toast('Failed to perform continuity audit.', 'error');
     } finally {
       setIsAuditing(false);
@@ -288,7 +287,6 @@ export default function AssistantPage() {
 
       setMessages((prev) => [...prev, assistantMsg]);
     } catch (error: unknown) {
-      console.error('Chat error:', error);
       const isAbort = error instanceof DOMException && error.name === 'AbortError';
       if (!isAbort) {
         const errorMsg = error instanceof Error ? error.message : 'Something went wrong';
