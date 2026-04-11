@@ -13,6 +13,7 @@ import {
   EmptyState,
   CharacterAvatar,
   DecorativeDivider,
+  FeatureErrorBoundary,
 } from '@/components/antiquarian';
 import { GenesisGuard } from '@/components/genesis/genesis-guard';
 import { useGamification } from '@/hooks/use-gamification';
@@ -84,7 +85,7 @@ function StoryAnatomyBar({ chapters, characters, events, conflicts }: {
   return (
     <motion.div {...fadeUp}>
       <div className="flex items-center gap-3 mb-3">
-        <Flame size={16} className="text-brass-600" />
+        <Flame aria-hidden="true" size={16} className="text-brass-600" />
         <h2 className="text-sm font-serif font-semibold text-sepia-700 uppercase tracking-wider">Story Anatomy</h2>
         <DecorativeDivider variant="section" className="flex-1" />
       </div>
@@ -115,31 +116,44 @@ function StoryAnatomyBar({ chapters, characters, events, conflicts }: {
 
 // ─── Story Health Card ───
 function StoryHealthCard() {
-  // Lazy import to avoid SSR issues with localStorage
+  // Lazy import analysis modules to avoid bloating the dashboard bundle.
+  // Modules are loaded in parallel (not waterfall) and cancelled on unmount.
   const [counts, setCounts] = React.useState<{ unresolved: number; plotHoles: number } | null>(null);
+
   React.useEffect(() => {
-    import('@/lib/story-brain/analyzer').then(({ analyzeStoryState }) =>
-      import('@/lib/story-brain/inconsistency-detector').then(({ detectInconsistencies }) =>
-        import('@/lib/story-brain/plot-hole-detector').then(({ detectPlotHoles }) =>
-          import('@/lib/story-brain/resolutions').then(({ getResolutions }) => {
-            // Access state from localStorage directly for dashboard summary
-            try {
-              const raw = localStorage.getItem('zagafy_state');
-              if (!raw) return;
-              const state = JSON.parse(raw);
-              const analysis = analyzeStoryState(state);
-              const incs = detectInconsistencies(state, analysis);
-              const phs = detectPlotHoles(state, analysis);
-              const resolved = new Set(getResolutions().map(r => r.inconsistencyId));
-              setCounts({
-                unresolved: incs.filter(i => !resolved.has(i.id)).length,
-                plotHoles: phs.filter(p => !resolved.has(p.id)).length,
-              });
-            } catch { /* ignore */ }
-          })
-        )
-      )
-    );
+    let cancelled = false;
+    (async () => {
+      try {
+        const [
+          { analyzeStoryState },
+          { detectInconsistencies },
+          { detectPlotHoles },
+          { getResolutions },
+        ] = await Promise.all([
+          import('@/lib/story-brain/analyzer'),
+          import('@/lib/story-brain/inconsistency-detector'),
+          import('@/lib/story-brain/plot-hole-detector'),
+          import('@/lib/story-brain/resolutions'),
+        ]);
+        if (cancelled) return;
+        // Access state from localStorage directly for dashboard summary
+        const raw = localStorage.getItem('zagafy_state');
+        if (!raw) return;
+        const state = JSON.parse(raw);
+        const analysis = analyzeStoryState(state);
+        const incs = detectInconsistencies(state, analysis);
+        const phs = detectPlotHoles(state, analysis);
+        const resolved = new Set(getResolutions().map(r => r.inconsistencyId));
+        if (cancelled) return;
+        setCounts({
+          unresolved: incs.filter(i => !resolved.has(i.id)).length,
+          plotHoles: phs.filter(p => !resolved.has(p.id)).length,
+        });
+      } catch {
+        // Silently swallow — dashboard summary is non-critical.
+      }
+    })();
+    return () => { cancelled = true; };
   }, []);
 
   if (!counts || (counts.unresolved === 0 && counts.plotHoles === 0)) return null;
@@ -150,7 +164,7 @@ function StoryHealthCard() {
       <motion.div {...fadeUp} {...hoverLift}>
         <ParchmentCard padding="lg" hover className="cursor-pointer border-l-4 border-l-wax-500">
           <div className="flex items-center gap-3">
-            <BrainCircuit size={20} className="text-wax-500 shrink-0" />
+            <BrainCircuit aria-hidden="true" size={20} className="text-wax-500 shrink-0" />
             <div>
               <p className="text-sm font-medium text-sepia-800">
                 {total} story health issue{total !== 1 ? 's' : ''} detected
@@ -243,7 +257,7 @@ export default function Dashboard() {
           <motion.div {...stagger.cards(0)} {...hoverLift}>
             <ParchmentCard padding="lg" hover className="group cursor-pointer">
               <div className="flex items-center justify-between mb-3">
-                <BookOpen className="text-brass-600 group-hover:text-brass-500 transition-colors" size={22} />
+                <BookOpen aria-hidden="true" className="text-brass-600 group-hover:text-brass-500 transition-colors" size={22} />
                 <span className="text-3xl font-light text-sepia-900">{state.chapters.length}</span>
               </div>
               <h3 className="text-xs font-medium text-sepia-600 uppercase tracking-wider">Chapters</h3>
@@ -259,7 +273,7 @@ export default function Dashboard() {
           <motion.div {...stagger.cards(1)} {...hoverLift}>
             <ParchmentCard padding="lg" hover className="group cursor-pointer">
               <div className="flex items-center justify-between mb-3">
-                <Users className="text-brass-600 group-hover:text-brass-500 transition-colors" size={22} />
+                <Users aria-hidden="true" className="text-brass-600 group-hover:text-brass-500 transition-colors" size={22} />
                 <span className="text-3xl font-light text-sepia-900">{state.characters.length}</span>
               </div>
               <h3 className="text-xs font-medium text-sepia-600 uppercase tracking-wider">Characters</h3>
@@ -282,7 +296,7 @@ export default function Dashboard() {
           <motion.div {...stagger.cards(2)} {...hoverLift}>
             <ParchmentCard padding="lg" hover className="group cursor-pointer">
               <div className="flex items-center justify-between mb-3">
-                <Clock className="text-brass-600 group-hover:text-brass-500 transition-colors" size={22} />
+                <Clock aria-hidden="true" className="text-brass-600 group-hover:text-brass-500 transition-colors" size={22} />
                 <span className="text-3xl font-light text-sepia-900">{state.timeline_events.length}</span>
               </div>
               <h3 className="text-xs font-medium text-sepia-600 uppercase tracking-wider">Timeline Events</h3>
@@ -310,7 +324,7 @@ export default function Dashboard() {
           <motion.div {...stagger.cards(3)} {...hoverLift}>
             <ParchmentCard padding="lg" hover className="group cursor-pointer">
               <div className="flex items-center justify-between mb-3">
-                <Swords className="text-brass-600 group-hover:text-brass-500 transition-colors" size={22} />
+                <Swords aria-hidden="true" className="text-brass-600 group-hover:text-brass-500 transition-colors" size={22} />
                 <span className="text-3xl font-light text-sepia-900">{state.active_conflicts.length}</span>
               </div>
               <h3 className="text-xs font-medium text-sepia-600 uppercase tracking-wider">Conflicts</h3>
@@ -339,12 +353,16 @@ export default function Dashboard() {
       </div>
 
       {/* ── Gamification ── */}
-      <Suspense fallback={<GamificationSkeleton />}>
-        <DashboardGamification />
-      </Suspense>
+      <FeatureErrorBoundary title="Writing Progress">
+        <Suspense fallback={<GamificationSkeleton />}>
+          <DashboardGamification />
+        </Suspense>
+      </FeatureErrorBoundary>
 
       {/* ── Story Health ── */}
-      <StoryHealthCard />
+      <FeatureErrorBoundary title="Story Health">
+        <StoryHealthCard />
+      </FeatureErrorBoundary>
 
       {/* ── Story Anatomy ── */}
       <StoryAnatomyBar

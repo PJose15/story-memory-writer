@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useStory, ChatMessage } from '@/lib/store';
 import { useSession } from '@/lib/session';
-import { Send, Bot, User, Loader2, ShieldAlert, X, AlertTriangle, CheckCircle2, LockKeyhole, Trash2, Feather, BookOpen } from 'lucide-react';
+import { Send, Bot, User, Loader2, ShieldAlert, X, AlertTriangle, CheckCircle2, LockKeyhole, Trash2, Feather, BookOpen, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import Markdown from 'react-markdown';
 import { useToast } from '@/components/toast';
@@ -103,6 +103,11 @@ export default function AssistantPage() {
   const { confirm } = useConfirm();
   const [messages, setMessages] = useState<Message[]>([welcomeMessage]);
   const hasLoadedRef = useRef(false);
+  // Render window: show only the tail of the conversation to avoid rendering
+  // thousands of Markdown bubbles + motion nodes. User can expand in chunks.
+  const MESSAGE_WINDOW_INITIAL = 50;
+  const MESSAGE_WINDOW_STEP = 50;
+  const [visibleCount, setVisibleCount] = useState(MESSAGE_WINDOW_INITIAL);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isAuditing, setIsAuditing] = useState(false);
@@ -127,6 +132,20 @@ export default function AssistantPage() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Derived window: last N messages, with count of hidden older messages
+  const { windowedMessages, hiddenCount } = useMemo(() => {
+    const total = messages.length;
+    const shown = Math.min(visibleCount, total);
+    return {
+      windowedMessages: messages.slice(total - shown),
+      hiddenCount: total - shown,
+    };
+  }, [messages, visibleCount]);
+
+  const handleLoadEarlier = () => {
+    setVisibleCount((n) => n + MESSAGE_WINDOW_STEP);
+  };
 
   // Abort any in-flight request on unmount
   useEffect(() => {
@@ -155,6 +174,7 @@ export default function AssistantPage() {
     if (!confirmed) return;
     setMessages([welcomeMessage]);
     setPendingAudit(null);
+    setVisibleCount(MESSAGE_WINDOW_INITIAL);
   };
 
   const handleAudit = async () => {
@@ -323,8 +343,20 @@ export default function AssistantPage() {
 
       {/* ─── Messages ─── */}
       <div className="flex-1 overflow-y-auto space-y-5 pr-2 pb-4 scrollbar-thin">
+        {hiddenCount > 0 && (
+          <div className="flex justify-center pt-2">
+            <button
+              onClick={handleLoadEarlier}
+              className="inline-flex items-center gap-2 text-xs font-medium text-sepia-600 hover:text-sepia-800 bg-parchment-200 hover:bg-parchment-300 border border-sepia-300/50 hover:border-brass-400/40 rounded-full px-4 py-2 transition-all active:scale-95"
+              aria-label={`Load ${Math.min(MESSAGE_WINDOW_STEP, hiddenCount)} earlier messages`}
+            >
+              <ChevronUp size={14} />
+              Load earlier messages ({hiddenCount} hidden)
+            </button>
+          </div>
+        )}
         <AnimatePresence initial={false}>
-          {messages.slice(-200).map((msg) => (
+          {windowedMessages.map((msg) => (
             <motion.div
               key={msg.id}
               initial={{ opacity: 0, y: 12 }}

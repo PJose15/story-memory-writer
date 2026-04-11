@@ -24,6 +24,12 @@ export default function SprintsPage() {
 
   const stats = useMemo(() => getSprintStats(gamification.sprints.sprintHistory), [gamification.sprints.sprintHistory]);
 
+  // Memoize reversed history slice — avoids creating a new array on every render
+  const recentSprints = useMemo(
+    () => gamification.sprints.sprintHistory.slice().reverse().slice(0, 10),
+    [gamification.sprints.sprintHistory]
+  );
+
   // H8: Use ref for latest totalWords to avoid stale closure
   const totalWordsRef = useRef(totalWords);
   useEffect(() => { totalWordsRef.current = totalWords; }, [totalWords]);
@@ -104,7 +110,7 @@ export default function SprintsPage() {
         <section className="space-y-3">
           <h2 className="text-sm font-serif font-semibold text-sepia-700 uppercase tracking-wider">History</h2>
           <div className="space-y-2">
-            {gamification.sprints.sprintHistory.slice().reverse().slice(0, 10).map((sprint) => {
+            {recentSprints.map((sprint) => {
               const config = getThemeConfig(sprint.theme);
               return (
                 <ParchmentCard key={sprint.id} padding="sm">

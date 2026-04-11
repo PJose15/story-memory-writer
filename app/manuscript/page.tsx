@@ -1,7 +1,7 @@
 'use client';
 
 import { useStory, Chapter, CanonStatus } from '@/lib/store';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useUnsavedChanges } from '@/hooks/use-unsaved-changes';
 import { Plus, Trash2, Edit3, Save, X, BookOpen, ChevronUp, ChevronDown, BookCopy } from 'lucide-react';
 import { readVersions } from '@/lib/types/chapter-version';
@@ -95,6 +95,12 @@ export default function ManuscriptPage() {
     return trimmed.split(/\s+/).length;
   };
 
+  // Memoize total word count — otherwise reduces over every chapter on every render
+  const totalWordCount = useMemo(
+    () => state.chapters.reduce((sum, c) => sum + wordCount(c.content), 0),
+    [state.chapters]
+  );
+
   return (
     <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-8">
       <CarvedHeader
@@ -104,7 +110,7 @@ export default function ManuscriptPage() {
             Write and organize your chapters.
             {state.chapters.length > 0 && (
               <span className="ml-2 text-sepia-500 font-mono">
-                {state.chapters.reduce((sum, c) => sum + wordCount(c.content), 0).toLocaleString()} total words
+                {totalWordCount.toLocaleString()} total words
               </span>
             )}
           </>

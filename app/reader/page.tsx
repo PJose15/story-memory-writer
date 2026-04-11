@@ -9,7 +9,7 @@ import { KindleView } from '@/components/reader/kindle-view';
 import { AudiobookView } from '@/components/reader/audiobook-view';
 import { analyzeText } from '@/lib/prose-analysis';
 import type { ProseIssue } from '@/lib/prose-analysis';
-import { EmptyState } from '@/components/antiquarian';
+import { EmptyState, FeatureErrorBoundary } from '@/components/antiquarian';
 
 type ReaderMode = 'print' | 'kindle' | 'audiobook';
 
@@ -55,6 +55,7 @@ export default function ReaderPage() {
   }
 
   return (
+    <FeatureErrorBoundary title="Reader Analysis">
     <ReaderLayout
       chapters={chapters.map(ch => ({ id: ch.id, title: ch.title }))}
       currentChapterIndex={chapterIndex}
@@ -83,5 +84,6 @@ export default function ReaderPage() {
       {mode === 'kindle' && <KindleView title={chapter.title} content={chapter.content} issues={issues} />}
       {mode === 'audiobook' && <AudiobookView title={chapter.title} content={chapter.content} />}
     </ReaderLayout>
+    </FeatureErrorBoundary>
   );
 }

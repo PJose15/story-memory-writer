@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useMemo, useState, useRef } from 'react';
 import { useStory, type CharacterState } from '@/lib/store';
 import type { ExtractedData, ExtractedChapter, ExtractedCharacter, ExtractedCharacterState, ExtractedRelationship, ExtractedConflict, ExtractedTimelineEvent, ExtractedWorldRule, ExtractedLocation, ExtractedTheme, ExtractedCanonItem, ExtractedAmbiguity, ExtractedOpenLoop, ExtractedForeshadowing, ExtractedScene } from '@/lib/types/extracted-data';
 import { UploadCloud, FileText, CheckCircle2, AlertCircle, Loader2, ArrowRight, Save, X, ChevronUp, ChevronDown } from 'lucide-react';
@@ -18,6 +18,19 @@ export default function ImportPage() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+
+  // Memoized index: character ref (id OR name) → character_state for O(1) lookup during review render
+  const characterStateByRef = useMemo(() => {
+    const map = new Map<string, ExtractedCharacterState>();
+    for (const s of extractedData?.character_states || []) {
+      if (s.character_id) map.set(s.character_id, s);
+      if (s.name) map.set(s.name, s);
+    }
+    return map;
+  }, [extractedData?.character_states]);
+
+  const lookupState = (c: ExtractedCharacter): ExtractedCharacterState | undefined =>
+    (c.character_id && characterStateByRef.get(c.character_id)) || (c.name ? characterStateByRef.get(c.name) : undefined);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -79,17 +92,30 @@ export default function ImportPage() {
     }
   };
 
+  // Deduplicates incoming against existing AND against itself. O(n+m).
   const dedup = <T,>(existing: T[], incoming: T[], key: keyof T): T[] => {
-    const existingKeys = new Set(existing.map(item => String(item[key]).toLowerCase().trim()));
-    return incoming.filter(item => !existingKeys.has(String(item[key]).toLowerCase().trim()));
+    const normalize = (item: T) => String(item[key] ?? '').toLowerCase().trim();
+    const seen = new Set<string>(existing.map(normalize));
+    const out: T[] = [];
+    for (const item of incoming) {
+      const k = normalize(item);
+      if (!k || seen.has(k)) continue;
+      seen.add(k);
+      out.push(item);
+    }
+    return out;
   };
 
   const handleConfirmImport = () => {
     if (!extractedData) return;
 
-    // Build stable ID map so relationships resolve correctly
+    const rawCharacters = extractedData.characters || [];
+    const rawRelationships = extractedData.relationships || [];
+    const rawCharacterStates = extractedData.character_states || [];
+
+    // Pre-index: character name/id → stable UUID (O(C))
     const charIdMap = new Map<string, string>();
-    for (const c of (extractedData.characters || [])) {
+    for (const c of rawCharacters) {
       if (!c.name) continue;
       const id = c.character_id || crypto.randomUUID();
       charIdMap.set(c.name, id);
@@ -100,20 +126,54 @@ export default function ImportPage() {
     const resolveCharId = (ref: string): string | undefined =>
       charIdMap.get(ref) || charIdMap.get(ref.toLowerCase());
 
-    // Merge Characters
-    const newCharacters = (extractedData.characters || []).map((c: ExtractedCharacter) => {
-      const charState = extractedData.character_states?.find((s: ExtractedCharacterState) => s.character_id === c.character_id || s.name === c.name);
+    // Pre-index: ref (name or character_id) → character (O(C))
+    const charByRef = new Map<string, ExtractedCharacter>();
+    for (const c of rawCharacters) {
+      if (c.name) charByRef.set(c.name, c);
+      if (c.character_id) charByRef.set(c.character_id, c);
+    }
+
+    // Pre-index: character_states keyed by character_id AND name (O(S))
+    const stateByRef = new Map<string, ExtractedCharacterState>();
+    for (const s of rawCharacterStates) {
+      if (s.character_id) stateByRef.set(s.character_id, s);
+      if (s.name) stateByRef.set(s.name, s);
+    }
+
+    // Pre-index: relationships grouped by source/target ref (O(R))
+    const relsBySource = new Map<string, ExtractedRelationship[]>();
+    const relsByTarget = new Map<string, ExtractedRelationship[]>();
+    const pushRel = (map: Map<string, ExtractedRelationship[]>, key: string | undefined, rel: ExtractedRelationship) => {
+      if (!key) return;
+      const arr = map.get(key);
+      if (arr) arr.push(rel);
+      else map.set(key, [rel]);
+    };
+    for (const r of rawRelationships) {
+      pushRel(relsBySource, r.character_1, r);
+      pushRel(relsByTarget, r.character_2, r);
+    }
+    const getRelsFor = (map: Map<string, ExtractedRelationship[]>, name?: string, id?: string): ExtractedRelationship[] => {
+      const a = name ? map.get(name) : undefined;
+      const b = id && id !== name ? map.get(id) : undefined;
+      if (a && b) return [...a, ...b];
+      return a || b || [];
+    };
+
+    // Merge Characters — now O(C + R) instead of O(C² · R)
+    const newCharacters = rawCharacters.map((c: ExtractedCharacter) => {
+      const charState = (c.character_id && stateByRef.get(c.character_id)) || (c.name ? stateByRef.get(c.name) : undefined);
       const charId = charIdMap.get(c.name!) || crypto.randomUUID();
 
       // Find relationships where this character is character_1
-      const relsAsSource = (extractedData.relationships || [])
-        .filter((r: ExtractedRelationship) => r.character_1 === c.name || r.character_1 === c.character_id)
+      const relsAsSource = getRelsFor(relsBySource, c.name, c.character_id)
         .map((r: ExtractedRelationship) => {
           const resolvedId = resolveCharId(r.character_2!);
           if (!resolvedId) return null; // Skip unresolvable relationships
+          const targetChar = charByRef.get(r.character_2!);
           return {
             targetId: resolvedId,
-            targetName: (extractedData.characters?.find((tc: ExtractedCharacter) => tc.name === r.character_2 || tc.character_id === r.character_2))?.name || r.character_2,
+            targetName: targetChar?.name || r.character_2,
             trustLevel: r.trust_level || 50,
             tensionLevel: r.tension_level || 50,
             dynamics: r.current_dynamic || r.relationship_type || ''
@@ -121,14 +181,14 @@ export default function ImportPage() {
         }).filter(Boolean);
 
       // Find relationships where this character is character_2 (inverse)
-      const relsAsTarget = (extractedData.relationships || [])
-        .filter((r: ExtractedRelationship) => r.character_2 === c.name || r.character_2 === c.character_id)
+      const relsAsTarget = getRelsFor(relsByTarget, c.name, c.character_id)
         .map((r: ExtractedRelationship) => {
           const resolvedId = resolveCharId(r.character_1!);
           if (!resolvedId) return null; // Skip unresolvable relationships
+          const sourceChar = charByRef.get(r.character_1!);
           return {
             targetId: resolvedId,
-            targetName: (extractedData.characters?.find((tc: ExtractedCharacter) => tc.name === r.character_1 || tc.character_id === r.character_1))?.name || r.character_1,
+            targetName: sourceChar?.name || r.character_1,
             trustLevel: r.trust_level || 50,
             tensionLevel: r.tension_level || 50,
             dynamics: r.current_dynamic || r.relationship_type || ''
@@ -482,7 +542,9 @@ export default function ImportPage() {
                 <span className="bg-parchment-200 text-sepia-700 px-2 py-0.5 rounded text-xs">{extractedData.characters?.length || 0}</span>
               </h4>
               <ul className="space-y-3 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
-                {(extractedData.characters || []).map((c: ExtractedCharacter, i: number) => (
+                {(extractedData.characters || []).map((c: ExtractedCharacter, i: number) => {
+                  const charState = lookupState(c);
+                  return (
                   <li key={i} className="bg-parchment-200 p-3 rounded-lg border border-sepia-300/30 relative group">
                     <button
                       onClick={() => setExtractedData({ ...extractedData, characters: (extractedData.characters || []).filter((_: ExtractedCharacter, idx: number) => idx !== i) })}
@@ -517,27 +579,28 @@ export default function ImportPage() {
                     <p className="text-xs text-sepia-500 line-clamp-2 px-1 mb-2">{c.description}</p>
 
                     {/* Character State (if available) */}
-                    {extractedData.character_states?.find((s: ExtractedCharacterState) => s.character_id === c.character_id || s.name === c.name) && (
+                    {charState && (
                       <div className="mt-2 pt-2 border-t border-sepia-300/30">
                         <span className="text-[10px] text-sepia-500 uppercase tracking-wider mb-1 block">Current State</span>
                         <div className="grid grid-cols-2 gap-2 text-xs">
                           <div>
-                            <span className="text-sepia-400">Goal:</span> <span className="text-sepia-600">{extractedData.character_states?.find((s: ExtractedCharacterState) => s.character_id === c.character_id || s.name === c.name)?.visible_goal}</span>
+                            <span className="text-sepia-400">Goal:</span> <span className="text-sepia-600">{charState.visible_goal}</span>
                           </div>
                           <div>
-                            <span className="text-sepia-400">Need:</span> <span className="text-sepia-600">{extractedData.character_states?.find((s: ExtractedCharacterState) => s.character_id === c.character_id || s.name === c.name)?.hidden_need}</span>
+                            <span className="text-sepia-400">Need:</span> <span className="text-sepia-600">{charState.hidden_need}</span>
                           </div>
                           <div>
-                            <span className="text-sepia-400">Emotion:</span> <span className="text-sepia-600">{extractedData.character_states?.find((s: ExtractedCharacterState) => s.character_id === c.character_id || s.name === c.name)?.current_emotional_state}</span>
+                            <span className="text-sepia-400">Emotion:</span> <span className="text-sepia-600">{charState.current_emotional_state}</span>
                           </div>
                           <div>
-                            <span className="text-sepia-400">Pressure:</span> <span className="text-sepia-600">{extractedData.character_states?.find((s: ExtractedCharacterState) => s.character_id === c.character_id || s.name === c.name)?.current_pressure_level}</span>
+                            <span className="text-sepia-400">Pressure:</span> <span className="text-sepia-600">{charState.current_pressure_level}</span>
                           </div>
                         </div>
                       </div>
                     )}
                   </li>
-                ))}
+                  );
+                })}
               </ul>
             </ParchmentCard>
 
