@@ -1,11 +1,20 @@
 'use client';
 
 import { useState, useRef, useEffect, useMemo } from 'react';
+import dynamic from 'next/dynamic';
 import { useStory, ChatMessage } from '@/lib/store';
 import { useSession } from '@/lib/session';
 import { Send, Bot, User, Loader2, ShieldAlert, X, AlertTriangle, CheckCircle2, LockKeyhole, Trash2, Feather, BookOpen, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import Markdown from 'react-markdown';
+
+// Lazy-load react-markdown. Only used as a legacy fallback for messages
+// without structured data; most replies render via StructuredNormal/Blocked
+// which also dynamic-import Markdown. Keeps remark/rehype/micromark off the
+// /assistant First Load JS.
+const Markdown = dynamic(() => import('react-markdown'), {
+  ssr: false,
+  loading: () => <span className="text-xs italic text-sepia-400">…</span>,
+});
 import { useToast } from '@/components/toast';
 import { useConfirm } from '@/components/confirm-dialog';
 import { buildContext } from '@/lib/ai/context-builder';

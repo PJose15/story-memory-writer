@@ -1,9 +1,17 @@
 'use client';
 
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { ChevronDown, ChevronRight, AlertTriangle, Info } from 'lucide-react';
-import Markdown from 'react-markdown';
 import type { ChatResponseNormal, ChatResponseBlocked } from '@/lib/types/chat-response';
+
+// Lazy-load react-markdown. Structured responses are only rendered after the
+// user sends a message and receives a reply, so the first paint of /assistant
+// doesn't need the markdown renderer (or remark/rehype/micromark).
+const Markdown = dynamic(() => import('react-markdown'), {
+  ssr: false,
+  loading: () => <span className="text-xs italic text-sepia-400">…</span>,
+});
 
 interface StructuredNormalResponseProps {
   data: ChatResponseNormal;
