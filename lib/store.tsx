@@ -243,7 +243,12 @@ export function StoryProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<StoryState>(defaultState);
   const [isLoaded, setIsLoaded] = useState(false);
   const channelRef = useRef<BroadcastChannel | null>(null);
-  const applyingRemoteRef = useRef(false);
+  // Tracks the last state snapshot applied from another tab. The persist
+  // effect compares by reference: if state === lastRemoteStateRef.current,
+  // we skip persisting (avoid echo loop). Using a snapshot ref instead of a
+  // boolean flag closes an edge case where a second remote message arrived
+  // before the persist effect ran and the flag had been consumed.
+  const lastRemoteStateRef = useRef<StoryState | null>(null);
 
   useEffect(() => {
     async function loadState() {
@@ -279,9 +284,11 @@ export function StoryProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!isLoaded) return;
 
-    // Skip persisting state we just applied from another tab (avoid echo loop)
-    if (applyingRemoteRef.current) {
-      applyingRemoteRef.current = false;
+    // Skip persisting state we just applied from another tab (avoid echo loop).
+    // Reference equality: if the current state IS the snapshot we applied from a
+    // remote message, don't re-persist it. The user hasn't made any changes yet.
+    if (lastRemoteStateRef.current === state) {
+      lastRemoteStateRef.current = null;
       return;
     }
 
@@ -334,18 +341,30 @@ export function StoryProvider({ children }: { children: React.ReactNode }) {
     }
     channelRef.current = channel;
 
+    // Debounce remote hydration so a burst of write-notifications from another
+    // tab only triggers one Dexie read.
+    let hydrateTimer: ReturnType<typeof setTimeout> | null = null;
+    const scheduleHydrate = () => {
+      if (hydrateTimer) clearTimeout(hydrateTimer);
+      hydrateTimer = setTimeout(() => {
+        hydrateTimer = null;
+        hydrateFromDexie().then(next => {
+          lastRemoteStateRef.current = next;
+          setState(next);
+        }).catch(() => {
+          // Ignore — remote rehydration failed
+        });
+      }, 250);
+    };
+
     const handleMessage = (e: MessageEvent) => {
       if (!e.data || e.data.type !== 'state-updated') return;
-      hydrateFromDexie().then(next => {
-        applyingRemoteRef.current = true;
-        setState(next);
-      }).catch(() => {
-        // Ignore — remote rehydration failed
-      });
+      scheduleHydrate();
     };
 
     channel.addEventListener('message', handleMessage);
     return () => {
+      if (hydrateTimer) clearTimeout(hydrateTimer);
       channel.removeEventListener('message', handleMessage);
       channel.close();
       channelRef.current = null;

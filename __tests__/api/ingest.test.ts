@@ -140,6 +140,22 @@ describe('POST /api/ingest', () => {
     expect(body.error).toMatch(/Too many files/);
   });
 
+  it('rejects combined text exceeding MAX_TOTAL_TEXT with 413', async () => {
+    // 3 files × 800K chars = 2.4M combined (> 2M cap)
+    const chunk = 'a'.repeat(800_000);
+    const files = [
+      { name: 'a.txt', content: chunk },
+      { name: 'b.txt', content: chunk },
+      { name: 'c.txt', content: chunk },
+    ];
+    const res = await POST(makeFormRequest(files));
+    expect(res.status).toBe(413);
+    const body = await res.json();
+    expect(body.error).toMatch(/Combined manuscript text is too large/);
+    // AI should not have been called
+    expect(mockGenerateContent).not.toHaveBeenCalled();
+  });
+
   it('processes a valid .txt file successfully', async () => {
     const extractedData = makeExtractedData();
 

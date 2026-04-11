@@ -482,6 +482,10 @@ export const maxDuration = 300;
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB per file
 const MAX_FILES = 10;
 const ALLOWED_EXTENSIONS = ['.pdf', '.docx', '.txt', '.md'];
+// Aggregate guards: prevent DOS / cost-explosion from many large files summing into
+// hundreds of MB of combined text (which would split into thousands of Gemini chunks).
+const MAX_TOTAL_TEXT = 2_000_000; // ~2M chars (~10 large chunks)
+const MAX_CHUNKS = 20;
 
 export async function POST(req: NextRequest) {
   const limited = await rateLimit(req, { maxRequests: 5, windowMs: 60000 });
@@ -557,6 +561,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No text could be extracted from the uploaded files.', fileParsingStatus }, { status: 400 });
     }
 
+    if (combinedText.length > MAX_TOTAL_TEXT) {
+      return NextResponse.json(
+        {
+          error: `Combined manuscript text is too large (${combinedText.length.toLocaleString()} chars, max ${MAX_TOTAL_TEXT.toLocaleString()}). Please upload a smaller subset of files.`,
+          fileParsingStatus,
+        },
+        { status: 413 }
+      );
+    }
+
     // 2. Split into chunks and analyze with Gemini
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
@@ -566,6 +580,16 @@ export async function POST(req: NextRequest) {
     const ai = new GoogleGenAI({ apiKey });
     const systemPrompt = buildSystemPrompt(language);
     const chunks = splitTextIntoChunks(combinedText);
+
+    if (chunks.length > MAX_CHUNKS) {
+      return NextResponse.json(
+        {
+          error: `Manuscript splits into too many processing chunks (${chunks.length}, max ${MAX_CHUNKS}). Please upload a smaller subset of files.`,
+          fileParsingStatus,
+        },
+        { status: 413 }
+      );
+    }
 
     console.log(`Processing ${chunks.length} chunk(s), total ${combinedText.length} characters`);
 
