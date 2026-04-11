@@ -1,5 +1,6 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import {
   Activity,
   AlertCircle,
@@ -13,8 +14,17 @@ import {
   Trash2,
   Users,
 } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
 import type { Character } from '@/lib/store';
+
+// Lazy-load ReactMarkdown — only needed when a user expands a character card
+// AND clicks "Run Audit". Most sessions never render it, so keep it off the
+// initial /characters bundle (saves react-markdown + remark/rehype/micromark).
+const ReactMarkdown = dynamic(() => import('react-markdown'), {
+  ssr: false,
+  loading: () => (
+    <span className="text-xs italic text-sepia-400">Loading renderer…</span>
+  ),
+});
 import { CharacterAvatar, DecorativeDivider } from '@/components/antiquarian';
 import { indicatorConfig, statusConfig } from './constants';
 
