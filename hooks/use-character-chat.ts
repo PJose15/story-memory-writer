@@ -13,7 +13,6 @@ import {
   addInsight,
   markInsightAsCanon as markCanon,
 } from '@/lib/types/character-chat';
-import { buildSystemPrompt } from '@/lib/prompts/character-chat';
 import { useStory } from '@/lib/store';
 
 export function useCharacterChat(characterId: string | null) {
@@ -119,18 +118,29 @@ export function useCharacterChat(characterId: string | null) {
     abortRef.current = new AbortController();
 
     try {
-      const systemPrompt = buildSystemPrompt(character, mode);
       const characterMessages = updatedMessages.filter(m => m.role === 'character');
       const shouldGenerateInsight = characterMessages.length >= 5;
+
+      // Send a structured character payload — server builds the system prompt
+      // server-side from these fields. This prevents the route from being
+      // abused as an open Anthropic proxy via a client-supplied systemPrompt.
+      const characterPayload = {
+        id: character.id,
+        name: character.name,
+        role: character.role,
+        description: character.description,
+        coreIdentity: character.coreIdentity,
+        relationships: character.relationships,
+        currentState: character.currentState,
+      };
 
       const res = await fetch('/api/character-chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          characterName: character.name,
           message: content.trim(),
           mode,
-          systemPrompt,
+          character: characterPayload,
           messages: updatedMessages.map(m => ({ role: m.role, content: m.content })),
           generateInsight: shouldGenerateInsight,
         }),
