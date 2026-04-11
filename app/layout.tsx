@@ -26,20 +26,13 @@ export const metadata: Metadata = {
     description: 'Your antiquarian narrative workshop.',
     type: 'website',
     siteName: 'Zagafy',
-    images: [
-      {
-        url: '/og-image.png',
-        width: 1200,
-        height: 630,
-        alt: 'Zagafy — Your antiquarian narrative workshop',
-      },
-    ],
+    // og:image is provided by app/opengraph-image.tsx (Next.js file convention)
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Zagafy',
     description: 'Your antiquarian narrative workshop.',
-    images: ['/og-image.png'],
+    // twitter:image is provided by app/twitter-image.tsx (Next.js file convention)
   },
 };
 
