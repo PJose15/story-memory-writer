@@ -4,9 +4,11 @@ import React from 'react';
 import type { PlotHole } from '@/lib/story-brain/plot-hole-types';
 import type { InconsistencyResolution } from '@/lib/story-brain/types';
 
-// Mock lucide-react
-vi.mock('lucide-react', () => new Proxy({}, {
-  get: (_, name) => (props: any) => <span data-testid={`icon-${String(name).toLowerCase()}`} {...props} />,
+// Mock lucide-react with explicit named exports. Vitest 4 validates mock exports against
+// ownKeys, so a Proxy-based catch-all mock ({} target) crashes the worker during module init.
+vi.mock('lucide-react', () => ({
+  ChevronDown: (props: any) => <span data-testid="icon-chevrondown" {...props} />,
+  ChevronRight: (props: any) => <span data-testid="icon-chevronright" {...props} />,
 }));
 
 // Mock PlotHoleCard

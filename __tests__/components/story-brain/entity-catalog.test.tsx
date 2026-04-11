@@ -21,9 +21,14 @@ vi.mock('motion/react', () => ({
   },
 }));
 
-// Mock lucide-react
-vi.mock('lucide-react', () => new Proxy({}, {
-  get: (_, name) => (props: any) => <span data-testid={`icon-${String(name).toLowerCase()}`} {...props} />,
+// Mock lucide-react with explicit named exports. Vitest 4 validates mock exports against
+// ownKeys, so a Proxy-based catch-all mock ({} target) crashes the worker during module init.
+vi.mock('lucide-react', () => ({
+  Search: (props: any) => <span data-testid="icon-search" {...props} />,
+  Users: (props: any) => <span data-testid="icon-users" {...props} />,
+  MapPin: (props: any) => <span data-testid="icon-mappin" {...props} />,
+  CalendarDays: (props: any) => <span data-testid="icon-calendardays" {...props} />,
+  Swords: (props: any) => <span data-testid="icon-swords" {...props} />,
 }));
 
 // Mock animations
@@ -65,9 +70,9 @@ describe('EntityCatalog', () => {
     render(<EntityCatalog entities={entities} />);
     expect(screen.getByText('Alice')).toBeDefined();
     expect(screen.getByText('Castle')).toBeDefined();
-    // Group headers
-    expect(screen.getByText(/Characters/)).toBeDefined();
-    expect(screen.getByText(/Locations/)).toBeDefined();
+    // Group headers (h3) — disambiguate from filter button with same label
+    expect(screen.getByRole('heading', { name: /Characters/ })).toBeDefined();
+    expect(screen.getByRole('heading', { name: /Locations/ })).toBeDefined();
   });
 
   it('filters by search text', () => {

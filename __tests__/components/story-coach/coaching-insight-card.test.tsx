@@ -10,9 +10,16 @@ vi.mock('@/components/antiquarian', () => ({
   ),
 }));
 
-// Mock lucide-react
-vi.mock('lucide-react', () => new Proxy({}, {
-  get: (_, name) => (props: any) => <span data-testid={`icon-${String(name).toLowerCase()}`} {...props} />,
+// Mock lucide-react with explicit named exports. Vitest 4 validates mock exports against
+// ownKeys, so a Proxy-based catch-all mock ({} target) crashes the worker during module init.
+vi.mock('lucide-react', () => ({
+  X: (props: any) => <span data-testid="icon-x" {...props} />,
+  Zap: (props: any) => <span data-testid="icon-zap" {...props} />,
+  Eye: (props: any) => <span data-testid="icon-eye" {...props} />,
+  Heart: (props: any) => <span data-testid="icon-heart" {...props} />,
+  Clock: (props: any) => <span data-testid="icon-clock" {...props} />,
+  Sparkles: (props: any) => <span data-testid="icon-sparkles" {...props} />,
+  MessageSquare: (props: any) => <span data-testid="icon-messagesquare" {...props} />,
 }));
 
 import { CoachingInsightCard } from '@/components/story-coach/coaching-insight-card';

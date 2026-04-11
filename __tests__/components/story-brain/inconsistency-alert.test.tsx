@@ -10,9 +10,13 @@ vi.mock('@/components/antiquarian', () => ({
   ),
 }));
 
-// Mock lucide-react
-vi.mock('lucide-react', () => new Proxy({}, {
-  get: (_, name) => (props: any) => <span data-testid={`icon-${String(name).toLowerCase()}`} {...props} />,
+// Mock lucide-react with explicit named exports. Vitest 4 validates mock exports against
+// ownKeys, so a Proxy-based catch-all mock ({} target) crashes the worker during module init.
+vi.mock('lucide-react', () => ({
+  AlertTriangle: (props: any) => <span data-testid="icon-alerttriangle" {...props} />,
+  Eye: (props: any) => <span data-testid="icon-eye" {...props} />,
+  CheckCircle: (props: any) => <span data-testid="icon-checkcircle" {...props} />,
+  Paintbrush: (props: any) => <span data-testid="icon-paintbrush" {...props} />,
 }));
 
 import { InconsistencyAlert } from '@/components/story-brain/inconsistency-alert';
