@@ -12,6 +12,9 @@ import {
   deleteVersionById,
   getSessions,
   putSession,
+  getStory,
+  putStory,
+  clearAllStoryData,
 } from '@/lib/storage/dexie-db';
 
 describe('dexie-db', () => {
@@ -23,6 +26,7 @@ describe('dexie-db', () => {
     await db.sessions.clear();
     await db.chapterVersions.clear();
     await db.meta.clear();
+    await db.stories.clear();
 
     storage = {};
     const localStorageMock: Storage = {
@@ -59,10 +63,16 @@ describe('dexie-db', () => {
       const ch2 = await db.chapters.get('ch2');
       expect(ch2?.content).toBe('And then...');
 
-      // localStorage chapters stripped to empty content
-      const state = JSON.parse(storage['zagafy_state']);
-      expect(state.chapters[0].content).toBe('');
-      expect(state.chapters[1].content).toBe('');
+      // Legacy localStorage key removed after migration
+      expect(storage['zagafy_state']).toBeUndefined();
+
+      // Full state blob now lives in Dexie stories table (content stripped)
+      const row = await db.stories.get('current');
+      expect(row).toBeTruthy();
+      const parsed = JSON.parse(row!.data);
+      expect(parsed.title).toBe('My Novel');
+      expect(parsed.chapters[0].content).toBe('');
+      expect(parsed.chapters[1].content).toBe('');
     });
 
     it('migrates chapter versions and removes localStorage key', async () => {
@@ -190,6 +200,54 @@ describe('dexie-db', () => {
       const sessions = await getSessions();
       expect(sessions).toHaveLength(1);
       expect(sessions[0].wordsAdded).toBe(200);
+    });
+  });
+
+  // ─── Story state CRUD ───
+
+  describe('story state CRUD', () => {
+    it('getStory returns null when no row exists', async () => {
+      expect(await getStory()).toBeNull();
+    });
+
+    it('putStory / getStory round-trip', async () => {
+      await putStory({ title: 'Test', genre: ['Fantasy'] });
+      const row = await getStory();
+      expect(row).toBeTruthy();
+      expect(row!.title).toBe('Test');
+      expect(row!.genre).toEqual(['Fantasy']);
+    });
+
+    it('putStory overwrites previous state', async () => {
+      await putStory({ title: 'First' });
+      await putStory({ title: 'Second' });
+      const row = await getStory();
+      expect(row!.title).toBe('Second');
+      const all = await db.stories.toArray();
+      expect(all).toHaveLength(1);
+    });
+
+    it('getStory returns null when stored JSON is corrupt', async () => {
+      await db.stories.put({ id: 'current', data: '{not-json', updatedAt: Date.now() });
+      expect(await getStory()).toBeNull();
+    });
+  });
+
+  // ─── clearAllStoryData ───
+
+  describe('clearAllStoryData', () => {
+    it('clears all project tables', async () => {
+      await putStory({ title: 'Gone' });
+      await putChapterContent('ch1', 'bye', 'Ch1');
+      await putSession({ id: 's1', wordsAdded: 10 });
+      await putVersion({ id: 'v1', chapterId: 'ch1', createdAt: '2026-01-01T00:00:00Z' });
+
+      await clearAllStoryData();
+
+      expect(await getStory()).toBeNull();
+      expect((await db.chapters.toArray())).toHaveLength(0);
+      expect((await db.sessions.toArray())).toHaveLength(0);
+      expect((await db.chapterVersions.toArray())).toHaveLength(0);
     });
   });
 });

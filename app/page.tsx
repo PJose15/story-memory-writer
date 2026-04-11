@@ -129,17 +129,20 @@ function StoryHealthCard() {
           { detectInconsistencies },
           { detectPlotHoles },
           { getResolutions },
+          { getStory },
         ] = await Promise.all([
           import('@/lib/story-brain/analyzer'),
           import('@/lib/story-brain/inconsistency-detector'),
           import('@/lib/story-brain/plot-hole-detector'),
           import('@/lib/story-brain/resolutions'),
+          import('@/lib/storage/dexie-db'),
         ]);
         if (cancelled) return;
-        // Access state from localStorage directly for dashboard summary
-        const raw = localStorage.getItem('zagafy_state');
+        // Access state from Dexie for dashboard summary (no chapter contents needed)
+        const raw = await getStory();
         if (!raw) return;
-        const state = JSON.parse(raw);
+        if (cancelled) return;
+        const state = raw as unknown as import('@/lib/store').StoryState;
         const analysis = analyzeStoryState(state);
         const incs = detectInconsistencies(state, analysis);
         const phs = detectPlotHoles(state, analysis);

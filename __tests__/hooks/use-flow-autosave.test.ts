@@ -8,8 +8,12 @@ vi.mock('@/lib/storage/dexie-db', () => ({
   putChapterContent: vi.fn().mockResolvedValue(undefined),
   getChapterContent: vi.fn().mockResolvedValue(undefined),
   deleteChapterContent: vi.fn().mockResolvedValue(undefined),
+  getStory: vi.fn().mockResolvedValue(null),
+  putStory: vi.fn().mockResolvedValue(undefined),
+  clearAllStoryData: vi.fn().mockResolvedValue(undefined),
 }));
 
+import * as dexieDb from '@/lib/storage/dexie-db';
 import { StoryProvider, useStory } from '@/lib/store';
 import type { Chapter, StoryState } from '@/lib/store';
 import { useFlowAutosave } from '@/hooks/use-flow-autosave';
@@ -27,7 +31,13 @@ const testChapter: Chapter = {
 
 function setupLocalStorage(chapters: Chapter[]) {
   const state: Partial<StoryState> = { chapters };
-  localStorage.setItem('zagafy_state', JSON.stringify(state));
+  // Legacy name kept — now seeds the mocked Dexie story + chapter content map
+  vi.mocked(dexieDb.getStory).mockResolvedValue(state as Record<string, unknown>);
+  const contentMap = new Map<string, string>();
+  for (const ch of chapters) {
+    contentMap.set(ch.id, ch.content);
+  }
+  vi.mocked(dexieDb.getAllChapterContents).mockResolvedValue(contentMap);
 }
 
 describe('useFlowAutosave', () => {

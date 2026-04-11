@@ -8,8 +8,12 @@ vi.mock('@/lib/storage/dexie-db', () => ({
   putChapterContent: vi.fn().mockResolvedValue(undefined),
   getChapterContent: vi.fn().mockResolvedValue(undefined),
   deleteChapterContent: vi.fn().mockResolvedValue(undefined),
+  getStory: vi.fn().mockResolvedValue(null),
+  putStory: vi.fn().mockResolvedValue(undefined),
+  clearAllStoryData: vi.fn().mockResolvedValue(undefined),
 }));
 
+import * as dexieDb from '@/lib/storage/dexie-db';
 import { StoryProvider } from '@/lib/store';
 import type { Chapter, StoryState } from '@/lib/store';
 
@@ -40,7 +44,12 @@ const testChapters: Chapter[] = [
 
 function setupLocalStorage(chapters: Chapter[]) {
   const state: Partial<StoryState> = { chapters };
-  localStorage.setItem('zagafy_state', JSON.stringify(state));
+  vi.mocked(dexieDb.getStory).mockResolvedValue(state as Record<string, unknown>);
+  const contentMap = new Map<string, string>();
+  for (const ch of chapters) {
+    contentMap.set(ch.id, ch.content);
+  }
+  vi.mocked(dexieDb.getAllChapterContents).mockResolvedValue(contentMap);
 }
 
 function wrapper({ children }: { children: React.ReactNode }) {

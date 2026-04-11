@@ -42,12 +42,19 @@ export interface DexieChatMessage {
   chapterId?: string;
 }
 
+export interface DexieStory {
+  id: string; // always 'current' (single-row table)
+  data: string; // JSON-serialized StoryState with chapter contents stripped
+  updatedAt: number;
+}
+
 class ZagafyDB extends Dexie {
   chapters!: Table<DexieChapter, string>;
   sessions!: Table<DexieSession, string>;
   chapterVersions!: Table<DexieChapterVersion, string>;
   meta!: Table<DexieMeta, string>;
   chatMessages!: Table<DexieChatMessage, string>;
+  stories!: Table<DexieStory, string>;
 
   constructor() {
     super('zagafy');
@@ -63,6 +70,14 @@ class ZagafyDB extends Dexie {
       meta: 'id',
       chatMessages: 'id, timestamp, chapterId',
     });
+    this.version(3).stores({
+      chapters: 'id, title, updatedAt',
+      sessions: 'id, startedAt',
+      chapterVersions: 'id, chapterId, createdAt',
+      meta: 'id',
+      chatMessages: 'id, timestamp, chapterId',
+      stories: 'id, updatedAt',
+    });
   }
 }
 
@@ -75,8 +90,8 @@ export async function migrateFromLocalStorage(): Promise<void> {
     const existing = await db.meta.get('migration');
     if (existing) return; // already migrated
 
-    await db.transaction('rw', [db.chapters, db.chapterVersions, db.sessions, db.meta], async () => {
-      // 1. Migrate chapters with content from zagafy_state
+    await db.transaction('rw', [db.chapters, db.chapterVersions, db.sessions, db.meta, db.stories], async () => {
+      // 1. Migrate chapters with content from zagafy_state and the whole state blob
       const stateRaw = localStorage.getItem('zagafy_state');
       if (stateRaw) {
         try {
@@ -97,13 +112,22 @@ export async function migrateFromLocalStorage(): Promise<void> {
               await db.chapters.bulkPut(dexieChapters);
             }
 
-            // Strip content from chapters in localStorage (keep stubs)
+            // Strip content from chapters before persisting to stories table
             state.chapters = state.chapters.map((ch: Record<string, unknown>) => ({
               ...ch,
               content: '',
             }));
-            localStorage.setItem('zagafy_state', JSON.stringify(state));
           }
+
+          // Persist the full state blob (sans chapter contents) into stories table
+          await db.stories.put({
+            id: 'current',
+            data: JSON.stringify(state),
+            updatedAt: Date.now(),
+          });
+
+          // Remove legacy localStorage key now that data lives in Dexie
+          localStorage.removeItem('zagafy_state');
         } catch {
           // Parse error — leave localStorage intact
         }
@@ -280,4 +304,52 @@ export async function putAllSessions(sessions: Record<string, unknown>[]): Promi
   if (rows.length > 0) {
     await db.sessions.bulkPut(rows);
   }
+}
+
+// ─── Story state CRUD ───
+
+/**
+ * Reads the main story state blob from Dexie. Returns null if not yet persisted.
+ * Chapter contents live in the `chapters` table — caller must merge them in.
+ */
+export async function getStory(): Promise<Record<string, unknown> | null> {
+  try {
+    const row = await db.stories.get('current');
+    if (!row) return null;
+    try {
+      return JSON.parse(row.data);
+    } catch {
+      return null;
+    }
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Writes the main story state blob to Dexie. Caller should strip chapter contents
+ * (store them via putChapterContent) before passing the state here.
+ */
+export async function putStory(state: Record<string, unknown>): Promise<void> {
+  await db.stories.put({
+    id: 'current',
+    data: JSON.stringify(state),
+    updatedAt: Date.now(),
+  });
+}
+
+/** Clears all project data (stories blob, chapters, versions, sessions, chat). */
+export async function clearAllStoryData(): Promise<void> {
+  await db.transaction(
+    'rw',
+    [db.stories, db.chapters, db.chapterVersions, db.sessions, db.chatMessages, db.meta],
+    async () => {
+      await db.stories.clear();
+      await db.chapters.clear();
+      await db.chapterVersions.clear();
+      await db.sessions.clear();
+      await db.chatMessages.clear();
+      await db.meta.clear();
+    }
+  );
 }

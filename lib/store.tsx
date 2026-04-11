@@ -2,8 +2,16 @@
 
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { StoreSkeleton } from '@/components/antiquarian/StoreSkeleton';
-import { migrateFromLocalStorage, getAllChapterContents, putChapterContent } from '@/lib/storage/dexie-db';
+import {
+  migrateFromLocalStorage,
+  getAllChapterContents,
+  putChapterContent,
+  getStory,
+  putStory,
+} from '@/lib/storage/dexie-db';
 import type { WorldBibleSection } from '@/lib/types/world-bible';
+
+const SYNC_CHANNEL = 'zagafy_sync';
 
 export type CanonStatus = 'confirmed' | 'flexible' | 'draft' | 'discarded';
 export type DataSource = 'manuscript' | 'ai-inferred' | 'user-entered';
@@ -205,49 +213,61 @@ interface StoryContextType {
 
 const StoryContext = createContext<StoryContextType | undefined>(undefined);
 
+async function hydrateFromDexie(): Promise<StoryState> {
+  const saved = await getStory();
+  let loadedState: StoryState = defaultState;
+  if (saved) {
+    loadedState = { ...defaultState, ...(saved as Partial<StoryState>) };
+  }
+
+  // Load chapter contents from Dexie and merge back
+  try {
+    const contentMap = await getAllChapterContents();
+    if (contentMap.size > 0 && Array.isArray(loadedState.chapters)) {
+      loadedState = {
+        ...loadedState,
+        chapters: loadedState.chapters.map(ch => ({
+          ...ch,
+          content: contentMap.get(ch.id) ?? ch.content,
+        })),
+      };
+    }
+  } catch {
+    // Dexie unavailable — chapters keep whatever content they have
+  }
+
+  return loadedState;
+}
+
 export function StoryProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<StoryState>(defaultState);
   const [isLoaded, setIsLoaded] = useState(false);
+  const channelRef = useRef<BroadcastChannel | null>(null);
+  const applyingRemoteRef = useRef(false);
 
   useEffect(() => {
     async function loadState() {
-      // Run Dexie migration first (idempotent)
+      // Run Dexie migration first (idempotent). This also moves any legacy
+      // localStorage state blob into the Dexie stories table.
       await migrateFromLocalStorage();
 
-      // Migration: copy legacy key to new key if needed
-      if (!localStorage.getItem('zagafy_state') && localStorage.getItem('story_memory_state')) {
-        localStorage.setItem('zagafy_state', localStorage.getItem('story_memory_state')!);
-        localStorage.removeItem('story_memory_state');
-      }
-
-      const saved = localStorage.getItem('zagafy_state');
-      let loadedState = defaultState;
-      if (saved) {
-        try {
-          loadedState = { ...defaultState, ...JSON.parse(saved) };
-        } catch (e) {
-          console.error('Failed to parse saved state', e);
-        }
-      }
-
-      // Load chapter contents from Dexie and merge back
+      // Legacy rename: copy story_memory_state → zagafy_state if it still exists
+      // so the migration function picks it up on a second pass.
       try {
-        const contentMap = await getAllChapterContents();
-        if (contentMap.size > 0 && Array.isArray(loadedState.chapters)) {
-          loadedState = {
-            ...loadedState,
-            chapters: loadedState.chapters.map(ch => ({
-              ...ch,
-              content: contentMap.get(ch.id) ?? ch.content,
-            })),
-          };
+        if (typeof localStorage !== 'undefined' && localStorage.getItem('story_memory_state')) {
+          if (!localStorage.getItem('zagafy_state')) {
+            localStorage.setItem('zagafy_state', localStorage.getItem('story_memory_state')!);
+          }
+          localStorage.removeItem('story_memory_state');
+          await migrateFromLocalStorage();
         }
       } catch {
-        // Dexie unavailable — chapters keep whatever content they have from localStorage
+        // Ignore — legacy cleanup is best-effort
       }
 
+      const loaded = await hydrateFromDexie();
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setState(loadedState);
+      setState(loaded);
       setIsLoaded(true);
     }
 
@@ -257,59 +277,79 @@ export function StoryProvider({ children }: { children: React.ReactNode }) {
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [saveError, setSaveError] = useState(false);
   useEffect(() => {
-    if (isLoaded) {
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-      saveTimerRef.current = setTimeout(() => {
-        try {
-          // Save to localStorage with chapter content stripped (stubs only)
-          const stateForLS = {
-            ...state,
-            chapters: state.chapters.map(ch => ({ ...ch, content: '' })),
-          };
-          localStorage.setItem('zagafy_state', JSON.stringify(stateForLS));
-          if (saveError) setSaveError(false);
-        } catch {
-          if (!saveError) setSaveError(true);
-        }
+    if (!isLoaded) return;
 
-        // Save chapter contents to Dexie (async, best-effort)
-        for (const ch of state.chapters) {
-          putChapterContent(ch.id, ch.content, ch.title, ch.summary, ch.canonStatus, ch.source).catch(() => {
-            // Dexie write failed — content was already in memory, will retry on next save
-          });
-        }
-      }, 500);
+    // Skip persisting state we just applied from another tab (avoid echo loop)
+    if (applyingRemoteRef.current) {
+      applyingRemoteRef.current = false;
+      return;
     }
+
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(async () => {
+      try {
+        // Save full state (minus chapter content) to Dexie stories table
+        const stateForStore = {
+          ...state,
+          chapters: state.chapters.map(ch => ({ ...ch, content: '' })),
+        };
+        await putStory(stateForStore as unknown as Record<string, unknown>);
+
+        // Save chapter contents to Dexie (separate table, best-effort)
+        await Promise.all(
+          state.chapters.map(ch =>
+            putChapterContent(ch.id, ch.content, ch.title, ch.summary, ch.canonStatus, ch.source).catch(() => {
+              // Individual chapter write failed — content remains in memory
+            })
+          )
+        );
+
+        if (saveError) setSaveError(false);
+
+        // Notify other tabs
+        try {
+          channelRef.current?.postMessage({ type: 'state-updated', at: Date.now() });
+        } catch {
+          // BroadcastChannel post failures are non-fatal
+        }
+      } catch {
+        if (!saveError) setSaveError(true);
+      }
+    }, 500);
+
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     };
   }, [state, isLoaded, saveError]);
 
-  // Sync state across tabs via storage events
+  // Cross-tab sync via BroadcastChannel (Dexie writes don't fire storage events)
   useEffect(() => {
-    const handleStorage = (e: StorageEvent) => {
-      if (e.key === 'zagafy_state' && e.newValue) {
-        try {
-          const parsed = { ...defaultState, ...JSON.parse(e.newValue) };
-          // Re-hydrate chapter content from Dexie for cross-tab sync
-          getAllChapterContents().then(contentMap => {
-            if (contentMap.size > 0 && Array.isArray(parsed.chapters)) {
-              parsed.chapters = parsed.chapters.map((ch: Chapter) => ({
-                ...ch,
-                content: contentMap.get(ch.id) ?? ch.content,
-              }));
-            }
-            setState(parsed);
-          }).catch(() => {
-            setState(parsed);
-          });
-        } catch {
-          // Ignore parse errors from other tabs
-        }
-      }
+    if (typeof BroadcastChannel === 'undefined') return;
+
+    let channel: BroadcastChannel;
+    try {
+      channel = new BroadcastChannel(SYNC_CHANNEL);
+    } catch {
+      return;
+    }
+    channelRef.current = channel;
+
+    const handleMessage = (e: MessageEvent) => {
+      if (!e.data || e.data.type !== 'state-updated') return;
+      hydrateFromDexie().then(next => {
+        applyingRemoteRef.current = true;
+        setState(next);
+      }).catch(() => {
+        // Ignore — remote rehydration failed
+      });
     };
-    window.addEventListener('storage', handleStorage);
-    return () => window.removeEventListener('storage', handleStorage);
+
+    channel.addEventListener('message', handleMessage);
+    return () => {
+      channel.removeEventListener('message', handleMessage);
+      channel.close();
+      channelRef.current = null;
+    };
   }, []);
 
   const updateField = useCallback(<K extends keyof StoryState>(field: K, value: StoryState[K]) => {

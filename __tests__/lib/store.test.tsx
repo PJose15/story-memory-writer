@@ -8,6 +8,9 @@ vi.mock('@/lib/storage/dexie-db', () => ({
   putChapterContent: vi.fn().mockResolvedValue(undefined),
   getChapterContent: vi.fn().mockResolvedValue(undefined),
   deleteChapterContent: vi.fn().mockResolvedValue(undefined),
+  getStory: vi.fn().mockResolvedValue(null),
+  putStory: vi.fn().mockResolvedValue(undefined),
+  clearAllStoryData: vi.fn().mockResolvedValue(undefined),
 }));
 
 import { StoryProvider, useStory, defaultState } from '@/lib/store';

@@ -7,6 +7,7 @@ import { useToast } from '@/components/toast';
 import { useConfirm } from '@/components/confirm-dialog';
 import { HeteronymSettings } from '@/components/heteronyms/heteronym-settings';
 import { BrassButton, InkStampButton, CarvedHeader, ParchmentCard } from '@/components/antiquarian';
+import { db, clearAllStoryData } from '@/lib/storage/dexie-db';
 
 // Only these keys from StoryState are allowed during import
 const ALLOWED_KEYS = new Set<keyof StoryState>([
@@ -46,11 +47,15 @@ export default function SettingsPage() {
         });
         if (!confirmed) return;
 
-        // Auto-backup current state before overwriting
+        // Auto-backup current state before overwriting (Dexie stories_backup row)
         try {
-          localStorage.setItem('zagafy_state_backup', JSON.stringify(state));
+          await db.stories.put({
+            id: 'backup',
+            data: JSON.stringify(state),
+            updatedAt: Date.now(),
+          });
         } catch {
-          // Quota exceeded — proceed anyway
+          // Backup failed — proceed anyway
         }
 
         // Whitelist keys to prevent arbitrary state injection
@@ -92,7 +97,19 @@ export default function SettingsPage() {
       variant: 'danger',
     });
     if (confirmed) {
-      localStorage.removeItem('zagafy_state');
+      try {
+        await clearAllStoryData();
+      } catch {
+        // If Dexie clear fails, fall through to reload anyway
+      }
+      // Also remove any straggler localStorage keys from older builds
+      try {
+        localStorage.removeItem('zagafy_state');
+        localStorage.removeItem('zagafy_chapter_versions');
+        localStorage.removeItem('zagafy_sessions');
+      } catch {
+        // best effort
+      }
       window.location.reload();
     }
   };
