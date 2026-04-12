@@ -13,7 +13,8 @@ export default defineConfig({
     environment: 'happy-dom',
     include: ['__tests__/**/*.test.{ts,tsx}'],
     coverage: {
-      include: ['app/api/**', 'lib/**'],
+      include: ['app/api/**', 'lib/**', 'hooks/**', 'components/**'],
+      exclude: ['**/*.test.{ts,tsx}', '**/__tests__/**'],
     },
   },
 });
