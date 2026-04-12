@@ -1,11 +1,23 @@
 'use client';
 
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { useSession } from '@/lib/session';
 import { ChapterSelectModal } from '@/components/flow/chapter-select-modal';
-import { FlowEditor } from '@/components/flow/flow-editor';
 import { FeatureErrorBoundary } from '@/components/antiquarian';
 import { useRouter } from 'next/navigation';
+
+const FlowEditor = dynamic(
+  () => import('@/components/flow/flow-editor').then(m => ({ default: m.FlowEditor })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="fixed inset-0 z-[150] bg-parchment-200 flex items-center justify-center">
+        <div className="text-sepia-500 text-sm animate-pulse">Loading editor...</div>
+      </div>
+    ),
+  }
+);
 
 export default function FlowPage() {
   const { session, setFlowChapterId } = useSession();
