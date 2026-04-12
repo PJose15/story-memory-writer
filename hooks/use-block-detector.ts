@@ -36,9 +36,15 @@ export function useBlockDetector(
   const [activeDetour, setActiveDetour] = useState<DetourSession | null>(null);
   const cooldownUntilRef = useRef<number>(0);
   const blockSignalRef = useRef(blockSignal);
-  blockSignalRef.current = blockSignal;
   const activeDetourRef = useRef(activeDetour);
-  activeDetourRef.current = activeDetour;
+
+  useEffect(() => {
+    blockSignalRef.current = blockSignal;
+  }, [blockSignal]);
+
+  useEffect(() => {
+    activeDetourRef.current = activeDetour;
+  }, [activeDetour]);
 
   // Periodic check — uses refs to avoid re-creating interval on state changes
   useEffect(() => {
