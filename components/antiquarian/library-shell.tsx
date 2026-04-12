@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef } from 'react';
+import { MotionConfig } from 'motion/react';
 import { StoryProvider } from '@/lib/store';
 import { SessionProvider } from '@/lib/session';
 import { ToastProvider, useToast } from '@/components/antiquarian/antiquarian-toast';
@@ -64,11 +65,13 @@ export function LibraryShell({ children }: { children: React.ReactNode }) {
     <StoryProvider>
       <SessionProvider>
         <GamificationProvider>
-          <ToastProvider>
-            <ConfirmProvider>
-              <LibraryShellInner>{children}</LibraryShellInner>
-            </ConfirmProvider>
-          </ToastProvider>
+          <MotionConfig reducedMotion="user">
+            <ToastProvider>
+              <ConfirmProvider>
+                <LibraryShellInner>{children}</LibraryShellInner>
+              </ConfirmProvider>
+            </ToastProvider>
+          </MotionConfig>
         </GamificationProvider>
       </SessionProvider>
     </StoryProvider>

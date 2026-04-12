@@ -1,7 +1,7 @@
 'use client';
 
 import { useStory, StoryState } from '@/lib/store';
-import { useRef } from 'react';
+import { useRef, useEffect } from 'react';
 import { Settings, Download, Upload, Trash2, AlertTriangle, Globe } from 'lucide-react';
 import { useToast } from '@/components/toast';
 import { useConfirm } from '@/components/confirm-dialog';
@@ -71,8 +71,14 @@ function validateImportShape(data: unknown): { ok: true } | { ok: false; reason:
 export default function SettingsPage() {
   const { state, setState, updateField } = useStory();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const readerRef = useRef<FileReader | null>(null);
   const { toast } = useToast();
   const { confirm } = useConfirm();
+
+  // Abort any in-flight FileReader on unmount
+  useEffect(() => {
+    return () => { readerRef.current?.abort(); };
+  }, []);
 
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -82,7 +88,9 @@ export default function SettingsPage() {
       if (fileInputRef.current) fileInputRef.current.value = '';
       return;
     }
+    readerRef.current?.abort();
     const reader = new FileReader();
+    readerRef.current = reader;
     reader.onload = async (event) => {
       try {
         const data: unknown = JSON.parse(event.target?.result as string);
