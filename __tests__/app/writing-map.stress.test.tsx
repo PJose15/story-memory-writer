@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, cleanup } from '@testing-library/react';
+import { render, screen, cleanup, waitFor } from '@testing-library/react';
 import React from 'react';
 import type { WritingSession } from '@/lib/types/writing-session';
 
@@ -62,14 +62,14 @@ function makeSession(overrides: Partial<WritingSession> = {}): WritingSession {
 let mockSessions: WritingSession[] = [];
 
 vi.mock('@/lib/types/writing-session', () => ({
-  readSessions: () => mockSessions,
+  readSessions: () => Promise.resolve(mockSessions),
 }));
 
 import WritingMapPage from '@/app/writing-map/page';
 
 describe('WritingMapPage STRESS', () => {
   beforeEach(() => {
-    vi.useFakeTimers();
+    vi.useFakeTimers({ shouldAdvanceTime: true });
     vi.setSystemTime(new Date('2026-03-11T12:00:00Z'));
     mockSessions = [];
     cleanup();
@@ -84,21 +84,24 @@ describe('WritingMapPage STRESS', () => {
   // EXTREME SESSION COUNTS
   // ──────────────────────────────────────────────────────
   describe('extreme session counts', () => {
-    it('renders with 0 sessions', () => {
+    it('renders with 0 sessions', async () => {
       mockSessions = [];
       render(<WritingMapPage />);
-      expect(screen.getByText('Writing Map')).toBeTruthy();
-      expect(screen.getByText(/Your writing patterns will appear here/)).toBeTruthy();
+      await waitFor(() => {
+        expect(screen.getByText(/Your writing patterns will appear here/)).toBeTruthy();
+      });
     });
 
-    it('renders with 1 session', () => {
+    it('renders with 1 session', async () => {
       mockSessions = [makeSession({ wordsAdded: 500 })];
       render(<WritingMapPage />);
-      expect(screen.getByText(/1 session/)).toBeTruthy();
+      await waitFor(() => {
+        expect(screen.getByText(/1 session/)).toBeTruthy();
+      });
       expect(screen.getByText(/500 words tracked/)).toBeTruthy();
     });
 
-    it('renders with 500 sessions without crashing', () => {
+    it('renders with 500 sessions without crashing', async () => {
       mockSessions = Array.from({ length: 500 }, (_, i) => {
         const d = new Date('2025-06-01');
         d.setDate(d.getDate() + (i % 300));
@@ -110,17 +113,19 @@ describe('WritingMapPage STRESS', () => {
         });
       });
       render(<WritingMapPage />);
-      expect(screen.getByText('Writing Map')).toBeTruthy();
-      expect(screen.getByText(/500 sessions/)).toBeTruthy();
+      await waitFor(() => {
+        expect(screen.getByText(/500 sessions/)).toBeTruthy();
+      });
     });
 
-    it('handles 1000+ sessions with large word totals', () => {
+    it('handles 1000+ sessions with large word totals', async () => {
       mockSessions = Array.from({ length: 1000 }, (_, i) =>
         makeSession({ id: `s-${i}`, wordsAdded: 1000 })
       );
       render(<WritingMapPage />);
-      // 1000 × 1000 = 1,000,000 words
-      expect(screen.getByText(/1,000,000 words tracked/)).toBeTruthy();
+      await waitFor(() => {
+        expect(screen.getByText(/1,000,000 words tracked/)).toBeTruthy();
+      });
     });
   });
 
@@ -128,7 +133,7 @@ describe('WritingMapPage STRESS', () => {
   // ALL 4 SECTIONS RENDER
   // ──────────────────────────────────────────────────────
   describe('all sections render together', () => {
-    it('renders all sections with populated data', () => {
+    it('renders all sections with populated data', async () => {
       mockSessions = Array.from({ length: 10 }, (_, i) =>
         makeSession({
           id: `s-${i}`,
@@ -138,16 +143,20 @@ describe('WritingMapPage STRESS', () => {
         })
       );
       render(<WritingMapPage />);
-      expect(screen.getByText('Activity')).toBeTruthy();
+      await waitFor(() => {
+        expect(screen.getByText('Activity')).toBeTruthy();
+      });
       expect(screen.getByText('Words by Hour')).toBeTruthy();
       expect(screen.getByText('Recent Sessions')).toBeTruthy();
       expect(screen.getByTestId('insight-card')).toBeTruthy();
     });
 
-    it('renders all ARIA labels', () => {
+    it('renders all ARIA labels', async () => {
       mockSessions = [makeSession()];
       render(<WritingMapPage />);
-      expect(screen.getByLabelText('Writing activity heatmap')).toBeTruthy();
+      await waitFor(() => {
+        expect(screen.getByLabelText('Writing activity heatmap')).toBeTruthy();
+      });
       expect(screen.getByLabelText('Words written by hour of day')).toBeTruthy();
       expect(screen.getByLabelText('Writing insight')).toBeTruthy();
       expect(screen.getByLabelText('Recent writing sessions')).toBeTruthy();
@@ -158,18 +167,22 @@ describe('WritingMapPage STRESS', () => {
   // WORD TOTAL FORMATTING
   // ──────────────────────────────────────────────────────
   describe('word total formatting', () => {
-    it('formats large totals with commas', () => {
+    it('formats large totals with commas', async () => {
       mockSessions = Array.from({ length: 50 }, (_, i) =>
         makeSession({ id: `s-${i}`, wordsAdded: 1000 })
       );
       render(<WritingMapPage />);
-      expect(screen.getByText(/50,000 words tracked/)).toBeTruthy();
+      await waitFor(() => {
+        expect(screen.getByText(/50,000 words tracked/)).toBeTruthy();
+      });
     });
 
-    it('small total no commas', () => {
+    it('small total no commas', async () => {
       mockSessions = [makeSession({ wordsAdded: 42 })];
       render(<WritingMapPage />);
-      expect(screen.getByText(/42 words tracked/)).toBeTruthy();
+      await waitFor(() => {
+        expect(screen.getByText(/42 words tracked/)).toBeTruthy();
+      });
     });
   });
 
@@ -177,7 +190,7 @@ describe('WritingMapPage STRESS', () => {
   // MIXED SESSION DATA
   // ──────────────────────────────────────────────────────
   describe('mixed session data', () => {
-    it('handles sessions with various flowScores including null', () => {
+    it('handles sessions with various flowScores including null', async () => {
       mockSessions = [
         makeSession({ id: 's1', flowScore: 1 }),
         makeSession({ id: 's2', flowScore: 3 }),
@@ -185,35 +198,43 @@ describe('WritingMapPage STRESS', () => {
         makeSession({ id: 's4', flowScore: null }),
       ];
       render(<WritingMapPage />);
-      expect(screen.getByText('Writing Map')).toBeTruthy();
+      await waitFor(() => {
+        expect(screen.getByText(/4 sessions/)).toBeTruthy();
+      });
     });
 
-    it('handles sessions with heteronym data', () => {
+    it('handles sessions with heteronym data', async () => {
       mockSessions = [
         makeSession({ id: 's1', heteronymId: 'het-1', heteronymName: 'Dark Poet' }),
         makeSession({ id: 's2', heteronymId: null, heteronymName: null }),
       ];
       render(<WritingMapPage />);
-      expect(screen.getByText('Writing Map')).toBeTruthy();
+      await waitFor(() => {
+        expect(screen.getByText(/2 sessions/)).toBeTruthy();
+      });
     });
 
-    it('handles sessions with different project names', () => {
+    it('handles sessions with different project names', async () => {
       mockSessions = [
         makeSession({ id: 's1', projectName: 'Novel A' }),
         makeSession({ id: 's2', projectName: 'Novel B' }),
         makeSession({ id: 's3', projectName: 'A Very Long Novel Name That Exceeds Limit' }),
       ];
       render(<WritingMapPage />);
-      expect(screen.getByText('Writing Map')).toBeTruthy();
+      await waitFor(() => {
+        expect(screen.getByText(/3 sessions/)).toBeTruthy();
+      });
     });
 
-    it('handles sessions with 0 wordsAdded', () => {
+    it('handles sessions with 0 wordsAdded', async () => {
       mockSessions = [
         makeSession({ id: 's1', wordsAdded: 0 }),
         makeSession({ id: 's2', wordsAdded: 500 }),
       ];
       render(<WritingMapPage />);
-      expect(screen.getByText(/500 words tracked/)).toBeTruthy();
+      await waitFor(() => {
+        expect(screen.getByText(/500 words tracked/)).toBeTruthy();
+      });
     });
   });
 });

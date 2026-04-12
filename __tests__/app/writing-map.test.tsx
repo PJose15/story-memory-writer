@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, cleanup } from '@testing-library/react';
+import { render, screen, cleanup, waitFor } from '@testing-library/react';
 import React from 'react';
 
 // Mock next/navigation
@@ -39,7 +39,7 @@ vi.mock('@/hooks/use-gamification', () => ({
 
 // Mock writing-session module
 vi.mock('@/lib/types/writing-session', () => ({
-  readSessions: () => [
+  readSessions: () => Promise.resolve([
     {
       id: 'sess-1',
       projectId: 'proj-1',
@@ -66,14 +66,14 @@ vi.mock('@/lib/types/writing-session', () => ({
       heteronymId: null,
       heteronymName: null,
     },
-  ],
+  ]),
 }));
 
 import WritingMapPage from '@/app/writing-map/page';
 
 describe('WritingMapPage', () => {
   beforeEach(() => {
-    vi.useFakeTimers();
+    vi.useFakeTimers({ shouldAdvanceTime: true });
     vi.setSystemTime(new Date('2026-03-11T12:00:00Z'));
     cleanup();
   });
@@ -88,22 +88,28 @@ describe('WritingMapPage', () => {
     expect(screen.getByText('Writing Map')).toBeTruthy();
   });
 
-  it('shows session count and word total', () => {
+  it('shows session count and word total', async () => {
     render(<WritingMapPage />);
-    expect(screen.getByText(/2 sessions — 450 words tracked/)).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.getByText(/2 sessions — 450 words tracked/)).toBeTruthy();
+    });
   });
 
-  it('renders all 4 sections', () => {
+  it('renders all 4 sections', async () => {
     render(<WritingMapPage />);
-    expect(screen.getByText('Activity')).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.getByText('Activity')).toBeTruthy();
+    });
     expect(screen.getByText('Words by Hour')).toBeTruthy();
     expect(screen.getByText('Recent Sessions')).toBeTruthy();
     expect(screen.getByTestId('insight-card')).toBeTruthy();
   });
 
-  it('renders section ARIA labels', () => {
+  it('renders section ARIA labels', async () => {
     render(<WritingMapPage />);
-    expect(screen.getByLabelText('Writing activity heatmap')).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.getByLabelText('Writing activity heatmap')).toBeTruthy();
+    });
     expect(screen.getByLabelText('Words written by hour of day')).toBeTruthy();
     expect(screen.getByLabelText('Writing insight')).toBeTruthy();
     expect(screen.getByLabelText('Recent writing sessions')).toBeTruthy();
