@@ -92,7 +92,7 @@ describe('isChatSession', () => {
 
   it('returns false for missing characterId', () => {
     const s = makeSession();
-    delete (s as Record<string, unknown>).characterId;
+    delete (s as unknown as Record<string, unknown>).characterId;
     expect(isChatSession(s)).toBe(false);
   });
 
@@ -108,7 +108,7 @@ describe('isCharacterInsight', () => {
 
   it('returns false for missing savedAsCanon', () => {
     const i = makeInsight();
-    delete (i as Record<string, unknown>).savedAsCanon;
+    delete (i as unknown as Record<string, unknown>).savedAsCanon;
     expect(isCharacterInsight(i)).toBe(false);
   });
 });

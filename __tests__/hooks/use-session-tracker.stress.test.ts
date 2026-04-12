@@ -23,16 +23,18 @@ vi.mock('@/lib/store', () => ({
 }));
 
 // Mock writing-session module
-const mockAddSession = vi.fn(() => Promise.resolve());
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const mockAddSession = vi.fn((_session: any) => Promise.resolve());
 const mockReadWipSession = vi.fn((): { id: string; projectId: string; projectName: string; startedAt: string; wordsStart: number; currentWords: number; heteronymId?: string | null; heteronymName?: string | null } | null => null);
-const mockSaveWipSession = vi.fn();
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const mockSaveWipSession = vi.fn((_wip: any) => {});
 const mockClearWipSession = vi.fn();
 const mockGetProjectId = vi.fn(() => 'proj-1');
 
 vi.mock('@/lib/types/writing-session', () => ({
-  addSession: (...args: unknown[]) => mockAddSession(...args),
+  addSession: (...args: unknown[]) => mockAddSession(args[0]),
   readWipSession: () => mockReadWipSession(),
-  saveWipSession: (...args: unknown[]) => mockSaveWipSession(...args),
+  saveWipSession: (...args: unknown[]) => mockSaveWipSession(args[0]),
   clearWipSession: () => mockClearWipSession(),
   getProjectId: () => mockGetProjectId(),
 }));
