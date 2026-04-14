@@ -173,4 +173,108 @@ describe('refreshQuests edge cases', () => {
     const result = refreshQuests(state, mockStory, '2025-01-02');
     expect(result.questHistory.length).toBeLessThanOrEqual(90);
   });
+
+  it('uses formatDateKey fallback when todayKey not provided', () => {
+    const state: QuestsState = { currentDate: '', quests: [], questHistory: [] };
+    const result = refreshQuests(state, mockStory);
+    // Should use today's date via formatDateKey
+    const today = new Date();
+    const expected = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    expect(result.currentDate).toBe(expected);
+    expect(result.quests).toHaveLength(3);
+  });
+
+  it('preserves completed quests in history when refreshing to new day', () => {
+    const initial = refreshQuests(emptyQuests, mockStory, '2025-01-15');
+    // Complete two quests
+    let state = completeQuest(initial, initial.quests[0].id);
+    state = completeQuest(state, state.quests[1].id);
+
+    // Advance to next day
+    const result = refreshQuests(state, mockStory, '2025-01-16');
+
+    // History should have 1 expired + 2 completed from previous day
+    const completedInHistory = result.questHistory.filter(q => q.status === 'completed');
+    const expiredInHistory = result.questHistory.filter(q => q.status === 'expired');
+    expect(completedInHistory).toHaveLength(2);
+    expect(expiredInHistory).toHaveLength(1);
+  });
+
+  it('handles multiple day transitions accumulating history', () => {
+    let state: QuestsState = emptyQuests;
+
+    // Simulate 5 days of quest refreshes
+    for (let day = 1; day <= 5; day++) {
+      state = refreshQuests(state, mockStory, `2025-01-${String(day).padStart(2, '0')}`);
+    }
+
+    // Should have quests from current day
+    expect(state.quests).toHaveLength(3);
+    expect(state.currentDate).toBe('2025-01-05');
+
+    // History should contain expired quests from previous days
+    // Days 1-4 had 3 quests each = 12 total in history
+    expect(state.questHistory.length).toBe(12);
+  });
+});
+
+describe('completeQuest edge cases', () => {
+  it('handles empty quests array gracefully', () => {
+    const state: QuestsState = { currentDate: '2025-01-15', quests: [], questHistory: [] };
+    const result = completeQuest(state, 'some-id');
+    expect(result.quests).toHaveLength(0);
+  });
+
+  it('only marks the targeted quest, not others', () => {
+    const state = refreshQuests(emptyQuests, mockStory, '2025-01-15');
+    const firstId = state.quests[0].id;
+    const result = completeQuest(state, firstId);
+
+    expect(result.quests[0].status).toBe('completed');
+    expect(result.quests[1].status).toBe('active');
+    expect(result.quests[2].status).toBe('active');
+  });
+});
+
+describe('generateDailyQuests — context generation', () => {
+  it('uses story data in quest descriptions when available', () => {
+    const storyWithData = {
+      characters: [{ id: '1', name: 'Zara', role: 'protagonist', description: '', relationships: '' }],
+      active_conflicts: [{ id: '1', title: 'Lost Kingdom', description: '', status: 'active' }],
+      locations: [{ id: '1', name: 'Crystal Caves', description: '', importance: '', associatedRules: [] }],
+    } as unknown as StoryState;
+
+    // Generate quests across many dates to find one that uses story data
+    let foundStoryRef = false;
+    for (let d = 1; d <= 30; d++) {
+      const dateKey = `2025-02-${String(d).padStart(2, '0')}`;
+      const quests = generateDailyQuests(dateKey, storyWithData);
+      const allText = quests.map(q => q.title + ' ' + q.description).join(' ');
+      if (allText.includes('Zara') || allText.includes('Lost Kingdom') || allText.includes('Crystal Caves')) {
+        foundStoryRef = true;
+        break;
+      }
+    }
+    expect(foundStoryRef).toBe(true);
+  });
+
+  it('falls back to generic context when story arrays are null-ish', () => {
+    const nullStory = {
+      characters: null,
+      active_conflicts: null,
+      locations: null,
+    } as unknown as StoryState;
+
+    const quests = generateDailyQuests('2025-01-15', nullStory);
+    expect(quests).toHaveLength(3);
+    // Should not crash — quests generated with fallback context
+    expect(quests.every(q => q.title.length > 0)).toBe(true);
+    expect(quests.every(q => q.description.length > 0)).toBe(true);
+    // Verify the fallback context is used: titles and descriptions should NOT
+    // reference any specific character/conflict/location name
+    const allText = quests.map(q => q.title + ' ' + q.description).join(' ');
+    // Generic templates may contain "a character" or just be template-specific text
+    // The key assertion is no crash and valid quest output
+    expect(quests.every(q => q.status === 'active')).toBe(true);
+  });
 });

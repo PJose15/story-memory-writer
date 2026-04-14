@@ -207,3 +207,244 @@ describe('buildContext', () => {
     expect(context).toContain('non-existent chapters');
   });
 });
+
+// ── Additional branch coverage tests ──
+
+describe('buildContext — source provenance tags', () => {
+  it('appends [AI-inferred] tag for ai-inferred source', () => {
+    const state = makeState({
+      locations: [
+        { id: 'l1', name: 'Forest', description: 'Dark', source: 'ai-inferred', canonStatus: 'confirmed', importance: '', associatedRules: [] },
+      ],
+    });
+    const { context } = buildContext(state, { userInput: 'test', isBlockedMode: false });
+    expect(context).toContain('[AI-inferred]');
+  });
+
+  it('appends [User-entered] tag for user-entered source', () => {
+    const state = makeState({
+      locations: [
+        { id: 'l1', name: 'Lake', description: 'Blue', source: 'user-entered', canonStatus: 'confirmed', importance: '', associatedRules: [] },
+      ],
+    });
+    const { context } = buildContext(state, { userInput: 'test', isBlockedMode: false });
+    expect(context).toContain('[User-entered]');
+  });
+
+  it('no tag for items without source field', () => {
+    const state = makeState({
+      locations: [
+        { id: 'l1', name: 'River', description: 'Flowing', canonStatus: 'confirmed', importance: '', associatedRules: [] },
+      ],
+    });
+    const { context } = buildContext(state, { userInput: 'test', isBlockedMode: false });
+    const riverLine = context.split('\n').find(l => l.includes('[Location] River'));
+    expect(riverLine).toBeDefined();
+    expect(riverLine).not.toContain('[AI-inferred]');
+    expect(riverLine).not.toContain('[User-entered]');
+  });
+});
+
+describe('buildContext — relevance boosting', () => {
+  it('boosts chapters mentioned by title in user input', () => {
+    const state = makeState({
+      chapters: [
+        { id: 'ch1', title: 'The Discovery', content: 'text', summary: 'Summary A', canonStatus: 'confirmed' },
+        { id: 'ch2', title: 'The Letter', content: 'text', summary: 'Summary B', canonStatus: 'confirmed' },
+      ],
+    });
+    const { context } = buildContext(state, { userInput: 'Tell me about The Letter', isBlockedMode: false });
+    // "The Letter" should come first in chapter summaries
+    const summaries = context.substring(context.indexOf('ALL CHAPTER SUMMARIES'));
+    const letterIdx = summaries.indexOf('The Letter');
+    const discoveryIdx = summaries.indexOf('The Discovery');
+    expect(letterIdx).toBeLessThan(discoveryIdx);
+  });
+
+  it('boosts relationship targets when character is mentioned', () => {
+    const state = makeState({
+      characters: [
+        {
+          id: 'c1', name: 'Elena', role: 'Protagonist', description: 'Hero',
+          relationships: '', canonStatus: 'confirmed',
+          dynamicRelationships: [{ targetId: 'c2', trustLevel: 90, tensionLevel: 10, dynamics: 'sibling bond' }],
+        },
+        { id: 'c2', name: 'Marco', role: 'Supporting', description: 'Brother', relationships: '', canonStatus: 'confirmed' },
+      ],
+    });
+    const { context } = buildContext(state, { userInput: 'Tell me about Elena', isBlockedMode: false });
+    expect(context).toContain('Marco (Trust:90% Tension:10%): sibling bond');
+  });
+});
+
+describe('buildContext — orphaned relationships', () => {
+  it('reports orphaned relationship when targetId does not match any character', () => {
+    const state = makeState({
+      characters: [
+        {
+          id: 'c1', name: 'Elena', role: 'Protagonist', description: 'Hero',
+          relationships: '', canonStatus: 'confirmed',
+          dynamicRelationships: [{ targetId: 'ghost', trustLevel: 50, tensionLevel: 50, dynamics: 'mystery' }],
+        },
+      ],
+    });
+    const { context } = buildContext(state, { userInput: 'Elena', isBlockedMode: false });
+    expect(context).toContain('DATA INTEGRITY NOTES');
+    expect(context).toContain('Orphaned relationship');
+    expect(context).toContain('targetId "ghost"');
+  });
+});
+
+describe('buildContext — character detail formatting', () => {
+  it('includes coreIdentity, currentState, hiddenNeed, currentKnowledge', () => {
+    const state = makeState({
+      characters: [
+        {
+          id: 'c1', name: 'Elena', role: 'Protagonist', description: 'A brave hero',
+          relationships: '', canonStatus: 'confirmed',
+          coreIdentity: 'Fearless leader',
+          currentState: {
+            emotionalState: 'Anxious',
+            visibleGoal: 'Find truth',
+            currentFear: 'Betrayal',
+            pressureLevel: 8,
+            hiddenNeed: 'Acceptance',
+            currentKnowledge: 'The artifact is cursed',
+          },
+        },
+      ],
+    });
+    const { context } = buildContext(state, { userInput: 'Elena', isBlockedMode: false });
+    expect(context).toContain('Core Identity: Fearless leader');
+    expect(context).toContain('State: Anxious');
+    expect(context).toContain('Goal: Find truth');
+    expect(context).toContain('Fear: Betrayal');
+    expect(context).toContain('Hidden Need: Acceptance');
+    expect(context).toContain('Knows: The artifact is cursed');
+  });
+});
+
+describe('buildContext — author_intent', () => {
+  it('includes author_intent block when non-empty', () => {
+    const state = makeState();
+    state.author_intent = 'Explore themes of forgiveness';
+    const { context } = buildContext(state, { userInput: 'test', isBlockedMode: false });
+    expect(context).toContain('CURRENT AUTHOR INTENT');
+    expect(context).toContain('Explore themes of forgiveness');
+  });
+
+  it('omits author_intent block when empty', () => {
+    const state = makeState();
+    state.author_intent = '';
+    const { context } = buildContext(state, { userInput: 'test', isBlockedMode: false });
+    expect(context).not.toContain('CURRENT AUTHOR INTENT');
+  });
+});
+
+describe('buildContext — blocked mode section ordering', () => {
+  it('includes ACTIVE CONFLICTS and FORESHADOWING sections in blocked mode', () => {
+    const state = makeState({
+      foreshadowing_elements: [
+        { id: 'f1', clue: 'Dark omen appears', payoff: '', canonStatus: 'confirmed' },
+      ],
+    });
+    const { context } = buildContext(state, { userInput: 'stuck', isBlockedMode: true });
+    expect(context).toContain('ACTIVE CONFLICTS');
+    expect(context).toContain('FORESHADOWING');
+    expect(context).toContain('Dark omen appears');
+  });
+
+  it('foreshadowing shows payoff when present, (unresolved) when absent', () => {
+    const state = makeState({
+      foreshadowing_elements: [
+        { id: 'f1', clue: 'Shadow moves', payoff: 'The villain arrives', canonStatus: 'confirmed' },
+        { id: 'f2', clue: 'Clock strikes', payoff: '', canonStatus: 'confirmed' },
+      ],
+    });
+    const { context } = buildContext(state, { userInput: 'test', isBlockedMode: true });
+    expect(context).toContain('Shadow moves -> The villain arrives');
+    expect(context).toContain('Clock strikes (unresolved)');
+  });
+});
+
+describe('buildContext — context truncation manifest', () => {
+  it('produces manifest with specific omission counts', () => {
+    // Create heavy canon_items and open_loops to force truncation
+    const heavyItems = Array.from({ length: 40 }, (_, i) => ({
+      id: `ci${i}`, category: 'plot', description: `Canon item ${i}: ${'X'.repeat(100)}`, status: 'confirmed',
+    }));
+    const heavyLoops = Array.from({ length: 40 }, (_, i) => ({
+      id: `ol${i}`, description: `Loop ${i}: ${'Y'.repeat(100)}`, status: 'open', canonStatus: 'confirmed',
+    }));
+
+    const state = makeState({
+      canon_items: heavyItems as typeof defaultState.canon_items,
+      open_loops: heavyLoops as typeof defaultState.open_loops,
+    });
+
+    const { context } = buildContext(state, { userInput: 'test', isBlockedMode: false, maxLength: 3000 });
+    expect(context).toContain('CONTEXT TRUNCATION MANIFEST');
+    expect(context).toContain('items omitted');
+  });
+
+  it('does not produce manifest when everything fits', () => {
+    const state = makeState();
+    const { context } = buildContext(state, { userInput: 'test', isBlockedMode: false, maxLength: 500000 });
+    expect(context).not.toContain('CONTEXT TRUNCATION MANIFEST');
+  });
+});
+
+describe('buildContext — scenes under chapters', () => {
+  it('includes scenes in chapter block', () => {
+    const state = makeState({
+      chapters: [{ id: 'ch1', title: 'The Discovery', content: 'text', summary: 'start', canonStatus: 'confirmed' }],
+      scenes: [{ id: 's1', chapterId: 'ch1', title: 'Opening', summary: 'The door opens', canonStatus: 'confirmed' }],
+    });
+    const { context } = buildContext(state, { userInput: 'test', isBlockedMode: false });
+    expect(context).toContain('Scenes: Opening: The door opens');
+  });
+});
+
+describe('buildContext — themes and world rules', () => {
+  it('includes themes with evidence', () => {
+    const state = makeState({
+      themes: [
+        { id: 'th1', theme: 'Redemption', evidence: ['Chapter 1 arc', 'Marco subplot'], canonStatus: 'confirmed' },
+      ],
+    });
+    const { context } = buildContext(state, { userInput: 'test', isBlockedMode: false });
+    expect(context).toContain('[Theme] Redemption: Chapter 1 arc, Marco subplot');
+  });
+
+  it('includes world rules by category', () => {
+    const state = makeState({
+      world_rules: [
+        { id: 'wr1', category: 'Magic', rule: 'Magic costs lifeforce', canonStatus: 'confirmed' },
+      ],
+    });
+    const { context } = buildContext(state, { userInput: 'test', isBlockedMode: false });
+    expect(context).toContain('[World Rule] Magic: Magic costs lifeforce');
+  });
+});
+
+describe('buildContext — ambiguities and canon_items', () => {
+  it('includes ambiguities with affected section and confidence', () => {
+    const state = makeState({
+      ambiguities: [
+        { id: 'a1', issue: 'Timeline conflict', affectedSection: 'Chapter 2', confidence: 0.3 },
+      ],
+    });
+    const { context } = buildContext(state, { userInput: 'test', isBlockedMode: false });
+    expect(context).toContain('Timeline conflict (affects: Chapter 2, confidence: 0.3)');
+  });
+
+  it('includes canon_items with category and status', () => {
+    const state = makeState({
+      canon_items: [
+        { id: 'ci1', category: 'plot', description: 'Elena finds the map', status: 'confirmed' },
+      ],
+    });
+    const { context } = buildContext(state, { userInput: 'test', isBlockedMode: false });
+    expect(context).toContain('[plot] Elena finds the map (confirmed)');
+  });
+});
