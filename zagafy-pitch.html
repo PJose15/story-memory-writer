@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Zagafy — Where Imagination Takes a Body</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Mahogany — wood / structural */
+    --mahogany-950: #1a0e08;
+    --mahogany-900: #2d1a0f;
+    --mahogany-800: #4a2c1a;
+    --mahogany-700: #6b3e25;
+    --mahogany-600: #7a4e35;
+
+    /* Parchment — card backgrounds */
+    --parchment-50: #fdf8f0;
+    --parchment-100: #f8edd8;
+    --parchment-200: #f0dfc0;
+    --parchment-300: #e4cfa0;
+
+    /* Sepia — ink / text */
+    --sepia-900: #2c1e0f;
+    --sepia-700: #5a3d1e;
+    --sepia-600: #7a5a30;
+    --sepia-400: #b8965a;
+
+    /* Forest — accent / active */
+    --forest-800: #14532d;
+    --forest-700: #166534;
+    --forest-600: #16a34a;
+    --forest-500: #22c55e;
+
+    /* Brass — metallic accents */
+    --brass-700: #8b6b38;
+    --brass-600: #a88540;
+    --brass-500: #c49b48;
+    --brass-400: #d4b050;
+    --brass-300: #e4c044;
+
+    /* Wax — danger / stamps */
+    --wax-700: #991b1b;
+    --wax-600: #b91c1c;
+    --wax-500: #dc2626;
+
+    /* Cream */
+    --cream-50: #fffdf7;
+    --cream-100: #fdf5e6;
+    --cream-200: #f5e6c8;
+    --cream-300: #ead4a8;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--mahogany-950);
+    color: var(--cream-100);
+    overflow-x: hidden;
+    line-height: 1.6;
+  }
+
+  /* Wood grain texture background */
+  .texture-wood {
+    background-color: var(--mahogany-950);
+    background-image:
+      repeating-linear-gradient(
+        90deg,
+        transparent, transparent 2px,
+        rgba(0, 0, 0, 0.15) 2px, rgba(0, 0, 0, 0.15) 4px
+      ),
+      repeating-linear-gradient(
+        0deg,
+        transparent, transparent 40px,
+        rgba(139, 94, 75, 0.12) 40px, rgba(139, 94, 75, 0.12) 42px
+      ),
+      linear-gradient(180deg, rgba(0, 0, 0, 0.3), transparent 30%, transparent 70%, rgba(0, 0, 0, 0.3));
+  }
+
+  /* Parchment texture */
+  .texture-parchment {
+    background-color: var(--parchment-100);
+    background-image:
+      radial-gradient(ellipse at 20% 50%, rgba(196, 160, 110, 0.2) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 20%, rgba(196, 160, 110, 0.25) 0%, transparent 40%),
+      radial-gradient(ellipse at 50% 80%, rgba(139, 94, 75, 0.15) 0%, transparent 50%);
+  }
+
+  /* Noise overlay */
+  .noise::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0.06;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 200px 200px;
+  }
+
+  /* Text effects */
+  .letterpress {
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.1), 0 -1px 0 rgba(0, 0, 0, 0.5);
+  }
+
+  .embossed {
+    text-shadow: 0 1px 1px rgba(255, 255, 255, 0.2), 0 -1px 1px rgba(0, 0, 0, 0.3);
+  }
+
+  /* ─── HERO ─── */
+  .hero {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    overflow: hidden;
+  }
+
+  .hero-inner {
+    position: relative;
+    z-index: 2;
+    max-width: 1100px;
+    text-align: center;
+  }
+
+  .crest {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 1.25rem;
+    border: 1px solid var(--brass-700);
+    border-radius: 9999px;
+    background: rgba(42, 24, 13, 0.6);
+    color: var(--brass-400);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 2.5rem;
+    backdrop-filter: blur(8px);
+  }
+
+  .crest-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--forest-500);
+    box-shadow: 0 0 10px var(--forest-500);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 0.5; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.3); }
+  }
+
+  .hero h1 {
+    font-family: 'Playfair Display', serif;
+    font-weight: 900;
+    font-size: clamp(3.5rem, 9vw, 8.5rem);
+    line-height: 0.95;
+    letter-spacing: -0.02em;
+    margin-bottom: 1.5rem;
+    background: linear-gradient(180deg, var(--cream-50) 0%, var(--brass-300) 60%, var(--brass-500) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 4px 20px rgba(196, 155, 72, 0.2));
+  }
+
+  .hero .tagline {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: clamp(1.25rem, 2.5vw, 1.75rem);
+    color: var(--cream-200);
+    margin-bottom: 3rem;
+    letter-spacing: 0.02em;
+  }
+
+  .hero .tagline span {
+    color: var(--brass-400);
+    font-style: normal;
+    font-weight: 700;
+  }
+
+  .ornament {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    margin: 2rem 0;
+    color: var(--brass-600);
+  }
+
+  .ornament .line {
+    width: 80px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--brass-600), transparent);
+  }
+
+  .ornament .diamond {
+    width: 10px;
+    height: 10px;
+    background: var(--brass-500);
+    transform: rotate(45deg);
+    box-shadow: 0 0 8px var(--brass-400);
+  }
+
+  .hero-lede {
+    max-width: 720px;
+    margin: 0 auto 3rem;
+    font-size: 1.125rem;
+    color: var(--cream-300);
+    line-height: 1.8;
+  }
+
+  .hero-lede strong {
+    color: var(--brass-400);
+    font-weight: 600;
+  }
+
+  .cta-row {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem 2rem;
+    border-radius: 0.75rem;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 1rem;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    border: none;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--forest-700), var(--forest-800));
+    color: var(--cream-50);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 4px 12px rgba(20, 83, 45, 0.4);
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 8px 20px rgba(20, 83, 45, 0.5);
+  }
+
+  .btn-secondary {
+    background: transparent;
+    color: var(--brass-400);
+    border: 1px solid var(--brass-700);
+  }
+
+  .btn-secondary:hover {
+    background: rgba(168, 133, 64, 0.1);
+    border-color: var(--brass-500);
+    color: var(--brass-300);
+  }
+
+  /* Ambient floating particles */
+  .particles {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .particle {
+    position: absolute;
+    width: 3px;
+    height: 3px;
+    background: var(--brass-400);
+    border-radius: 50%;
+    opacity: 0.4;
+    animation: float 20s infinite linear;
+    box-shadow: 0 0 6px var(--brass-500);
+  }
+
+  @keyframes float {
+    0% { transform: translateY(100vh) translateX(0); opacity: 0; }
+    10% { opacity: 0.6; }
+    90% { opacity: 0.6; }
+    100% { transform: translateY(-10vh) translateX(100px); opacity: 0; }
+  }
+
+  /* ─── MANIFESTO (parchment card) ─── */
+  .manifesto-section {
+    padding: 6rem 2rem;
+    position: relative;
+  }
+
+  .manifesto {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 4rem 3.5rem;
+    border-radius: 1rem;
+    position: relative;
+    color: var(--sepia-900);
+    box-shadow:
+      0 20px 60px rgba(0, 0, 0, 0.5),
+      0 0 0 1px var(--brass-700),
+      inset 0 0 40px rgba(139, 94, 75, 0.1);
+  }
+
+  .manifesto::before {
+    content: '';
+    position: absolute;
+    top: -1px; left: -1px; right: -1px; bottom: -1px;
+    border-radius: 1rem;
+    background: linear-gradient(135deg, var(--brass-500), var(--brass-700), var(--brass-500));
+    z-index: -1;
+  }
+
+  .wax-seal {
+    position: absolute;
+    top: -30px;
+    right: 40px;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, var(--wax-500), var(--wax-700) 70%, #4a0a0a);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--cream-100);
+    font-family: 'Playfair Display', serif;
+    font-weight: 900;
+    font-size: 1.75rem;
+    font-style: italic;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5), inset 0 2px 4px rgba(255, 255, 255, 0.2);
+    transform: rotate(-8deg);
+    border: 2px solid rgba(0, 0, 0, 0.2);
+  }
+
+  .manifesto-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--sepia-600);
+    margin-bottom: 1rem;
+  }
+
+  .manifesto h2 {
+    font-family: 'Playfair Display', serif;
+    font-weight: 900;
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    line-height: 1.05;
+    color: var(--sepia-900);
+    margin-bottom: 2rem;
+  }
+
+  .manifesto h2 em {
+    color: var(--forest-700);
+    font-style: italic;
+  }
+
+  .manifesto p {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.2rem;
+    line-height: 1.75;
+    color: var(--sepia-800);
+    margin-bottom: 1.5rem;
+  }
+
+  .manifesto p strong {
+    color: var(--wax-700);
+    font-weight: 700;
+  }
+
+  .signature {
+    margin-top: 2.5rem;
+    padding-top: 2rem;
+    border-top: 1px dashed var(--sepia-600);
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    color: var(--sepia-700);
+    font-size: 1rem;
+  }
+
+  /* ─── CARDS GRID ─── */
+  .features-section {
+    padding: 6rem 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .section-header {
+    text-align: center;
+    margin-bottom: 4rem;
+  }
+
+  .section-header h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2rem, 4vw, 3rem);
+    color: var(--cream-50);
+    margin-bottom: 1rem;
+    letter-spacing: -0.01em;
+  }
+
+  .section-header p {
+    color: var(--sepia-400);
+    font-size: 1.1rem;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .feature-card {
+    position: relative;
+    padding: 2rem;
+    border-radius: 1rem;
+    background: linear-gradient(160deg, var(--parchment-100), var(--parchment-200));
+    color: var(--sepia-900);
+    overflow: hidden;
+    transition: all 0.4s ease;
+    border: 1px solid rgba(90, 61, 30, 0.3);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  }
+
+  .feature-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  }
+
+  .feature-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 20% 30%, rgba(196, 160, 110, 0.15) 0%, transparent 40%),
+      radial-gradient(ellipse at 80% 70%, rgba(139, 94, 75, 0.1) 0%, transparent 50%);
+    pointer-events: none;
+  }
+
+  .feature-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 0.75rem;
+    background: linear-gradient(135deg, var(--forest-700), var(--forest-800));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.25rem;
+    color: var(--cream-100);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 2px 6px rgba(0, 0, 0, 0.3);
+  }
+
+  .feature-card h4 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+    color: var(--sepia-900);
+    position: relative;
+  }
+
+  .feature-card p {
+    color: var(--sepia-700);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    position: relative;
+  }
+
+  .feature-badge {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    padding: 0.25rem 0.6rem;
+    border-radius: 9999px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    background: var(--forest-700);
+    color: var(--cream-100);
+  }
+
+  .feature-badge.brass { background: var(--brass-600); }
+  .feature-badge.wax { background: var(--wax-700); }
+
+  /* ─── QUOTE / PULL ─── */
+  .pull-section {
+    padding: 6rem 2rem;
+    text-align: center;
+    position: relative;
+  }
+
+  .pull {
+    max-width: 900px;
+    margin: 0 auto;
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: clamp(1.75rem, 4vw, 2.75rem);
+    line-height: 1.3;
+    color: var(--cream-100);
+  }
+
+  .pull .highlight {
+    background: linear-gradient(180deg, transparent 60%, rgba(196, 155, 72, 0.3) 60%);
+    color: var(--brass-300);
+    font-style: normal;
+    font-weight: 700;
+    padding: 0 0.2em;
+  }
+
+  /* ─── CLOSING ─── */
+  .closing {
+    padding: 8rem 2rem 4rem;
+    text-align: center;
+    position: relative;
+  }
+
+  .closing h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2.5rem, 6vw, 5rem);
+    font-weight: 900;
+    color: var(--cream-50);
+    margin-bottom: 1.5rem;
+    line-height: 1;
+  }
+
+  .closing h2 em {
+    font-style: italic;
+    background: linear-gradient(180deg, var(--brass-300), var(--brass-500));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .closing p {
+    font-size: 1.25rem;
+    color: var(--sepia-400);
+    margin-bottom: 2.5rem;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  footer {
+    padding: 2rem;
+    text-align: center;
+    border-top: 1px solid rgba(107, 62, 37, 0.3);
+    color: var(--sepia-600);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+
+  footer span { color: var(--brass-500); }
+
+  /* Responsive */
+  @media (max-width: 640px) {
+    .manifesto { padding: 3rem 1.75rem; }
+    .wax-seal { width: 60px; height: 60px; font-size: 1.25rem; top: -20px; right: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════ HERO ═══════ -->
+<section class="hero texture-wood noise">
+  <div class="particles" id="particles"></div>
+  <div class="hero-inner">
+    <div class="crest">
+      <span class="crest-dot"></span>
+      <span>Canon Keeper · Vol. I</span>
+    </div>
+
+    <h1 class="letterpress">Zagafy</h1>
+
+    <div class="ornament">
+      <span class="line"></span>
+      <span class="diamond"></span>
+      <span class="line"></span>
+    </div>
+
+    <p class="tagline">Where imagination takes a <span>body.</span></p>
+
+    <p class="hero-lede">
+      This isn't a writing app. It's a <strong>living studio</strong> for the dreamers who were told their ideas were too big, too wild, too much. <strong>Novelists. Screenwriters. Worldbuilders. Movie-makers in their own heads.</strong> Zagafy is where what's inside you walks out onto the page — and starts talking back.
+    </p>
+
+    <div class="cta-row">
+      <a href="#manifesto" class="btn btn-primary">Enter the Library</a>
+      <a href="#features" class="btn btn-secondary">See What's Inside</a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ MANIFESTO ═══════ -->
+<section class="manifesto-section texture-wood" id="manifesto">
+  <div class="manifesto texture-parchment">
+    <div class="wax-seal">Z</div>
+    <div class="manifesto-label">— The Manifesto —</div>
+    <h2>Stop <em>dreaming</em> of being a writer.<br/>Become one.</h2>
+
+    <p>
+      Every writer knows the moment. Chapter nineteen, three a.m., and you can't remember if your villain has a brother or a blade. The page stares back. The doubt creeps in. The story you were building starts to <strong>slip</strong>.
+    </p>
+
+    <p>
+      Zagafy is the place where that stops happening.
+    </p>
+
+    <p>
+      Your characters <strong>answer you</strong>. Your worlds remember themselves. Your stuck moments become sparks. The AI never writes the book for you — it writes <em>with</em> you, the way a best friend brainstorms at 3 a.m., handing you the match, never the fire.
+    </p>
+
+    <p>
+      You become the author. The screenwriter. The maker of the next thing people can't stop watching.
+    </p>
+
+    <div class="signature">— for the haunted, the obsessed, the ones with a book inside them that refuses to leave.</div>
+  </div>
+</section>
+
+<!-- ═══════ FEATURES ═══════ -->
+<section class="features-section" id="features">
+  <div class="section-header">
+    <h3>The Library</h3>
+    <p>Every tool a creator needs — bound in brass, sealed in wax, kept on living shelves.</p>
+  </div>
+
+  <div class="features-grid">
+
+    <div class="feature-card">
+      <span class="feature-badge">Live</span>
+      <div class="feature-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      </div>
+      <h4>Character Chat</h4>
+      <p>Your villain talks back. Your hero argues with you. Pull your cast out of the page and let them tell you what happens next.</p>
+    </div>
+
+    <div class="feature-card">
+      <span class="feature-badge brass">Canon</span>
+      <div class="feature-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      </div>
+      <h4>Canon Lock</h4>
+      <p>Every character, rule, and secret you've ever written — protected. Contradict yourself and Zagafy catches you before the reader does.</p>
+    </div>
+
+    <div class="feature-card">
+      <span class="feature-badge wax">Sacred</span>
+      <div class="feature-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><line x1="16" x2="2" y1="8" y2="22"/></svg>
+      </div>
+      <h4>Flow Mode</h4>
+      <p>No backspace. No delete. Just forward. A distraction-free writing temple where momentum glows behind every word you lay down.</p>
+    </div>
+
+    <div class="feature-card">
+      <span class="feature-badge">Unstuck</span>
+      <div class="feature-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/></svg>
+      </div>
+      <h4>Writer's Block Diagnostics</h4>
+      <p>Afraid? Perfectionist? Empty? Zagafy asks first — then softens, sharpens, or steadies itself to meet you where you are.</p>
+    </div>
+
+    <div class="feature-card">
+      <span class="feature-badge brass">Voices</span>
+      <div class="feature-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v11a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1v-3a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1v3a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1Z"/><path d="M6 6V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2"/></svg>
+      </div>
+      <h4>Heteronyms</h4>
+      <p>Slip into alter-ego voices when your own isn't coming. Write as the poet, the cynic, the child — then return home, richer.</p>
+    </div>
+
+    <div class="feature-card">
+      <span class="feature-badge">Insight</span>
+      <div class="feature-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 0-16 0"/><path d="M12 12v8"/><path d="m9 18 3 2 3-2"/></svg>
+      </div>
+      <h4>Story Brain</h4>
+      <p>A second mind watching for patterns, threads, and obsessions you can't see yourself. Your subconscious, rendered.</p>
+    </div>
+
+    <div class="feature-card">
+      <span class="feature-badge brass">Visual</span>
+      <div class="feature-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+      </div>
+      <h4>Writing Map</h4>
+      <p>See the shape of your obsession over time. Heatmaps, rituals, sprints — every word you've ever written, rendered as landscape.</p>
+    </div>
+
+    <div class="feature-card">
+      <span class="feature-badge">Ritual</span>
+      <div class="feature-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+      </div>
+      <h4>Entry Rituals</h4>
+      <p>A breath. A quote. A pause. Writing is sacred, and your tools should treat it that way. Begin each session with a door, not a dashboard.</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════ PULL QUOTE ═══════ -->
+<section class="pull-section texture-wood noise">
+  <blockquote class="pull">
+    "The AI <span class="highlight">never writes the book for you</span> — it writes <em>with</em> you. Hands you the match. Never the fire."
+  </blockquote>
+</section>
+
+<!-- ═══════ CLOSING ═══════ -->
+<section class="closing texture-wood">
+  <div class="ornament">
+    <span class="line"></span>
+    <span class="diamond"></span>
+    <span class="line"></span>
+  </div>
+  <h2>Your story is <em>alive.</em></h2>
+  <p>Zagafy is how you keep it that way — and how you finally let it out.</p>
+  <a href="#" class="btn btn-primary">Open Your Library</a>
+</section>
+
+<footer>
+  <span>Zagafy</span> &nbsp;·&nbsp; Canon Keeper v1.0 &nbsp;·&nbsp; An Antiquarian Instrument for Modern Storytellers
+</footer>
+
+<script>
+  // Generate floating brass particles
+  const particlesContainer = document.getElementById('particles');
+  for (let i = 0; i < 25; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.left = Math.random() * 100 + '%';
+    p.style.animationDuration = (15 + Math.random() * 15) + 's';
+    p.style.animationDelay = Math.random() * 20 + 's';
+    p.style.opacity = (0.2 + Math.random() * 0.4);
+    particlesContainer.appendChild(p);
+  }
+</script>
+
+</body>
+</html>
