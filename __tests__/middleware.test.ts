@@ -96,4 +96,49 @@ describe('middleware', () => {
     const { config } = await loadMiddleware();
     expect(config.matcher).toBe('/api/:path*');
   });
+
+  it('allows ai.studio Origin (AI Studio iframe embed)', async () => {
+    const { middleware } = await loadMiddleware();
+    const res = middleware(makeRequest({
+      host: 'myapp.vercel.app',
+      origin: 'https://ai.studio',
+    }));
+    expect(res.status).not.toBe(403);
+  });
+
+  it('allows aistudio.google.com Origin', async () => {
+    const { middleware } = await loadMiddleware();
+    const res = middleware(makeRequest({
+      host: 'myapp.vercel.app',
+      origin: 'https://aistudio.google.com',
+    }));
+    expect(res.status).not.toBe(403);
+  });
+
+  it('allows subdomains of ai.studio', async () => {
+    const { middleware } = await loadMiddleware();
+    const res = middleware(makeRequest({
+      host: 'myapp.vercel.app',
+      origin: 'https://apps.ai.studio',
+    }));
+    expect(res.status).not.toBe(403);
+  });
+
+  it('allows ai.studio via Referer when Origin is absent', async () => {
+    const { middleware } = await loadMiddleware();
+    const res = middleware(makeRequest({
+      host: 'myapp.vercel.app',
+      referer: 'https://ai.studio/apps/abc123',
+    }));
+    expect(res.status).not.toBe(403);
+  });
+
+  it('does NOT allow suffix-spoofing attacks like notai.studio', async () => {
+    const { middleware } = await loadMiddleware();
+    const res = middleware(makeRequest({
+      host: 'myapp.vercel.app',
+      origin: 'https://notai.studio',
+    }));
+    expect(res.status).toBe(403);
+  });
 });

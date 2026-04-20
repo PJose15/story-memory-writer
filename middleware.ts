@@ -1,9 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 /**
+ * Hosts allowed to make cross-origin API calls to this app.
+ * Google AI Studio embeds the applet in an iframe where the effective
+ * Origin becomes ai.studio (or aistudio.google.com), so same-origin
+ * checks would otherwise reject every extraction / chat call.
+ */
+const ALLOWED_EMBED_SUFFIXES = [
+  'ai.studio',
+  'aistudio.google.com',
+];
+
+function isAllowedEmbedHost(host: string): boolean {
+  return ALLOWED_EMBED_SUFFIXES.some(
+    (suffix) => host === suffix || host.endsWith('.' + suffix),
+  );
+}
+
+/**
  * Protect API routes from cross-origin abuse.
- * Allows requests from the same origin (checked via Origin or Referer header)
- * and server-side requests (no Origin header, e.g. Next.js SSR).
+ * Allows requests from the same origin (checked via Origin or Referer header),
+ * from allowlisted embed hosts (AI Studio), and server-side requests (no
+ * Origin header, e.g. Next.js SSR).
  */
 export function middleware(req: NextRequest) {
   const origin = req.headers.get('origin');
@@ -20,7 +38,7 @@ export function middleware(req: NextRequest) {
   if (origin) {
     try {
       const originHost = new URL(origin).host;
-      if (originHost === host) {
+      if (originHost === host || isAllowedEmbedHost(originHost)) {
         return NextResponse.next();
       }
     } catch {
@@ -32,7 +50,7 @@ export function middleware(req: NextRequest) {
   if (referer) {
     try {
       const refererHost = new URL(referer).host;
-      if (refererHost === host) {
+      if (refererHost === host || isAllowedEmbedHost(refererHost)) {
         return NextResponse.next();
       }
     } catch {
