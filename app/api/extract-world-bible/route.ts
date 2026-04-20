@@ -71,7 +71,7 @@ Only include sections where you found actual content. Do not invent or speculate
 ${chapterText}
 </manuscript>`;
 
-    const response = await ai.models.generateContent({
+    const generateConfig = {
       model: AI_MODEL,
       contents: prompt,
       config: {
@@ -101,7 +101,30 @@ ${chapterText}
           },
         },
       },
-    });
+    };
+
+    // Retry 503 UNAVAILABLE (peak-load overflow) with exponential backoff.
+    // Gemini regularly returns this during high-demand periods.
+    let response;
+    let lastError: unknown;
+    const MAX_ATTEMPTS = 3;
+    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+      try {
+        response = await ai.models.generateContent(generateConfig);
+        break;
+      } catch (err: unknown) {
+        lastError = err;
+        const msg = err instanceof Error ? err.message : String(err);
+        const isTransient = /\b503\b|UNAVAILABLE|overloaded|high demand/i.test(msg);
+        if (!isTransient || attempt === MAX_ATTEMPTS - 1) throw err;
+        const backoffMs = 800 * Math.pow(2, attempt);
+        console.warn(`WorldBible: Gemini transient failure (attempt ${attempt + 1}/${MAX_ATTEMPTS}), retrying in ${backoffMs}ms`);
+        await new Promise((resolve) => setTimeout(resolve, backoffMs));
+      }
+    }
+    if (!response) {
+      throw lastError ?? new Error('Gemini call failed after retries');
+    }
 
     const candidate = response.candidates?.[0];
     const finishReason = candidate?.finishReason;
@@ -167,8 +190,15 @@ ${chapterText}
     return NextResponse.json({ sections });
   } catch (error: unknown) {
     console.error('WorldBible extraction error:', error);
+    const rawMessage = getErrorMessage(error, 'Failed to extract worldbuilding');
+    const isOverloaded = /\b503\b|UNAVAILABLE|overloaded|high demand/i.test(rawMessage);
+    if (isOverloaded) {
+      return NextResponse.json(
+        { error: 'Gemini is experiencing high demand right now. Please wait a minute and try again.' },
+        { status: 503 },
+      );
+    }
     const status = getErrorStatus(error);
-    const message = getErrorMessage(error, 'Failed to extract worldbuilding');
-    return NextResponse.json({ error: message }, { status });
+    return NextResponse.json({ error: rawMessage }, { status });
   }
 }
