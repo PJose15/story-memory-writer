@@ -78,7 +78,8 @@ export default function BiblePage() {
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
-      throw new Error(err.error || `Extraction failed (HTTP ${res.status})`);
+      const msg = err.error || 'Extraction failed';
+      throw new Error(`[HTTP ${res.status}] ${msg}`);
     }
     const data = await res.json();
     const sections: WorldBibleSection[] = data.sections ?? [];
