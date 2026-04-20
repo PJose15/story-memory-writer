@@ -9,11 +9,12 @@ interface WorldBibleExtractButtonProps {
   onExtract: () => Promise<number>;
   disabled?: boolean;
   chapterCount: number;
+  onError?: (message: string) => void;
 }
 
 type ExtractState = 'idle' | 'extracting' | 'success' | 'error';
 
-export function WorldBibleExtractButton({ onExtract, disabled, chapterCount }: WorldBibleExtractButtonProps) {
+export function WorldBibleExtractButton({ onExtract, disabled, chapterCount, onError }: WorldBibleExtractButtonProps) {
   const [extractState, setExtractState] = useState<ExtractState>('idle');
   const [cycleIndex, setCycleIndex] = useState(0);
   const [resultCount, setResultCount] = useState(0);
@@ -46,7 +47,10 @@ export function WorldBibleExtractButton({ onExtract, disabled, chapterCount }: W
       const count = await onExtract();
       setResultCount(count);
       setExtractState('success');
-    } catch {
+    } catch (err) {
+      console.error('[WorldBibleExtract] extraction failed:', err);
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      onError?.(message);
       setExtractState('error');
     }
   };

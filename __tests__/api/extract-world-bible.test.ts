@@ -36,7 +36,7 @@ vi.mock('@/lib/ai-config', () => ({
   },
 }));
 
-const { POST } = await import('@/app/api/extract-world-bible/route');
+import { POST } from '@/app/api/extract-world-bible/route';
 
 function makeRequest(body: Record<string, unknown>): NextRequest {
   return new NextRequest('http://localhost:3000/api/extract-world-bible', {
@@ -64,16 +64,40 @@ describe('POST /api/extract-world-bible', () => {
     expect(res.status).toBe(400);
   });
 
-  it('rejects chapter without title', async () => {
-    const res = await POST(makeRequest({ chapters: [{ content: 'some text' }] }));
+  it('rejects when all chapters lack title or content', async () => {
+    const res = await POST(makeRequest({ chapters: [{ content: 'some text' }, { title: 'Ch2', content: '   ' }] }));
     expect(res.status).toBe(400);
     const body = await res.json();
-    expect(body.error).toMatch(/title/i);
+    expect(body.error).toMatch(/no chapters with content/i);
   });
 
-  it('rejects chapter without content', async () => {
+  it('rejects chapter without content when it is the only chapter', async () => {
     const res = await POST(makeRequest({ chapters: [{ title: 'Ch1', content: '' }] }));
     expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toMatch(/no chapters with content/i);
+  });
+
+  it('filters out empty chapters and processes the valid ones', async () => {
+    mockGenerateContent.mockResolvedValue({
+      candidates: [{ finishReason: 'STOP' }],
+      text: JSON.stringify({
+        sections: [{ category: 'geography', title: 'Kingdom', content: 'A place.' }],
+      }),
+    });
+
+    const res = await POST(
+      makeRequest({
+        chapters: [
+          { title: 'Ch1', content: '' },
+          { title: 'Ch2', content: 'Real content about the kingdom.' },
+          { title: '', content: 'orphan content' },
+        ],
+      }),
+    );
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.sections).toHaveLength(1);
   });
 
   it('rejects oversized payload', async () => {
@@ -169,7 +193,7 @@ describe('POST /api/extract-world-bible', () => {
     expect(res.status).toBe(502);
   });
 
-  it('returns empty sections when response text is empty', async () => {
+  it('returns 502 when response text is empty', async () => {
     mockGenerateContent.mockResolvedValue({
       candidates: [{ finishReason: 'STOP' }],
       text: '',
@@ -178,8 +202,47 @@ describe('POST /api/extract-world-bible', () => {
     const res = await POST(
       makeRequest({ chapters: [{ title: 'Ch1', content: 'Text...' }] }),
     );
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(502);
     const body = await res.json();
-    expect(body.sections).toEqual([]);
+    expect(body.error).toMatch(/empty response/i);
+  });
+
+  it('returns 413 when response hits MAX_TOKENS', async () => {
+    mockGenerateContent.mockResolvedValue({
+      candidates: [{ finishReason: 'MAX_TOKENS' }],
+      text: '{"sections": [{"category": "geography", "title": "Trunc',
+    });
+
+    const res = await POST(
+      makeRequest({ chapters: [{ title: 'Ch1', content: 'Long manuscript.' }] }),
+    );
+    expect(res.status).toBe(413);
+    const body = await res.json();
+    expect(body.error).toMatch(/fewer chapters/i);
+  });
+
+  it('passes thinkingConfig: { thinkingBudget: 0 } to Gemini', async () => {
+    mockGenerateContent.mockResolvedValue({
+      candidates: [{ finishReason: 'STOP' }],
+      text: JSON.stringify({ sections: [] }),
+    });
+
+    await POST(
+      makeRequest({ chapters: [{ title: 'Ch1', content: 'Text.' }] }),
+    );
+
+    expect(mockGenerateContent).toHaveBeenCalledTimes(1);
+    const callArg = mockGenerateContent.mock.calls[0][0];
+    expect(callArg.config.thinkingConfig).toEqual({ thinkingBudget: 0 });
+  });
+
+  it('surfaces underlying error message from thrown errors', async () => {
+    mockGenerateContent.mockRejectedValue(new Error('Quota exceeded for project'));
+
+    const res = await POST(
+      makeRequest({ chapters: [{ title: 'Ch1', content: 'Text.' }] }),
+    );
+    const body = await res.json();
+    expect(body.error).toMatch(/quota exceeded/i);
   });
 });

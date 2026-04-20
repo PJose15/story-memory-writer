@@ -5,7 +5,7 @@ import { useState, useCallback } from 'react';
 import { useUnsavedChanges } from '@/hooks/use-unsaved-changes';
 import {
   Save, Book, Settings2, Plus, Globe, Scroll, Wand2,
-  Landmark, Church, Coins, Languages, CalendarDays,
+  Landmark, Church, Coins, Languages, CalendarDays, AlertTriangle, X,
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import {
@@ -43,6 +43,7 @@ export default function BiblePage() {
   const [selectedCategory, setSelectedCategory] = useState<WorldBibleCategory>('geography');
   const [mergeModalOpen, setMergeModalOpen] = useState(false);
   const [incomingSections, setIncomingSections] = useState<WorldBibleSection[]>([]);
+  const [extractError, setExtractError] = useState<string | null>(null);
 
   useUnsavedChanges(
     title !== state.title ||
@@ -61,16 +62,23 @@ export default function BiblePage() {
   };
 
   const handleExtract = useCallback(async (): Promise<number> => {
+    setExtractError(null);
+    const validChapters = state.chapters
+      .filter((ch) => ch.title?.trim() && ch.content?.trim())
+      .map((ch) => ({ title: ch.title, content: ch.content }));
+
+    if (validChapters.length === 0) {
+      throw new Error('No chapters with written content. Add chapter text on the Manuscript page before extracting.');
+    }
+
     const res = await fetch('/api/extract-world-bible', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chapters: state.chapters.map((ch) => ({ title: ch.title, content: ch.content })),
-      }),
+      body: JSON.stringify({ chapters: validChapters }),
     });
     if (!res.ok) {
-      const err = await res.json().catch(() => ({ error: 'Unknown error' }));
-      throw new Error(err.error || 'Extraction failed');
+      const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+      throw new Error(err.error || `Extraction failed (HTTP ${res.status})`);
     }
     const data = await res.json();
     const sections: WorldBibleSection[] = data.sections ?? [];
@@ -126,6 +134,7 @@ export default function BiblePage() {
             <WorldBibleExtractButton
               onExtract={handleExtract}
               chapterCount={state.chapters.length}
+              onError={setExtractError}
             />
             <InkStampButton onClick={handleSave} disabled={isSaving} icon={<Save size={18} />}>
               {isSaving ? 'Saved!' : 'Save Changes'}
@@ -204,6 +213,27 @@ export default function BiblePage() {
           transition={{ delay: 0.1 }}
         >
           <h2 className="text-xl font-serif font-semibold text-sepia-900 mb-4">World Bible</h2>
+
+          {extractError && (
+            <div
+              role="alert"
+              className="mb-4 flex items-start gap-3 rounded-lg border border-red-900/30 bg-red-900/10 p-4 text-sm text-red-900"
+            >
+              <AlertTriangle size={18} className="mt-0.5 shrink-0 text-red-800" />
+              <div className="flex-1">
+                <p className="font-semibold">Extraction failed</p>
+                <p className="mt-1 whitespace-pre-wrap text-red-900/90">{extractError}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setExtractError(null)}
+                aria-label="Dismiss error"
+                className="shrink-0 rounded-full p-1 text-red-800 hover:bg-red-900/10"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
             {/* Category sidebar */}

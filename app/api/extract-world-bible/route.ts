@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenAI, Type, FinishReason } from '@google/genai';
 import { rateLimit } from '@/lib/rate-limit';
 import { AI_MODEL, SAFETY_SETTINGS, AI_CONFIG } from '@/lib/ai-config';
-import { getErrorStatus } from '@/lib/api-error';
+import { getErrorStatus, getErrorMessage } from '@/lib/api-error';
 import { WORLD_BIBLE_CATEGORIES, type WorldBibleSection } from '@/lib/types/world-bible';
 
 export const maxDuration = 60;
@@ -19,24 +19,30 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'chapters must be a non-empty array' }, { status: 400 });
     }
 
-    let totalSize = 0;
-    for (const ch of chapters) {
-      if (
-        typeof ch !== 'object' || ch === null ||
-        typeof ch.title !== 'string' || !ch.title.trim() ||
-        typeof ch.content !== 'string' || !ch.content.trim()
-      ) {
-        return NextResponse.json(
-          { error: 'Each chapter must have a non-empty title and content' },
-          { status: 400 },
-        );
-      }
-      totalSize += ch.title.length + ch.content.length;
+    const validChapters = chapters.filter(
+      (ch: unknown): ch is { title: string; content: string } =>
+        typeof ch === 'object' && ch !== null &&
+        typeof (ch as { title?: unknown }).title === 'string' &&
+        (ch as { title: string }).title.trim().length > 0 &&
+        typeof (ch as { content?: unknown }).content === 'string' &&
+        (ch as { content: string }).content.trim().length > 0,
+    );
+
+    if (validChapters.length === 0) {
+      return NextResponse.json(
+        { error: 'No chapters with content to extract from. Write chapter text on the Manuscript page first.' },
+        { status: 400 },
+      );
     }
+
+    const totalSize = validChapters.reduce(
+      (sum, ch) => sum + ch.title.length + ch.content.length,
+      0,
+    );
 
     if (totalSize > 500_000) {
       return NextResponse.json(
-        { error: 'Total chapter text exceeds 500KB limit' },
+        { error: 'Manuscript too long to extract in one pass (>500KB). Try extracting with fewer chapters.' },
         { status: 413 },
       );
     }
@@ -48,9 +54,8 @@ export async function POST(req: NextRequest) {
 
     const ai = new GoogleGenAI({ apiKey });
 
-    const chapterText = chapters
-      .map((ch: { title: string; content: string }, i: number) =>
-        `--- Chapter ${i + 1}: ${ch.title} ---\n${ch.content}`)
+    const chapterText = validChapters
+      .map((ch, i) => `--- Chapter ${i + 1}: ${ch.title} ---\n${ch.content}`)
       .join('\n\n');
 
     const prompt = `You are a worldbuilding analyst. Extract all worldbuilding details from the following manuscript chapters and organize them into exactly these categories: geography, history, magic-tech, politics, religion-culture, economy, languages, calendar.
@@ -73,6 +78,11 @@ ${chapterText}
         safetySettings: SAFETY_SETTINGS,
         temperature: AI_CONFIG.worldBible.temperature,
         maxOutputTokens: AI_CONFIG.worldBible.maxOutputTokens,
+        // Disable "thinking" for gemini-2.5-flash: thinking tokens are billed
+        // against maxOutputTokens and can consume the entire budget, leaving
+        // an empty or truncated JSON body. Extraction is analytical, not
+        // creative — we don't need reasoning tokens here.
+        thinkingConfig: { thinkingBudget: 0 },
         responseMimeType: 'application/json',
         responseSchema: {
           type: Type.OBJECT,
@@ -104,8 +114,21 @@ ${chapterText}
     }
 
     const rawText = response.text;
+
+    if (finishReason === FinishReason.MAX_TOKENS) {
+      console.error('WorldBible: response hit MAX_TOKENS; truncated output.');
+      return NextResponse.json(
+        { error: 'Manuscript too long to extract in one pass. Try extracting with fewer chapters at a time.' },
+        { status: 413 },
+      );
+    }
+
     if (!rawText) {
-      return NextResponse.json({ sections: [] });
+      console.error('WorldBible: empty response text. finishReason=', finishReason);
+      return NextResponse.json(
+        { error: `AI returned an empty response (finish reason: ${finishReason ?? 'unknown'}). Please try again.` },
+        { status: 502 },
+      );
     }
 
     let result;
@@ -114,7 +137,7 @@ ${chapterText}
     } catch {
       console.error('WorldBible: Gemini returned invalid JSON:', rawText.slice(0, 500));
       return NextResponse.json(
-        { error: 'AI returned an invalid response. Please try again.' },
+        { error: 'AI returned an invalid response. Please try again, or extract with fewer chapters.' },
         { status: 502 },
       );
     }
@@ -145,6 +168,7 @@ ${chapterText}
   } catch (error: unknown) {
     console.error('WorldBible extraction error:', error);
     const status = getErrorStatus(error);
-    return NextResponse.json({ error: 'Failed to extract worldbuilding' }, { status });
+    const message = getErrorMessage(error, 'Failed to extract worldbuilding');
+    return NextResponse.json({ error: message }, { status });
   }
 }
