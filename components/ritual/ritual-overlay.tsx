@@ -16,7 +16,7 @@ type RitualStep = 'choose' | 'breathing' | 'quote';
 export function RitualOverlay() {
   const { session, completeRitual } = useSession();
   const [step, setStep] = useState<RitualStep>('choose');
-  const countdown = useCountdown(60);
+  const countdown = useCountdown(8);
 
   // Compute quote once based on block type (stable across renders via useMemo-like pattern)
   const [quote] = useState<WriterQuote>(() =>
